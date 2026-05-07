@@ -12,6 +12,7 @@ MCM_TYPE_DEFAULT = 8
 MCM_ACTION_REQUEST = 1
 MCM_ACTION_ACCEPT = 2
 MCM_ACTION_REJECT = 3
+MAX_MANOEUVRE_ID = 65535
 
 STATE_CRUISE = "CRUISE"
 STATE_NEGOTIATING = "NEGOTIATING"
@@ -32,6 +33,37 @@ def load_json(path: str) -> Dict[str, Any]:
 
 def ms_since_minute() -> int:
     return int(time.time() * 1000) % 65536
+
+
+def clamp_int(
+    value: Any,
+    default: int = 0,
+    minimum: Optional[int] = None,
+    maximum: Optional[int] = None,
+) -> int:
+    try:
+        out = int(round(float(value)))
+    except (TypeError, ValueError):
+        out = default
+
+    if minimum is not None and out < minimum:
+        out = minimum
+    if maximum is not None and out > maximum:
+        out = maximum
+    return out
+
+
+def heading_deg_to_etsi(value: Optional[float]) -> int:
+    if value is None:
+        return 3601
+
+    deg = float(value) % 360.0
+    scaled = int(round(deg * 10.0))
+
+    if scaled >= 3600:
+        scaled = 0
+
+    return clamp_int(scaled, default=3601, minimum=0, maximum=3601)
 
 
 def meters_per_deg_lon(lat_deg: float) -> float:
@@ -416,7 +448,7 @@ class OBUApp:
         self.last_position = {"x": x, "y": y}
         return cam
 
-    def _build_mcm(self, action: int, manoeuvre_id: int) -> Dict[str, Any]:
+    def _build_mcm(self, action: int, manoeuvre_id: Optional[int]) -> Dict[str, Any]:
         mcm = copy.deepcopy(self.mcm_template)
         if not self.sensor_state:
             return mcm
@@ -426,9 +458,12 @@ class OBUApp:
         speed = float(self.sensor_state.get("speed", 0.0))
         latlon = xy_to_latlon(x, y, self.origin_lat, self.origin_lon)
 
+        manoeuvre_id = self._normalize_manoeuvre_id(manoeuvre_id)
+        action = clamp_int(action, default=MCM_ACTION_REQUEST)
+
         mcm["stationId"] = self.station_id
         basic = mcm.setdefault("basicContainer", {})
-        basic["generationDeltaTime"] = ms_since_minute()
+        basic["generationDeltaTime"] = clamp_int(ms_since_minute(), minimum=0, maximum=65535)
         basic["stationID"] = self.station_id
         basic["stationType"] = self.mcm_station_type
         basic["itssRole"] = self.itss_role
@@ -439,23 +474,39 @@ class OBUApp:
         rational["manoeuvreCooperationCost"] = action
 
         position = basic.setdefault("position", {})
-        position["latitude"] = latlon["latitude"]
-        position["longitude"] = latlon["longitude"]
+        position["latitude"] = float(latlon["latitude"])
+        position["longitude"] = float(latlon["longitude"])
 
         container = mcm.setdefault("mcmContainer", {})
         veh = container.setdefault("vehicleManoeuvreContainer", {})
         state = veh.setdefault("vehicleCurrentStateContainer", {})
+
         vehicle_speed = state.setdefault("vehicleSpeed", {})
-        vehicle_speed["speedValue"] = speed
-        if self.last_heading is not None:
-            vehicle_heading = state.setdefault("vehicleHeading", {})
-            vehicle_heading["value"] = self.last_heading
+        vehicle_speed["speedValue"] = clamp_int(speed, default=0, minimum=0)
+
+        vehicle_heading = state.setdefault("vehicleHeading", {})
+        vehicle_heading["value"] = heading_deg_to_etsi(self.last_heading)
 
         vehicle_size = state.setdefault("vehicleSize", {})
-        vehicle_size["vehicleWidth"] = self.vehicle_width
+        vehicle_size["vehicleWidth"] = clamp_int(self.vehicle_width, default=1, minimum=1)
         vehicle_length = vehicle_size.setdefault("vehicleLenth", {})
-        vehicle_length["vehicleLengthValue"] = self.vehicle_length
+        vehicle_length["vehicleLengthValue"] = clamp_int(self.vehicle_length, default=1, minimum=1)
         return mcm
+
+    def _next_manoeuvre_id(self) -> int:
+        self.mcm_seq = (self.mcm_seq + 1) % (MAX_MANOEUVRE_ID + 1)
+        return self.mcm_seq
+
+    def _normalize_manoeuvre_id(self, value: Optional[int]) -> int:
+        if value is None:
+            return self._next_manoeuvre_id()
+
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return self._next_manoeuvre_id()
+
+        return clamp_int(parsed, default=self._next_manoeuvre_id(), minimum=0, maximum=MAX_MANOEUVRE_ID)
 
     def _build_denm(self) -> Dict[str, Any]:
         denm = copy.deepcopy(self.denm_template)
@@ -638,7 +689,7 @@ class OBUApp:
         candidates.sort(key=lambda item: (item[0], item[1]))
         return candidates[0][1]
 
-    def _send_mcm(self, action: int, manoeuvre_id: int) -> None:
+    def _send_mcm(self, action: int, manoeuvre_id: Optional[int] = None) -> None:
         if not self.enable_mcm:
             return
         payload = self._build_mcm(action, manoeuvre_id)
@@ -809,13 +860,13 @@ class OBUApp:
         response_action = None
         if host_id is not None:
             if self.pending_request is None or self.pending_request.get("host_id") != host_id:
-                self.mcm_seq += 1
+                manoeuvre_id = self._next_manoeuvre_id()
                 self.pending_request = {
                     "host_id": host_id,
-                    "manoeuvre_id": self.mcm_seq,
+                    "manoeuvre_id": manoeuvre_id,
                     "timestamp": time.time(),
                 }
-                self._send_mcm(MCM_ACTION_REQUEST, self.mcm_seq)
+                self._send_mcm(MCM_ACTION_REQUEST, manoeuvre_id)
                 self._set_state(STATE_NEGOTIATING)
             elif time.time() - self.last_mcm_sent >= self.request_retry_s:
                 self._send_mcm(MCM_ACTION_REQUEST, self.pending_request["manoeuvre_id"])
