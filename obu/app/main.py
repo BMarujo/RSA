@@ -60,13 +60,81 @@ def parse_lane_index(lane_id: str) -> Optional[int]:
         return None
 
 
+def parse_csv(value: str) -> set[str]:
+    return {item.strip() for item in value.split(",") if item.strip()}
+
+
+def parse_bbox(value: str) -> Optional[tuple[float, float, float, float]]:
+    if not value.strip():
+        return None
+    parts = [float(item.strip()) for item in value.split(",") if item.strip()]
+    if len(parts) != 4:
+        return None
+    x1, y1, x2, y2 = parts
+    return (min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
+
+
+def edge_id_from_lane(lane_id: str) -> str:
+    if not lane_id:
+        return ""
+    parts = lane_id.rsplit("_", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return parts[0]
+    return lane_id
+
+
+def get_path(data: Dict[str, Any], *keys: str) -> Any:
+    current: Any = data
+    for key in keys:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+def vanetza_station_id(payload: Dict[str, Any]) -> Optional[int]:
+    station_id = payload.get("stationID")
+    if station_id is None:
+        station_id = payload.get("stationId")
+    if station_id is None:
+        station_id = get_path(payload, "itsPduHeader", "stationID")
+    if station_id is None:
+        station_id = get_path(payload, "itsPduHeader", "stationId")
+    if station_id is None:
+        station_id = get_path(payload, "fields", "header", "stationId")
+    if station_id is None:
+        station_id = get_path(payload, "fields", "header", "stationID")
+    if station_id is None:
+        return None
+    return int(station_id)
+
+
+def unwrap_vanetza_cam(payload: Dict[str, Any]) -> Dict[str, Any]:
+    cam = get_path(payload, "fields", "cam")
+    if isinstance(cam, dict):
+        return cam
+    return payload
+
+
+def unwrap_vanetza_mcm(payload: Dict[str, Any]) -> Dict[str, Any]:
+    mcm = get_path(payload, "fields", "payload")
+    if isinstance(mcm, dict):
+        return mcm
+    return payload
+
+
 class OBUApp:
     def __init__(self) -> None:
         self.vehicle_id = env("VEHICLE_ID", "vehicle_1")
         self.station_id = int(env("STATION_ID", "1"))
         self.station_type = int(env("STATION_TYPE", "5"))
+        self.mcm_station_type = int(env("MCM_STATION_TYPE", "1"))
         self.itss_role = int(env("ITSS_ROLE", "1"))
-        self.role = env("VEHICLE_ROLE", "host")
+        self.role = env("VEHICLE_ROLE", "host").lower()
+        self.role_mode = env("ROLE_MODE", "static").lower()
+        if self.role == "auto":
+            self.role_mode = "auto"
+            self.role = "host"
 
         self.local_mqtt_host = env("LOCAL_MQTT_HOST", "127.0.0.1")
         self.local_mqtt_port = int(env("LOCAL_MQTT_PORT", "1883"))
@@ -90,6 +158,7 @@ class OBUApp:
         self.cam_period_s = int(env("CAM_PERIOD_MS", "100")) / 1000.0
         self.fsm_period_s = int(env("FSM_PERIOD_MS", "100")) / 1000.0
         self.actuator_period_s = int(env("ACTUATOR_PERIOD_MS", "100")) / 1000.0
+        self.status_period_s = int(env("STATUS_PERIOD_MS", "250")) / 1000.0
 
         self.merge_point_x = float(env("MERGE_POINT_X", "0"))
         self.merge_point_y = float(env("MERGE_POINT_Y", "0"))
@@ -104,6 +173,11 @@ class OBUApp:
         self.abort_speed = float(env("ABORT_SPEED", "2.0"))
         self.min_speed = float(env("MIN_SPEED", "0.5"))
         self.min_clearance_m = float(env("MIN_CLEARANCE_M", "8.0"))
+        self.ramp_edge_ids = parse_csv(env("RAMP_EDGE_IDS", "ramp_in"))
+        self.main_edge_ids = parse_csv(env("MAIN_EDGE_IDS", "main_in,main_out"))
+        self.ramp_y_threshold = float(env("RAMP_Y_THRESHOLD", "-1.0"))
+        self.ramp_bbox = parse_bbox(env("RAMP_BBOX", ""))
+        self.role_detection_distance = float(env("ROLE_DETECTION_DISTANCE", str(max(self.priority_distance * 2.0, 180.0))))
 
         self.desired_speed = env("DESIRED_SPEED", "")
         self.enable_mcm = env("ENABLE_MCM", "true").lower() == "true"
@@ -114,6 +188,7 @@ class OBUApp:
         self.actuator_speed_topic = f"car/{self.vehicle_id}/actuators/speed"
         self.actuator_lane_topic = f"car/{self.vehicle_id}/actuators/lane"
         self.actuator_speed_mode_topic = f"car/{self.vehicle_id}/actuators/speed_mode"
+        self.status_topic = f"car/{self.vehicle_id}/status/fsm"
 
         self.cam_in_topic = "vanetza/in/cam"
         self.mcm_in_topic = "vanetza/in/mcm"
@@ -139,6 +214,7 @@ class OBUApp:
         self.last_mcm_sent = 0.0
         self.last_fsm_step = 0.0
         self.last_actuator_sent = 0.0
+        self.last_status_sent = 0.0
 
         self.neighbors: Dict[int, Dict[str, Any]] = {}
         self.mcm_messages: Dict[int, Dict[str, Any]] = {}
@@ -153,6 +229,7 @@ class OBUApp:
 
         self.fsm_state = STATE_CRUISE
         self.fsm_state_since = time.time()
+        self.effective_role = self.role
 
     def connect(self) -> None:
         self.client.connect(self.local_mqtt_host, self.local_mqtt_port, 60)
@@ -194,7 +271,7 @@ class OBUApp:
         return float(self.sensor_state.get("speed", 0.0))
 
     def _base_cruise_speed(self) -> float:
-        if self.role == "merge":
+        if self.effective_role == "merge":
             return self.cruise_speed + self.merge_speed_bonus
         return self.cruise_speed
 
@@ -209,11 +286,21 @@ class OBUApp:
         return self._distance_to_merge(x, y)
 
     def _merge_candidate_id(self) -> Optional[int]:
-        if self.merge_station_id is None:
-            return None
-        if self.merge_station_id in self.neighbors:
+        if self.merge_station_id is not None and self.merge_station_id in self.neighbors:
             return self.merge_station_id
-        return None
+
+        candidates = []
+        for station_id, data in self.neighbors.items():
+            if not self._neighbor_is_merge_candidate(station_id):
+                continue
+            eta = self._neighbor_eta(station_id)
+            if eta is None:
+                continue
+            candidates.append((eta, station_id))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        return candidates[0][1]
 
     def _set_target_speed(self, speed: float) -> None:
         self.target_speed = max(speed, self.min_speed)
@@ -225,20 +312,15 @@ class OBUApp:
             self.neighbors.pop(sid, None)
 
     def _handle_cam(self, payload: Dict[str, Any]) -> None:
-        station_id = None
-        header = payload.get("itsPduHeader", {})
-        if isinstance(header, dict):
-            station_id = header.get("stationID")
-        if station_id is None:
-            station_id = payload.get("stationID")
+        station_id = vanetza_station_id(payload)
         if station_id is None:
             return
-        station_id = int(station_id)
         if station_id == self.station_id:
             return
 
         try:
-            cam_params = payload.get("camParameters", {})
+            cam_payload = unwrap_vanetza_cam(payload)
+            cam_params = cam_payload.get("camParameters", {})
             basic = cam_params.get("basicContainer", {})
             pos = basic.get("referencePosition", {})
             high = cam_params.get("highFrequencyContainer", {})
@@ -264,12 +346,13 @@ class OBUApp:
         }
 
     def _handle_mcm(self, payload: Dict[str, Any]) -> None:
-        basic = payload.get("basicContainer", {})
-        station_id = basic.get("stationID")
+        mcm_payload = unwrap_vanetza_mcm(payload)
+        basic = mcm_payload.get("basicContainer", {})
+        station_id = vanetza_station_id(payload)
         if station_id is None:
-            header = payload.get("itsPduHeader", {})
-            if isinstance(header, dict):
-                station_id = header.get("stationID")
+            station_id = basic.get("stationID")
+        if station_id is None:
+            station_id = basic.get("stationId")
         if station_id is None:
             return
         station_id = int(station_id)
@@ -306,6 +389,7 @@ class OBUApp:
 
         latlon = xy_to_latlon(x, y, self.origin_lat, self.origin_lon)
 
+        cam["stationId"] = self.station_id
         cam_params = cam.setdefault("camParameters", {})
         basic = cam_params.setdefault("basicContainer", {})
         ref = basic.setdefault("referencePosition", {})
@@ -342,10 +426,11 @@ class OBUApp:
         speed = float(self.sensor_state.get("speed", 0.0))
         latlon = xy_to_latlon(x, y, self.origin_lat, self.origin_lon)
 
+        mcm["stationId"] = self.station_id
         basic = mcm.setdefault("basicContainer", {})
         basic["generationDeltaTime"] = ms_since_minute()
         basic["stationID"] = self.station_id
-        basic["stationType"] = self.station_type
+        basic["stationType"] = self.mcm_station_type
         basic["itssRole"] = self.itss_role
         basic["mcmType"] = MCM_TYPE_DEFAULT
         basic["manoeuvreId"] = manoeuvre_id
@@ -415,6 +500,31 @@ class OBUApp:
             mode_payload = {"speed_mode": int(self.target_speed_mode), "timestamp": time.time()}
             self._publish_json(self.actuator_speed_mode_topic, mode_payload)
 
+    def _publish_status(self) -> None:
+        distance = self._self_distance_to_merge()
+        eta = self._merge_eta()
+        payload: Dict[str, Any] = {
+            "vehicle_id": self.vehicle_id,
+            "station_id": self.station_id,
+            "role": self.role,
+            "role_mode": self.role_mode,
+            "effective_role": self.effective_role,
+            "fsm_state": self.fsm_state,
+            "fsm_state_age_s": time.time() - self.fsm_state_since,
+            "distance_to_merge_m": distance,
+            "merge_eta_s": eta,
+            "neighbor_count": len(self.neighbors),
+            "target_speed": self.target_speed,
+            "target_lane_index": self.target_lane_index,
+            "target_speed_mode": self.target_speed_mode,
+            "pending_request": self.pending_request is not None,
+            "timestamp": time.time(),
+        }
+        if self.sensor_state:
+            payload["lane_id"] = self.sensor_state.get("lane_id")
+            payload["speed"] = self.sensor_state.get("speed")
+        self._publish_json(self.status_topic, payload)
+
     def _merge_eta(self) -> Optional[float]:
         if not self.sensor_state:
             return None
@@ -453,6 +563,58 @@ class OBUApp:
             etas.append((eta, station_id))
         etas.sort(key=lambda item: (item[0], item[1]))
         return etas
+
+    def _lane_edge_id(self) -> str:
+        if not self.sensor_state:
+            return ""
+        return edge_id_from_lane(str(self.sensor_state.get("lane_id", "")))
+
+    def _self_is_on_ramp(self) -> bool:
+        if not self.sensor_state:
+            return False
+        edge_id = self._lane_edge_id()
+        if edge_id in self.ramp_edge_ids:
+            return True
+        y = float(self.sensor_state.get("y", 0.0))
+        distance = self._self_distance_to_merge()
+        return y <= self.ramp_y_threshold and (distance is None or distance <= self.role_detection_distance)
+
+    def _neighbor_is_merge_candidate(self, station_id: int) -> bool:
+        data = self.neighbors.get(station_id)
+        if not data:
+            return False
+        if self.merge_station_id is not None and station_id == self.merge_station_id:
+            return True
+        x = float(data["x"])
+        y = float(data["y"])
+        distance = self._distance_to_merge(x, y)
+        if distance > self.role_detection_distance:
+            return False
+        if self.ramp_bbox is not None:
+            min_x, min_y, max_x, max_y = self.ramp_bbox
+            return min_x <= x <= max_x and min_y <= y <= max_y
+        return y <= self.ramp_y_threshold
+
+    def _arrives_before(self, eta_a: float, station_a: int, eta_b: float, station_b: int) -> bool:
+        if abs(eta_a - eta_b) > 1e-3:
+            return eta_a < eta_b
+        return station_a < station_b
+
+    def _resolve_role(self) -> str:
+        if self.role_mode != "auto":
+            return self.role
+        if self._self_is_on_ramp():
+            return "merge"
+
+        self_eta = self._merge_eta()
+        merge_id = self._merge_candidate_id()
+        merge_eta = self._neighbor_eta(merge_id) if merge_id is not None else None
+        if self_eta is None or merge_id is None or merge_eta is None:
+            return "host"
+
+        if self._arrives_before(self_eta, self.station_id, merge_eta, merge_id):
+            return "lead"
+        return "host"
 
     def _select_host_candidate(self, self_eta: float) -> Optional[int]:
         candidates = []
@@ -504,6 +666,10 @@ class OBUApp:
             self._publish_actuators()
             self.last_actuator_sent = now
 
+        if now - self.last_status_sent >= self.status_period_s:
+            self._publish_status()
+            self.last_status_sent = now
+
     def _step_fsm(self) -> None:
         if not self.sensor_state:
             return
@@ -512,6 +678,7 @@ class OBUApp:
 
         # Each FSM method is responsible for setting its own targets.
         # We set safe defaults here but do NOT reset mid-operation.
+        self.effective_role = self._resolve_role()
         default_speed = self._base_cruise_speed()
         if self.desired_speed != "":
             try:
@@ -522,12 +689,11 @@ class OBUApp:
         self.target_speed = max(default_speed, self.min_speed)
         self.target_lane_index = None
         self.target_speed_mode = self.default_speed_mode
-
-        if self.role == "merge":
+        if self.effective_role == "merge":
             self._fsm_merge()
-        elif self.role == "host":
+        elif self.effective_role == "host":
             self._fsm_host()
-        elif self.role == "lead":
+        elif self.effective_role == "lead":
             self._fsm_lead()
 
     def _fsm_merge(self) -> None:

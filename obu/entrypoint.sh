@@ -55,6 +55,7 @@ if [ -n "$START_EMBEDDED_MOSQUITTO" ] && [ "$START_EMBEDDED_MOSQUITTO" = "true" 
             echo "address ${REMOTE_MQTT_HOST}:${REMOTE_MQTT_PORT}"
             echo "topic car/${VEHICLE_ID}/sensors/# in 0"
             echo "topic car/${VEHICLE_ID}/actuators/# out 0"
+            echo "topic car/${VEHICLE_ID}/status/# out 0"
         fi
     } > /mosquitto.conf
     /usr/sbin/mosquitto -c /mosquitto.conf &

@@ -9,7 +9,7 @@ docker compose up --build
 2. Observe CAM messages on the shared broker:
 
 ```
-mosquitto_sub -h 127.0.0.1 -t "obu+/vanetza/out/cam" -v
+mosquitto_sub -h 127.0.0.1 -t "+/vanetza/out/cam" -v
 ```
 
 3. Inspect SUMO actuator topics:

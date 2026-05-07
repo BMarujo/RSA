@@ -19,17 +19,27 @@ services:
     environment:
       - MQTT_HOST=mqtt-broker
       - MQTT_PORT=1883
-      - SUMO_CFG=/data/sim.sumocfg
+      - SUMO_CFG=/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg
       - SUMO_GUI=true
       - DISPLAY=${DISPLAY}
       - STEP_LENGTH=0.1
       - STEP_DELAY_S=0.1
+      - SPEED_COMMAND_DURATION_S=1.0
       - LOOP_SIM=true
       - LOOP_PAUSE_S=1.0
-      - SUMO_END=300
+      - SUMO_END=120
       - VEHICLE_IDS=Lead_Car,Host_Car,Merge_Car
+      - GUI_MARKERS=true
+      - GUI_TRACK_VEHICLE=Merge_Car
+      - GUI_ZOOM=1800
+      - GUI_MARKER_RADIUS=9
+      - GUI_BADGE_SIZE=5
+      - GUI_MERGE_POINT=true
+      - MERGE_POINT_X=194.89
+      - MERGE_POINT_Y=2212.42
     volumes:
       - ./:/data:ro
+      - ./results:/results
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     networks:
       - v2x_net
@@ -48,9 +58,11 @@ services:
       - "1884:1883"
     environment:
       - VEHICLE_ID=Lead_Car
-      - VEHICLE_ROLE=lead
+      - VEHICLE_ROLE=auto
+      - ROLE_MODE=auto
       - STATION_ID=101
       - STATION_TYPE=5
+      - MCM_STATION_TYPE=1
       - START_EMBEDDED_MOSQUITTO=true
       - SUPPORT_MAC_BLOCKING=true
       - REMOTE_MQTT_HOST=mqtt-broker
@@ -67,16 +79,21 @@ services:
       - VANETZA_INTERFACE=br0
       - ORIGIN_LAT=40.0
       - ORIGIN_LON=-8.0
-      - MERGE_POINT_X=151.74
-      - MERGE_POINT_Y=13.40
-      - CRUISE_SPEED=15.0
-      - MERGE_SPEED_BONUS=4.0
-      - LEAD_SPEED_BONUS=4.0
+      - MERGE_POINT_X=194.89
+      - MERGE_POINT_Y=2212.42
+      - CRUISE_SPEED=11.0
+      - MERGE_SPEED_BONUS=0.75
+      - LEAD_SPEED_BONUS=1.0
       - MERGE_PRIORITY=true
       - DEFAULT_SPEED_MODE=31
       - PRIORITY_SPEED_MODE=0
-      - PRIORITY_DISTANCE=60.0
-      - MERGE_STATION_ID=103
+      - PRIORITY_DISTANCE=120.0
+      - MERGE_STATION_ID=0
+      - RAMP_EDGE_IDS=34126779
+      - MAIN_EDGE_IDS=560761994,1331698336,135424828
+      - RAMP_Y_THRESHOLD=-1.0
+      - RAMP_BBOX=205,2120,340,2225
+      - ROLE_DETECTION_DISTANCE=260.0
       - SAFE_HEADWAY_S=1.5
       - NEGOTIATION_TIMEOUT_S=2.0
       - REQUEST_RETRY_S=0.5
@@ -84,10 +101,11 @@ services:
       - YIELD_SPEED_DELTA=6.0
       - ABORT_SPEED=2.0
       - MIN_SPEED=0.5
-      - MERGE_LANE_INDEX=0
+      - MERGE_LANE_INDEX=1
       - ENABLE_MCM=true
       - ENABLE_DENM=false
-      - ETA_THRESHOLD_S=8.0
+      - ETA_THRESHOLD_S=12.0
+      - STATUS_PERIOD_MS=250
       - PUBLISH_IDLE_ACTUATORS=true
     networks:
       - v2x_net
@@ -106,9 +124,11 @@ services:
       - "1885:1883"
     environment:
       - VEHICLE_ID=Host_Car
-      - VEHICLE_ROLE=host
+      - VEHICLE_ROLE=auto
+      - ROLE_MODE=auto
       - STATION_ID=102
       - STATION_TYPE=5
+      - MCM_STATION_TYPE=1
       - START_EMBEDDED_MOSQUITTO=true
       - SUPPORT_MAC_BLOCKING=true
       - REMOTE_MQTT_HOST=mqtt-broker
@@ -125,16 +145,21 @@ services:
       - VANETZA_INTERFACE=br0
       - ORIGIN_LAT=40.0
       - ORIGIN_LON=-8.0
-      - MERGE_POINT_X=151.74
-      - MERGE_POINT_Y=13.40
-      - CRUISE_SPEED=15.0
-      - MERGE_SPEED_BONUS=4.0
-      - LEAD_SPEED_BONUS=4.0
+      - MERGE_POINT_X=194.89
+      - MERGE_POINT_Y=2212.42
+      - CRUISE_SPEED=11.0
+      - MERGE_SPEED_BONUS=0.75
+      - LEAD_SPEED_BONUS=1.0
       - MERGE_PRIORITY=true
       - DEFAULT_SPEED_MODE=31
       - PRIORITY_SPEED_MODE=0
-      - PRIORITY_DISTANCE=60.0
-      - MERGE_STATION_ID=103
+      - PRIORITY_DISTANCE=120.0
+      - MERGE_STATION_ID=0
+      - RAMP_EDGE_IDS=34126779
+      - MAIN_EDGE_IDS=560761994,1331698336,135424828
+      - RAMP_Y_THRESHOLD=-1.0
+      - RAMP_BBOX=205,2120,340,2225
+      - ROLE_DETECTION_DISTANCE=260.0
       - SAFE_HEADWAY_S=1.5
       - NEGOTIATION_TIMEOUT_S=2.0
       - REQUEST_RETRY_S=0.5
@@ -142,10 +167,11 @@ services:
       - YIELD_SPEED_DELTA=6.0
       - ABORT_SPEED=2.0
       - MIN_SPEED=0.5
-      - MERGE_LANE_INDEX=0
+      - MERGE_LANE_INDEX=1
       - ENABLE_MCM=true
       - ENABLE_DENM=false
-      - ETA_THRESHOLD_S=8.0
+      - ETA_THRESHOLD_S=12.0
+      - STATUS_PERIOD_MS=250
       - PUBLISH_IDLE_ACTUATORS=true
     networks:
       - v2x_net
@@ -164,9 +190,11 @@ services:
       - "1886:1883"
     environment:
       - VEHICLE_ID=Merge_Car
-      - VEHICLE_ROLE=merge
+      - VEHICLE_ROLE=auto
+      - ROLE_MODE=auto
       - STATION_ID=103
       - STATION_TYPE=5
+      - MCM_STATION_TYPE=1
       - START_EMBEDDED_MOSQUITTO=true
       - SUPPORT_MAC_BLOCKING=true
       - REMOTE_MQTT_HOST=mqtt-broker
@@ -183,15 +211,21 @@ services:
       - VANETZA_INTERFACE=br0
       - ORIGIN_LAT=40.0
       - ORIGIN_LON=-8.0
-      - MERGE_POINT_X=151.74
-      - MERGE_POINT_Y=13.40
-      - CRUISE_SPEED=15.0
-      - MERGE_SPEED_BONUS=4.0
-      - LEAD_SPEED_BONUS=4.0
+      - MERGE_POINT_X=194.89
+      - MERGE_POINT_Y=2212.42
+      - CRUISE_SPEED=11.0
+      - MERGE_SPEED_BONUS=0.75
+      - LEAD_SPEED_BONUS=1.0
       - MERGE_PRIORITY=true
       - DEFAULT_SPEED_MODE=31
       - PRIORITY_SPEED_MODE=0
-      - PRIORITY_DISTANCE=60.0
+      - PRIORITY_DISTANCE=120.0
+      - MERGE_STATION_ID=0
+      - RAMP_EDGE_IDS=34126779
+      - MAIN_EDGE_IDS=560761994,1331698336,135424828
+      - RAMP_Y_THRESHOLD=-1.0
+      - RAMP_BBOX=205,2120,340,2225
+      - ROLE_DETECTION_DISTANCE=260.0
       - SAFE_HEADWAY_S=1.5
       - NEGOTIATION_TIMEOUT_S=2.0
       - REQUEST_RETRY_S=0.5
@@ -199,10 +233,11 @@ services:
       - YIELD_SPEED_DELTA=6.0
       - ABORT_SPEED=2.0
       - MIN_SPEED=0.5
-      - MERGE_LANE_INDEX=0
+      - MERGE_LANE_INDEX=1
       - ENABLE_MCM=true
       - ENABLE_DENM=false
-      - ETA_THRESHOLD_S=8.0
+      - ETA_THRESHOLD_S=12.0
+      - STATUS_PERIOD_MS=250
       - PUBLISH_IDLE_ACTUATORS=true
     networks:
       - v2x_net
