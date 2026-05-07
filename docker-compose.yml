@@ -1,0 +1,210 @@
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - v2x_net
+
+  traci-bridge:
+    build:
+      context: .
+      dockerfile: sim/bridge/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mqtt-broker
+    environment:
+      - MQTT_HOST=mqtt-broker
+      - MQTT_PORT=1883
+      - SUMO_CFG=/data/sim.sumocfg
+      - SUMO_GUI=true
+      - DISPLAY=${DISPLAY}
+      - STEP_LENGTH=0.1
+      - STEP_DELAY_S=0.1
+      - LOOP_SIM=true
+      - LOOP_PAUSE_S=1.0
+      - SUMO_END=300
+      - VEHICLE_IDS=Lead_Car,Host_Car,Merge_Car
+    volumes:
+      - ./:/data:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    networks:
+      - v2x_net
+
+  obu-lead:
+    build:
+      context: .
+      dockerfile: obu/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mqtt-broker
+    cap_add:
+      - "NET_ADMIN"
+      - "NET_RAW"
+    ports:
+      - "1884:1883"
+    environment:
+      - VEHICLE_ID=Lead_Car
+      - VEHICLE_ROLE=lead
+      - STATION_ID=101
+      - STATION_TYPE=5
+      - START_EMBEDDED_MOSQUITTO=true
+      - SUPPORT_MAC_BLOCKING=true
+      - REMOTE_MQTT_HOST=mqtt-broker
+      - REMOTE_MQTT_PORT=1883
+      - LOCAL_MQTT_HOST=127.0.0.1
+      - LOCAL_MQTT_PORT=1883
+      - VANETZA_LOCAL_MQTT_BROKER=127.0.0.1
+      - VANETZA_LOCAL_MQTT_PORT=1883
+      - VANETZA_REMOTE_MQTT_BROKER=mqtt-broker
+      - VANETZA_REMOTE_MQTT_PORT=1883
+      - VANETZA_STATION_ID=101
+      - VANETZA_STATION_TYPE=5
+      - VANETZA_MAC_ADDRESS=6e:06:e0:03:00:11
+      - VANETZA_INTERFACE=br0
+      - ORIGIN_LAT=40.0
+      - ORIGIN_LON=-8.0
+      - MERGE_POINT_X=151.74
+      - MERGE_POINT_Y=13.40
+      - CRUISE_SPEED=15.0
+      - MERGE_SPEED_BONUS=4.0
+      - LEAD_SPEED_BONUS=4.0
+      - MERGE_PRIORITY=true
+      - DEFAULT_SPEED_MODE=31
+      - PRIORITY_SPEED_MODE=0
+      - PRIORITY_DISTANCE=60.0
+      - MERGE_STATION_ID=103
+      - SAFE_HEADWAY_S=1.5
+      - NEGOTIATION_TIMEOUT_S=2.0
+      - REQUEST_RETRY_S=0.5
+      - RESPONSE_PERIOD_S=0.5
+      - YIELD_SPEED_DELTA=6.0
+      - ABORT_SPEED=2.0
+      - MIN_SPEED=0.5
+      - MERGE_LANE_INDEX=0
+      - ENABLE_MCM=true
+      - ENABLE_DENM=false
+      - PUBLISH_IDLE_ACTUATORS=true
+    networks:
+      - v2x_net
+
+  obu-host:
+    build:
+      context: .
+      dockerfile: obu/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mqtt-broker
+    cap_add:
+      - "NET_ADMIN"
+      - "NET_RAW"
+    ports:
+      - "1885:1883"
+    environment:
+      - VEHICLE_ID=Host_Car
+      - VEHICLE_ROLE=host
+      - STATION_ID=102
+      - STATION_TYPE=5
+      - START_EMBEDDED_MOSQUITTO=true
+      - SUPPORT_MAC_BLOCKING=true
+      - REMOTE_MQTT_HOST=mqtt-broker
+      - REMOTE_MQTT_PORT=1883
+      - LOCAL_MQTT_HOST=127.0.0.1
+      - LOCAL_MQTT_PORT=1883
+      - VANETZA_LOCAL_MQTT_BROKER=127.0.0.1
+      - VANETZA_LOCAL_MQTT_PORT=1883
+      - VANETZA_REMOTE_MQTT_BROKER=mqtt-broker
+      - VANETZA_REMOTE_MQTT_PORT=1883
+      - VANETZA_STATION_ID=102
+      - VANETZA_STATION_TYPE=5
+      - VANETZA_MAC_ADDRESS=6e:06:e0:03:00:12
+      - VANETZA_INTERFACE=br0
+      - ORIGIN_LAT=40.0
+      - ORIGIN_LON=-8.0
+      - MERGE_POINT_X=151.74
+      - MERGE_POINT_Y=13.40
+      - CRUISE_SPEED=15.0
+      - MERGE_SPEED_BONUS=4.0
+      - LEAD_SPEED_BONUS=4.0
+      - MERGE_PRIORITY=true
+      - DEFAULT_SPEED_MODE=31
+      - PRIORITY_SPEED_MODE=0
+      - PRIORITY_DISTANCE=60.0
+      - MERGE_STATION_ID=103
+      - SAFE_HEADWAY_S=1.5
+      - NEGOTIATION_TIMEOUT_S=2.0
+      - REQUEST_RETRY_S=0.5
+      - RESPONSE_PERIOD_S=0.5
+      - YIELD_SPEED_DELTA=6.0
+      - ABORT_SPEED=2.0
+      - MIN_SPEED=0.5
+      - MERGE_LANE_INDEX=0
+      - ENABLE_MCM=true
+      - ENABLE_DENM=false
+      - PUBLISH_IDLE_ACTUATORS=true
+    networks:
+      - v2x_net
+
+  obu-merge:
+    build:
+      context: .
+      dockerfile: obu/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mqtt-broker
+    cap_add:
+      - "NET_ADMIN"
+      - "NET_RAW"
+    ports:
+      - "1886:1883"
+    environment:
+      - VEHICLE_ID=Merge_Car
+      - VEHICLE_ROLE=merge
+      - STATION_ID=103
+      - STATION_TYPE=5
+      - START_EMBEDDED_MOSQUITTO=true
+      - SUPPORT_MAC_BLOCKING=true
+      - REMOTE_MQTT_HOST=mqtt-broker
+      - REMOTE_MQTT_PORT=1883
+      - LOCAL_MQTT_HOST=127.0.0.1
+      - LOCAL_MQTT_PORT=1883
+      - VANETZA_LOCAL_MQTT_BROKER=127.0.0.1
+      - VANETZA_LOCAL_MQTT_PORT=1883
+      - VANETZA_REMOTE_MQTT_BROKER=mqtt-broker
+      - VANETZA_REMOTE_MQTT_PORT=1883
+      - VANETZA_STATION_ID=103
+      - VANETZA_STATION_TYPE=5
+      - VANETZA_MAC_ADDRESS=6e:06:e0:03:00:13
+      - VANETZA_INTERFACE=br0
+      - ORIGIN_LAT=40.0
+      - ORIGIN_LON=-8.0
+      - MERGE_POINT_X=151.74
+      - MERGE_POINT_Y=13.40
+      - CRUISE_SPEED=15.0
+      - MERGE_SPEED_BONUS=4.0
+      - LEAD_SPEED_BONUS=4.0
+      - MERGE_PRIORITY=true
+      - DEFAULT_SPEED_MODE=31
+      - PRIORITY_SPEED_MODE=0
+      - PRIORITY_DISTANCE=60.0
+      - SAFE_HEADWAY_S=1.5
+      - NEGOTIATION_TIMEOUT_S=2.0
+      - REQUEST_RETRY_S=0.5
+      - RESPONSE_PERIOD_S=0.5
+      - YIELD_SPEED_DELTA=6.0
+      - ABORT_SPEED=2.0
+      - MIN_SPEED=0.5
+      - MERGE_LANE_INDEX=0
+      - ENABLE_MCM=true
+      - ENABLE_DENM=false
+      - ETA_THRESHOLD_S=5.0
+      - PUBLISH_IDLE_ACTUATORS=true
+    networks:
+      - v2x_net
+
+networks:
+  v2x_net:
+    driver: bridge

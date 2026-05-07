@@ -1,0 +1,12 @@
+<routes>
+    <vType id="lead_car" color="white" length="5" maxSpeed="25"/>
+    <vType id="host_car" color="green" length="5" maxSpeed="25"/>
+    <vType id="merge_car" color="red" length="5" maxSpeed="25"/>
+
+    <route id="main_route" edges="main_in main_out"/>
+    <route id="ramp_route" edges="ramp_in main_out"/>
+
+    <vehicle id="Lead_Car" type="lead_car" route="main_route" depart="0" departPos="80" departSpeed="15"/>
+    <vehicle id="Host_Car" type="host_car" route="main_route" depart="0" departPos="20" departSpeed="15"/>
+    <vehicle id="Merge_Car" type="merge_car" route="ramp_route" depart="0" departPos="10" departSpeed="15"/>
+</routes>

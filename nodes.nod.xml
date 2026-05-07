@@ -1,0 +1,6 @@
+<nodes>
+    <node id="start_main" x="0.0" y="0.0"/>
+    <node id="merge_point" x="150.0" y="0.0"/>
+    <node id="end_main" x="300.0" y="0.0"/>
+    <node id="start_ramp" x="50.0" y="-15.0"/>
+</nodes>
