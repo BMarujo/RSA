@@ -509,14 +509,17 @@ class OBUApp:
             return
 
         self._prune_neighbors()
-        self._set_target_speed(self._base_cruise_speed())
 
+        # Each FSM method is responsible for setting its own targets.
+        # We set safe defaults here but do NOT reset mid-operation.
+        default_speed = self._base_cruise_speed()
         if self.desired_speed != "":
             try:
-                self._set_target_speed(float(self.desired_speed))
+                default_speed = float(self.desired_speed)
             except ValueError:
                 pass
 
+        self.target_speed = max(default_speed, self.min_speed)
         self.target_lane_index = None
         self.target_speed_mode = self.default_speed_mode
 
@@ -536,6 +539,20 @@ class OBUApp:
         if distance_to_merge is None:
             return
 
+        # --- Check if already merged (on the target lane) ---
+        lane_id = self.sensor_state.get("lane_id", "")
+        lane_index = parse_lane_index(lane_id)
+        if lane_index is not None and lane_index == self.merge_lane_index:
+            # On main road already — we merged successfully
+            on_main = "main_out" in lane_id or "main_in" in lane_id or ":merge_point" in lane_id
+            if on_main:
+                self._set_state(STATE_CRUISE)
+                self._set_target_speed(self.cruise_speed)
+                self.target_speed_mode = self.default_speed_mode
+                self.pending_request = None
+                return
+
+        # --- Identify neighbors by ETA to merge point ---
         lead_id = self._select_lead_candidate(eta)
         lead_eta = self._neighbor_eta(lead_id) if lead_id is not None else None
 
@@ -549,6 +566,7 @@ class OBUApp:
         lead_distance = self._neighbor_distance(lead_id) if lead_id is not None else None
         host_distance = self._neighbor_distance(host_id) if host_id is not None else None
 
+        # --- Compute the safe ETA window [min_eta, max_eta] ---
         min_eta = lead_eta + self.safe_headway_s if lead_eta is not None else None
         max_eta = host_eta - self.safe_headway_s if host_eta is not None else None
 
@@ -556,22 +574,37 @@ class OBUApp:
         if min_eta is not None and max_eta is not None and max_eta < min_eta:
             gap_possible = False
 
+        # --- Adjust speed to aim for the gap ---
         desired_eta = eta
-        if min_eta is not None and desired_eta < min_eta:
-            desired_eta = min_eta
-        if max_eta is not None and gap_possible and desired_eta > max_eta:
-            desired_eta = max_eta
-        if not gap_possible:
+        if gap_possible:
+            if min_eta is not None and desired_eta < min_eta:
+                desired_eta = min_eta
+            if max_eta is not None and desired_eta > max_eta:
+                desired_eta = max_eta
+        else:
+            # No gap — aim to arrive AFTER the host car passes
             if host_eta is not None:
                 desired_eta = max(desired_eta, host_eta + self.safe_headway_s)
             elif min_eta is not None:
                 desired_eta = max(desired_eta, min_eta + self.safe_headway_s)
 
-        if desired_eta != eta:
-            self._set_target_speed(distance_to_merge / max(desired_eta, 0.1))
-        elif eta <= self.eta_threshold_s:
+        # --- Speed adjustment based on desired ETA ---
+        if desired_eta > eta + 0.05:
+            # Need to slow down to arrive later
+            adjusted_speed = distance_to_merge / max(desired_eta, 0.1)
+            # Graduated deceleration: don't drop below 40% of cruise
+            floor_speed = max(self.cruise_speed * 0.4, self.min_speed)
+            self._set_target_speed(max(adjusted_speed, floor_speed))
+        elif desired_eta < eta - 0.05:
+            # Need to speed up to arrive earlier (gap is ahead of us)
+            adjusted_speed = distance_to_merge / max(desired_eta, 0.1)
+            ceiling_speed = self.cruise_speed + 2.0 * self.merge_speed_bonus
+            self._set_target_speed(min(adjusted_speed, ceiling_speed))
+        else:
+            # On track — maintain merge speed
             self._set_target_speed(self.cruise_speed + self.merge_speed_bonus)
 
+        # --- Clearance checks ---
         gap_ahead_ok = min_eta is None or eta >= min_eta
         gap_behind_ok = max_eta is None or eta <= max_eta
         clearance_ok = True
@@ -579,27 +612,34 @@ class OBUApp:
             clearance_ok = False
         if host_distance is not None and host_distance <= self.min_clearance_m:
             clearance_ok = False
-        if lead_eta is None and distance_to_merge <= self.priority_distance:
-            clearance_ok = False
+        # NOTE: no lead car visible = road is clear ahead (removed inverted check)
 
         can_merge = gap_possible and gap_ahead_ok and gap_behind_ok and clearance_ok
 
-        if self.priority_merge and distance_to_merge <= self.priority_distance and can_merge and eta <= self.eta_threshold_s:
+        # --- Set priority speed mode when approaching merge zone ---
+        # Enable earlier and more aggressively so SUMO doesn't block acceleration
+        if self.priority_merge and distance_to_merge <= self.priority_distance:
             self.target_speed_mode = self.priority_speed_mode
 
+        # --- Far from merge point: just cruise ---
         if eta > self.eta_threshold_s:
             if self.fsm_state in (STATE_NEGOTIATING, STATE_MERGING, STATE_YIELDING):
                 self._set_state(STATE_CRUISE)
             return
 
-        hold_distance = max(self.cruise_speed * self.safe_headway_s, 5.0)
-        holding = False
-        if (not can_merge or not clearance_ok) and distance_to_merge <= hold_distance:
-            holding = True
+        # --- Close but can't merge: graduated slowdown, not hard stop ---
+        if not can_merge and distance_to_merge <= self.cruise_speed * self.safe_headway_s:
             self._set_state(STATE_YIELDING)
-            self._set_target_speed(self.min_speed)
+            # Proportional deceleration based on distance remaining
+            ratio = max(distance_to_merge / (self.cruise_speed * self.safe_headway_s), 0.0)
+            slow_speed = max(self.cruise_speed * 0.3 * ratio + self.min_speed, self.min_speed)
+            self._set_target_speed(slow_speed)
+            # Keep priority speed mode so we can accelerate away quickly
+            if self.priority_merge:
+                self.target_speed_mode = self.priority_speed_mode
             return
 
+        # --- MCM Negotiation with host ---
         response_action = None
         if host_id is not None:
             if self.pending_request is None or self.pending_request.get("host_id") != host_id:
@@ -615,16 +655,19 @@ class OBUApp:
                 self._send_mcm(MCM_ACTION_REQUEST, self.pending_request["manoeuvre_id"])
 
             response = self.mcm_messages.get(host_id)
-            if response and response.get("manoeuvre_id") == self.pending_request["manoeuvre_id"]:
-                response_action = response.get("action")
-                if response_action == MCM_ACTION_ACCEPT:
-                    self.pending_request = None
-                if response_action == MCM_ACTION_REJECT and not self.priority_merge:
-                    self._set_state(STATE_ABORT)
-                    self._set_target_speed(max(self.abort_speed, self.min_speed))
-                    self._send_denm()
-                    self.pending_request = None
-                    return
+            if response is not None and self.pending_request is not None:
+                # Accept response if manoeuvre_id matches OR if priority merge
+                mid_match = response.get("manoeuvre_id") == self.pending_request.get("manoeuvre_id")
+                if mid_match or self.priority_merge:
+                    response_action = response.get("action")
+                    if response_action == MCM_ACTION_ACCEPT:
+                        self.pending_request = None
+                    elif response_action == MCM_ACTION_REJECT and not self.priority_merge:
+                        self._set_state(STATE_ABORT)
+                        self._set_target_speed(max(self.abort_speed, self.min_speed))
+                        self._send_denm()
+                        self.pending_request = None
+                        return
 
             if self.pending_request and time.time() - self.pending_request["timestamp"] > self.negotiation_timeout_s:
                 if not self.priority_merge:
@@ -633,24 +676,19 @@ class OBUApp:
                     self._send_denm()
                     self.pending_request = None
                     return
+                # Priority merge: proceed without response
                 self.pending_request = None
 
+        # --- Execute merge or continue negotiating ---
         allowed_by_mcm = self.priority_merge or host_id is None or response_action == MCM_ACTION_ACCEPT
-        if can_merge and allowed_by_mcm and not holding:
+        if can_merge and allowed_by_mcm:
             self._set_state(STATE_MERGING)
-            merge_target_speed = max(
-                self._base_cruise_speed() + self.merge_speed_bonus,
-                self.cruise_speed + (2.0 * self.merge_speed_bonus),
-            )
+            merge_target_speed = self.cruise_speed + 2.0 * self.merge_speed_bonus
             self._set_target_speed(merge_target_speed)
             self.target_lane_index = self.merge_lane_index
-        else:
+            self.target_speed_mode = self.priority_speed_mode
+        elif not can_merge:
             self._set_state(STATE_NEGOTIATING if host_id is not None else STATE_YIELDING)
-
-        lane_id = self.sensor_state.get("lane_id", "")
-        lane_index = parse_lane_index(lane_id)
-        if lane_index == self.merge_lane_index:
-            self._set_state(STATE_CRUISE)
 
     def _latest_request(self) -> Optional[Dict[str, Any]]:
         now = time.time()
@@ -658,9 +696,12 @@ class OBUApp:
         if merge_id is not None:
             merge_eta = self._neighbor_eta(merge_id)
             if merge_eta is not None and merge_eta <= self.eta_threshold_s:
+                # Look up actual manoeuvre_id from MCM messages if available
+                mcm_data = self.mcm_messages.get(merge_id, {})
+                manoeuvre_id = mcm_data.get("manoeuvre_id", 0)
                 return {
                     "station_id": merge_id,
-                    "manoeuvre_id": 0,
+                    "manoeuvre_id": manoeuvre_id,
                     "timestamp": now,
                     "eta": merge_eta,
                 }
@@ -684,68 +725,70 @@ class OBUApp:
         return data
 
     def _fsm_host(self) -> None:
-        request = self._latest_request()
         merge_id = self._merge_candidate_id()
-        if merge_id is not None:
-            merge_eta = self._neighbor_eta(merge_id)
-            merge_distance = None
-            if merge_id in self.neighbors:
-                merge_distance = self._distance_to_merge(self.neighbors[merge_id]["x"], self.neighbors[merge_id]["y"])
-            if merge_eta is not None and merge_distance is not None and merge_distance <= self.priority_distance:
-                distance = self._self_distance_to_merge()
-                if distance is None:
-                    return
-                gap_buffer = self.safe_headway_s * 0.5
-                target_eta = merge_eta + self.safe_headway_s + gap_buffer
-                required_speed = distance / max(target_eta, 0.1)
-                current_speed = self._current_speed() or self.cruise_speed
-                required_speed = min(required_speed, current_speed)
-                if self.priority_merge:
-                    required_speed = min(required_speed, self.cruise_speed - self.yield_speed_delta)
-                if required_speed < self.target_speed or self.priority_merge:
-                    self._set_state(STATE_YIELDING)
-                    self._set_target_speed(max(required_speed, self.min_speed))
-                else:
-                    self._set_state(STATE_CRUISE)
-                if time.time() - self.last_mcm_response.get(merge_id, 0) >= self.response_period_s:
-                    self._send_mcm(MCM_ACTION_ACCEPT, 0)
-                    self.last_mcm_response[merge_id] = time.time()
-                return
+        request = self._latest_request()
 
-        if not request:
+        # Determine the merge car's station ID and manoeuvre_id
+        req_station_id = None
+        req_manoeuvre_id = 0
+        if request:
+            req_station_id = request["station_id"]
+            req_manoeuvre_id = request.get("manoeuvre_id") or 0
+        elif merge_id is not None:
+            req_station_id = merge_id
+
+        if req_station_id is None:
             self._set_state(STATE_CRUISE)
             return
 
-        merge_id = request["station_id"]
-        merge_eta = self._neighbor_eta(merge_id)
-        host_eta = self._merge_eta()
-        if merge_eta is None or host_eta is None:
+        merge_eta = self._neighbor_eta(req_station_id)
+        if merge_eta is None:
+            self._set_state(STATE_CRUISE)
             return
 
-        response_action = MCM_ACTION_ACCEPT
+        merge_distance = None
+        if req_station_id in self.neighbors:
+            merge_distance = self._distance_to_merge(
+                self.neighbors[req_station_id]["x"],
+                self.neighbors[req_station_id]["y"],
+            )
+
+        # Only yield if the merge car is within the priority zone
+        if merge_distance is not None and merge_distance > self.priority_distance:
+            self._set_state(STATE_CRUISE)
+            return
+
         distance = self._self_distance_to_merge()
         if distance is None:
             return
 
+        # Compute the speed needed to arrive AFTER the merge car + headway
         gap_buffer = self.safe_headway_s * 0.5
         target_eta = merge_eta + self.safe_headway_s + gap_buffer
         required_speed = distance / max(target_eta, 0.1)
+
+        # Proportional yield — don't drop too far below cruise
         current_speed = self._current_speed() or self.cruise_speed
-        required_speed = min(required_speed, current_speed)
         if self.priority_merge:
-            required_speed = min(required_speed, self.cruise_speed - self.yield_speed_delta)
+            # Hard yield: merge car has priority
+            yield_floor = max(self.cruise_speed - self.yield_speed_delta, self.min_speed)
+            required_speed = min(required_speed, yield_floor)
+        required_speed = min(required_speed, current_speed)
+        # Never go below 30% of cruise speed
+        speed_floor = max(self.cruise_speed * 0.3, self.min_speed)
+        required_speed = max(required_speed, speed_floor)
 
         if required_speed < self.target_speed or self.priority_merge:
             self._set_state(STATE_YIELDING)
-            self._set_target_speed(max(required_speed, self.min_speed))
+            self._set_target_speed(required_speed)
         else:
             self._set_state(STATE_CRUISE)
 
-        last_sent = self.last_mcm_response.get(merge_id, 0)
+        # Send MCM ACCEPT with the CORRECT manoeuvre_id
+        last_sent = self.last_mcm_response.get(req_station_id, 0)
         if time.time() - last_sent >= self.response_period_s:
-            manoeuvre_id = request.get("manoeuvre_id") or 0
-            self._send_mcm(response_action, manoeuvre_id)
-            self.last_mcm_response[merge_id] = time.time()
+            self._send_mcm(MCM_ACTION_ACCEPT, req_manoeuvre_id)
+            self.last_mcm_response[req_station_id] = time.time()
 
     def _fsm_lead(self) -> None:
         merge_id = self._merge_candidate_id()
@@ -769,9 +812,12 @@ class OBUApp:
             target_eta = max(merge_eta - (self.safe_headway_s + gap_buffer), 0.1)
             required_speed = distance / target_eta
             current_speed = self._current_speed() or self.cruise_speed
-            base_speed = self.cruise_speed + (2.0 * self.lead_speed_bonus)
+            base_speed = self.cruise_speed + 2.0 * self.lead_speed_bonus
+            final_speed = max(required_speed, current_speed, base_speed)
             self._set_state(STATE_CRUISE)
-            self._set_target_speed(max(required_speed, current_speed, base_speed))
+            self._set_target_speed(final_speed)
+            # Override SUMO speed checks so lead can actually accelerate
+            self.target_speed_mode = self.priority_speed_mode
         else:
             self._set_state(STATE_CRUISE)
 

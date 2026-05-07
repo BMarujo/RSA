@@ -87,6 +87,7 @@ services:
       - MERGE_LANE_INDEX=0
       - ENABLE_MCM=true
       - ENABLE_DENM=false
+      - ETA_THRESHOLD_S=8.0
       - PUBLISH_IDLE_ACTUATORS=true
     networks:
       - v2x_net
@@ -144,6 +145,7 @@ services:
       - MERGE_LANE_INDEX=0
       - ENABLE_MCM=true
       - ENABLE_DENM=false
+      - ETA_THRESHOLD_S=8.0
       - PUBLISH_IDLE_ACTUATORS=true
     networks:
       - v2x_net
@@ -200,7 +202,7 @@ services:
       - MERGE_LANE_INDEX=0
       - ENABLE_MCM=true
       - ENABLE_DENM=false
-      - ETA_THRESHOLD_S=5.0
+      - ETA_THRESHOLD_S=8.0
       - PUBLISH_IDLE_ACTUATORS=true
     networks:
       - v2x_net
