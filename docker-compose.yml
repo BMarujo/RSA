@@ -19,15 +19,16 @@ services:
     environment:
       - MQTT_HOST=mqtt-broker
       - MQTT_PORT=1883
-      - SUMO_CFG=/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg
-      - SUMO_GUI=true
-      - DISPLAY=${DISPLAY}
+      - SUMO_CFG=${SUMO_CFG:-/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg}
+      - SUMO_GUI=${SUMO_GUI:-true}
+      - DISPLAY=${DISPLAY:-:0}
       - STEP_LENGTH=0.1
-      - STEP_DELAY_S=0.1
+      - STEP_DELAY_S=${STEP_DELAY_S:-0.1}
       - SPEED_COMMAND_DURATION_S=1.0
-      - LOOP_SIM=true
+      - LOOP_SIM=${LOOP_SIM:-true}
       - LOOP_PAUSE_S=1.0
-      - SUMO_END=120
+      - SUMO_END=${SUMO_END:-120}
+      - SUMO_EXTRA_ARGS=${SUMO_EXTRA_ARGS:-}
       - VEHICLE_IDS=Lead_Car,Host_Car,Merge_Car
       - GUI_MARKERS=true
       - GUI_TRACK_VEHICLE=Merge_Car
