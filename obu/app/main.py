@@ -184,7 +184,7 @@ class OBUApp:
         merge_station_id = int(env("MERGE_STATION_ID", "0"))
         self.merge_station_id = merge_station_id if merge_station_id > 0 else None
         self.default_speed_mode = int(env("DEFAULT_SPEED_MODE", "31"))
-        self.priority_speed_mode = int(env("PRIORITY_SPEED_MODE", "0"))
+        self.priority_speed_mode = int(env("PRIORITY_SPEED_MODE", "31"))
         self.priority_distance = float(env("PRIORITY_DISTANCE", "40.0"))
 
         self.cam_period_s = int(env("CAM_PERIOD_MS", "100")) / 1000.0
@@ -205,6 +205,16 @@ class OBUApp:
         self.abort_speed = float(env("ABORT_SPEED", "2.0"))
         self.min_speed = float(env("MIN_SPEED", "0.5"))
         self.min_clearance_m = float(env("MIN_CLEARANCE_M", "8.0"))
+        self.max_speed_step_up = float(env("MAX_SPEED_STEP_UP", "2.5"))
+        self.max_speed_step_down = float(env("MAX_SPEED_STEP_DOWN", "2.0"))
+        self.merge_yield_floor_ratio = float(env("MERGE_YIELD_FLOOR_RATIO", "0.55"))
+        self.host_yield_floor_ratio = float(env("HOST_YIELD_FLOOR_RATIO", "0.55"))
+        self.ramp_platoon_headway_s = float(env("RAMP_PLATOON_HEADWAY_S", "1.4"))
+        self.ramp_platoon_min_gap = float(env("RAMP_PLATOON_MIN_GAP", "14.0"))
+        self.ramp_platoon_speed_delta = float(env("RAMP_PLATOON_SPEED_DELTA", "0.8"))
+        self.merge_commit_distance = float(env("MERGE_COMMIT_DISTANCE", "45.0"))
+        self.merge_commit_min_speed = float(env("MERGE_COMMIT_MIN_SPEED", "8.0"))
+        self.merge_commit_clearance_ratio = float(env("MERGE_COMMIT_CLEARANCE_RATIO", "0.75"))
         self.ramp_edge_ids = parse_csv(env("RAMP_EDGE_IDS", "ramp_in"))
         self.main_edge_ids = parse_csv(env("MAIN_EDGE_IDS", "main_in,main_out"))
         self.ramp_y_threshold = float(env("RAMP_Y_THRESHOLD", "-1.0"))
@@ -335,7 +345,13 @@ class OBUApp:
         return candidates[0][1]
 
     def _set_target_speed(self, speed: float) -> None:
-        self.target_speed = max(speed, self.min_speed)
+        target = max(speed, self.min_speed)
+        current = self._current_speed()
+        if current is not None:
+            upper = max(current + self.max_speed_step_up, self.min_speed)
+            lower = max(current - self.max_speed_step_down, self.min_speed)
+            target = min(max(target, lower), upper)
+        self.target_speed = target
 
     def _prune_neighbors(self) -> None:
         now = time.time()
@@ -646,6 +662,30 @@ class OBUApp:
             return min_x <= x <= max_x and min_y <= y <= max_y
         return y <= self.ramp_y_threshold
 
+    def _neighbor_is_main_candidate(self, station_id: int) -> bool:
+        data = self.neighbors.get(station_id)
+        if not data:
+            return False
+        distance = self._distance_to_merge(float(data["x"]), float(data["y"]))
+        if distance > self.role_detection_distance:
+            return False
+        return not self._neighbor_is_merge_candidate(station_id)
+
+    def _ramp_leader(self, self_distance: float) -> Optional[tuple[int, float, float]]:
+        leaders: list[tuple[float, int, float]] = []
+        for station_id, data in self.neighbors.items():
+            if not self._neighbor_is_merge_candidate(station_id):
+                continue
+            leader_distance = self._distance_to_merge(float(data["x"]), float(data["y"]))
+            gap = self_distance - leader_distance
+            if gap <= 0:
+                continue
+            leaders.append((gap, station_id, float(data.get("speed") or 0.0)))
+        if not leaders:
+            return None
+        gap, station_id, speed = min(leaders, key=lambda item: (item[0], item[1]))
+        return station_id, gap, speed
+
     def _arrives_before(self, eta_a: float, station_a: int, eta_b: float, station_b: int) -> bool:
         if abs(eta_a - eta_b) > 1e-3:
             return eta_a < eta_b
@@ -670,6 +710,8 @@ class OBUApp:
     def _select_host_candidate(self, self_eta: float) -> Optional[int]:
         candidates = []
         for eta, station_id in self._neighbor_etas():
+            if not self._neighbor_is_main_candidate(station_id):
+                continue
             delta = eta - self_eta
             if delta >= 0:
                 candidates.append((delta, station_id))
@@ -681,6 +723,8 @@ class OBUApp:
     def _select_lead_candidate(self, self_eta: float) -> Optional[int]:
         candidates = []
         for eta, station_id in self._neighbor_etas():
+            if not self._neighbor_is_main_candidate(station_id):
+                continue
             delta = self_eta - eta
             if delta > 0:
                 candidates.append((delta, station_id))
@@ -769,6 +813,23 @@ class OBUApp:
                 self.pending_request = None
                 return
 
+        ramp_leader = self._ramp_leader(distance_to_merge)
+        if ramp_leader is not None:
+            _leader_id, ramp_gap, leader_speed = ramp_leader
+            current_speed = self._current_speed() or self.cruise_speed
+            desired_gap = max(self.ramp_platoon_min_gap, current_speed * self.ramp_platoon_headway_s)
+            if ramp_gap < desired_gap:
+                self._set_state(STATE_YIELDING)
+                follow_speed = max(
+                    leader_speed - self.ramp_platoon_speed_delta,
+                    self.cruise_speed * self.merge_yield_floor_ratio,
+                    self.min_speed,
+                )
+                self._set_target_speed(min(current_speed, follow_speed))
+                self.target_lane_index = None
+                self.target_speed_mode = self.default_speed_mode
+                return
+
         # --- Identify neighbors by ETA to merge point ---
         lead_id = self._select_lead_candidate(eta)
         lead_eta = self._neighbor_eta(lead_id) if lead_id is not None else None
@@ -833,6 +894,16 @@ class OBUApp:
 
         can_merge = gap_possible and gap_ahead_ok and gap_behind_ok and clearance_ok
 
+        critical_clearance = max(self.min_clearance_m * self.merge_commit_clearance_ratio, 1.0)
+        lead_critical_clear = lead_distance is None or lead_distance > critical_clearance
+        host_critical_clear = host_distance is None or host_distance > critical_clearance
+        can_commit = (
+            self.priority_merge
+            and distance_to_merge <= self.merge_commit_distance
+            and lead_critical_clear
+            and host_critical_clear
+        )
+
         # --- Set priority speed mode when approaching merge zone ---
         # Enable earlier and more aggressively so SUMO doesn't block acceleration
         if self.priority_merge and distance_to_merge <= self.priority_distance:
@@ -844,12 +915,22 @@ class OBUApp:
                 self._set_state(STATE_CRUISE)
             return
 
+        if can_commit and not can_merge:
+            self._set_state(STATE_MERGING)
+            commit_speed = max(self.merge_commit_min_speed, self.cruise_speed + self.merge_speed_bonus)
+            self._set_target_speed(commit_speed)
+            self.target_lane_index = self.merge_lane_index
+            self.target_speed_mode = self.priority_speed_mode
+            self.pending_request = None
+            return
+
         # --- Close but can't merge: graduated slowdown, not hard stop ---
         if not can_merge and distance_to_merge <= self.cruise_speed * self.safe_headway_s:
             self._set_state(STATE_YIELDING)
             # Proportional deceleration based on distance remaining
             ratio = max(distance_to_merge / (self.cruise_speed * self.safe_headway_s), 0.0)
-            slow_speed = max(self.cruise_speed * 0.3 * ratio + self.min_speed, self.min_speed)
+            floor_speed = max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)
+            slow_speed = max(self.cruise_speed * 0.3 * ratio + self.min_speed, floor_speed)
             self._set_target_speed(slow_speed)
             # Keep priority speed mode so we can accelerate away quickly
             if self.priority_merge:
@@ -991,8 +1072,8 @@ class OBUApp:
             yield_floor = max(self.cruise_speed - self.yield_speed_delta, self.min_speed)
             required_speed = min(required_speed, yield_floor)
         required_speed = min(required_speed, current_speed)
-        # Never go below 30% of cruise speed
-        speed_floor = max(self.cruise_speed * 0.3, self.min_speed)
+        # Keep the host rolling; a full stop often creates merge deadlocks.
+        speed_floor = max(self.cruise_speed * self.host_yield_floor_ratio, self.min_speed)
         required_speed = max(required_speed, speed_floor)
 
         if required_speed < self.target_speed or self.priority_merge:

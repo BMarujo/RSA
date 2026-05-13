@@ -25,7 +25,12 @@ Other vehicles must be known through Vanetza-decoded CAM/MCM messages.
 Important paths:
 
 - `docker-compose.yml`
-  - Starts shared MQTT, the SUMO TraCI bridge, and three OBU containers.
+  - Starts shared MQTT and the SUMO TraCI bridge.
+- `scripts/run_vanetza_scenario.sh`
+  - Generates a Compose override with one OBU container per explicit SUMO vehicle
+    in the route file and starts the full stack.
+- `scripts/generate_obu_compose.py`
+  - Parses `SUMO_CFG` / route XML and writes `.generated/vanetza-obus.compose.yml`.
 - `sim/bridge/traci_bridge.py`
   - Starts SUMO/SUMO-GUI.
   - Publishes sensors to `car/<vehicle_id>/sensors/gps`.
@@ -47,6 +52,10 @@ Important paths:
 - `sumo-lane-merge/aveiro_map`
   - Aveiro SUMO map.
   - `vanetza.sumocfg` and `vanetza.rou.xml` are used by the Docker/Vanetza flow.
+  - `vanetza.rou.xml` is now the default focused local dense merge demo.
+  - `vanetza_scenarios/` contains focused variants for the same merge area:
+    `base`, `gap`, `dense`, `ramp-platoon`, `blocked`, and a separate
+    `single-lane` one-lane merge.
 - `sumo-lane-merge/scripts/run_traci.py`
   - Standalone TraCI demo with scenario logic, useful as a reference/demo path.
 
@@ -65,9 +74,9 @@ Shared broker:
 
 Per-OBU local brokers:
 
-- Lead: host port `1884`
-- Host: host port `1885`
-- Merge: host port `1886`
+- Each generated OBU has its own embedded Mosquitto broker inside the container.
+- Local OBU brokers are no longer mapped to fixed host ports by default, because
+  the number of OBUs follows the SUMO vehicle count.
 
 Local Vanetza topics inside each OBU:
 
@@ -261,17 +270,16 @@ In the latest smoke test:
 If the UPER spam returns, first rebuild the OBU images:
 
 ```bash
-docker compose build obu-merge obu-host obu-lead
+scripts/run_vanetza_scenario.sh bridge
 ```
 
 Then run headless and inspect:
 
 ```bash
 SUMO_GUI=false LOOP_SIM=false SUMO_END=80 STEP_DELAY_S=0 \
-SUMO_CFG=/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg \
-docker compose run --rm traci-bridge
+scripts/run_vanetza_scenario.sh bridge
 
-docker compose logs --no-color obu-merge obu-host obu-lead | \
+docker compose -f docker-compose.yml -f .generated/vanetza-obus.compose.yml logs --no-color | \
   rg "UPER|Encoding Error|Can't determine|Invalid payload"
 ```
 
@@ -279,17 +287,44 @@ docker compose logs --no-color obu-merge obu-host obu-lead | \
 
 The TraCI bridge can visualize vehicle state in SUMO-GUI:
 
-- Tracks `Merge_Car` by default.
-- Draws a large role marker around each car.
-- Draws a small FSM badge near each car.
-- Colors vehicle bodies by FSM state.
-- Draws a merge-point marker.
+- Tracks `Merge_Car` by default to keep the presentation focused on the merge area.
+- Set `GUI_FIT_NETWORK=true GUI_TRACK_VEHICLE=` to see the full map.
+- Draws custom top-down vehicle skins over the native SUMO vehicles.
+- The default custom skins are lightweight: body, glass, and a clean
+  role/active-state stripe. Extra headlights and antenna polygons are optional
+  with `GUI_VEHICLE_SKIN_DETAIL=true`.
+- Legacy role circles and FSM badges are optional and disabled by default for a
+  cleaner demo view.
+- Keeps scenario vehicle body colors by default, so the presentation stays
+  visually readable.
+- Set `GUI_COLOR_VEHICLES_BY_STATE=true` if you want vehicle bodies overwritten
+  by FSM-state colors.
+- Draws brake-light overlays while cars decelerate, yield, or abort.
+- Draws a subtle merge-zone gate instead of a circular merge-point marker.
 
 Relevant env vars:
 
 ```text
 GUI_MARKERS=true
 GUI_TRACK_VEHICLE=Merge_Car
+GUI_FIT_NETWORK=false
+GUI_BOUNDARY_PADDING=80
+GUI_MERGE_ZONE_LENGTH=13
+GUI_MERGE_ZONE_WIDTH=1.1
+GUI_MERGE_ZONE_GAP=5.5
+GUI_MERGE_ZONE_ANGLE_DEG=0
+GUI_VEHICLE_SKINS=true
+GUI_DIM_SUMO_VEHICLES=true
+GUI_VEHICLE_SKIN_DETAIL=false
+GUI_ROLE_MARKERS=false
+GUI_STATE_BADGES=false
+GUI_STATE_BODY_TINT=false
+GUI_STATE_BODY_TINT_AMOUNT=0.34
+GUI_STATE_INDICATOR_WIDTH=0.22
+GUI_STATE_ROOF=false
+GUI_SHOW_CRUISE_STATE=false
+GUI_COLOR_VEHICLES_BY_STATE=false
+GUI_BRAKE_LIGHTS=true
 GUI_ZOOM=1800
 GUI_MARKER_RADIUS=9
 GUI_BADGE_SIZE=5
@@ -300,14 +335,14 @@ For GUI runs, Docker needs X11 authorization:
 
 ```bash
 xhost +local:docker
-SUMO_GUI=true docker compose up --build
+SUMO_GUI=true scripts/run_vanetza_scenario.sh up
 ```
 
 For reliable tests, prefer headless:
 
 ```bash
 SUMO_GUI=false LOOP_SIM=false SUMO_END=80 STEP_DELAY_S=0 \
-docker compose run --rm traci-bridge
+scripts/run_vanetza_scenario.sh bridge
 ```
 
 ## Compose Important Detail
@@ -318,7 +353,7 @@ docker compose run --rm traci-bridge
 SUMO_CFG=${SUMO_CFG:-/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg}
 SUMO_GUI=${SUMO_GUI:-true}
 DISPLAY=${DISPLAY:-:0}
-STEP_DELAY_S=${STEP_DELAY_S:-0.1}
+STEP_DELAY_S=${STEP_DELAY_S:-0.02}
 LOOP_SIM=${LOOP_SIM:-true}
 SUMO_END=${SUMO_END:-120}
 SUMO_EXTRA_ARGS=${SUMO_EXTRA_ARGS:-}
@@ -332,6 +367,19 @@ Authorization required, but no authorization protocol specified
 FXApp::openDisplay: unable to open display :0
 ```
 
+Merge-control tuning now avoids hard stops and abrupt lane jumps:
+
+- `PRIORITY_SPEED_MODE` defaults to `31` instead of unsafe `0`.
+- `MAX_SPEED_STEP_UP` / `MAX_SPEED_STEP_DOWN` smooth OBU speed targets.
+- `MERGE_COMMIT_DISTANCE` lets the ramp vehicle commit once close enough and
+  clear enough, avoiding two-car yield deadlocks.
+- `HOST_YIELD_FLOOR_RATIO` / `MERGE_YIELD_FLOOR_RATIO` keep vehicles rolling.
+- `LANE_CHANGE_DURATION_S` / `LANE_CHANGE_COOLDOWN_S` prevent repeated abrupt
+  TraCI lane-change commands.
+- `RAMP_PLATOON_HEADWAY_S` / `RAMP_PLATOON_MIN_GAP` keep ramp vehicles spaced
+  before the merge, allowing a larger ramp queue without all cars committing at
+  once.
+
 ## Useful Debug Commands
 
 Shared broker:
@@ -344,46 +392,45 @@ docker run --rm --network host eclipse-mosquitto:2 \
   mosquitto_sub -h 127.0.0.1 -p 1883 -t 'car/+/actuators/#' -v
 ```
 
-Merge OBU local Vanetza topics:
+Generated OBU local Vanetza topics are not mapped to fixed host ports by default.
+For most debugging, inspect all generated OBU logs:
 
 ```bash
-docker run --rm --network host eclipse-mosquitto:2 \
-  mosquitto_sub -h 127.0.0.1 -p 1886 -t 'vanetza/in/#' -v
-
-docker run --rm --network host eclipse-mosquitto:2 \
-  mosquitto_sub -h 127.0.0.1 -p 1886 -t 'vanetza/out/#' -v
+docker compose -f docker-compose.yml -f .generated/vanetza-obus.compose.yml logs --no-color | \
+  rg "vanetza/(in|out)|MCM|CAM|DENM|UPER|Encoding Error"
 ```
 
-Specific MCM capture:
+Run the main dynamic stack:
 
 ```bash
-docker run --rm --network host eclipse-mosquitto:2 \
-  mosquitto_sub -h 127.0.0.1 -p 1886 -t 'vanetza/in/mcm' -v
-
-docker run --rm --network host eclipse-mosquitto:2 \
-  mosquitto_sub -h 127.0.0.1 -p 1886 -t 'vanetza/out/mcm' -v
+scripts/run_vanetza_scenario.sh up
 ```
 
-Run the main stack:
+Choose a focused scenario:
 
 ```bash
-docker compose up --build
+scripts/run_vanetza_scenario.sh scenarios
+VANETZA_SCENARIO=gap scripts/run_vanetza_scenario.sh up
 ```
 
-Run just the physics bridge headless:
+Generate only the dynamic OBU override:
 
 ```bash
-docker compose up -d mqtt-broker obu-lead obu-host obu-merge
+scripts/run_vanetza_scenario.sh generate
+```
 
+Run the generated OBUs in the background and the TraCI bridge as a one-shot
+headless process:
+
+```bash
 SUMO_GUI=false LOOP_SIM=false SUMO_END=80 STEP_DELAY_S=0 \
-SUMO_CFG=/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg \
-docker compose run --rm traci-bridge
+scripts/run_vanetza_scenario.sh bridge
 ```
 
 Stop everything:
 
 ```bash
-docker compose down
+scripts/run_vanetza_scenario.sh down
 ```
 
 ## Results and Metrics
@@ -468,19 +515,15 @@ at the time this handoff file was written.
 Last meaningful checks:
 
 ```bash
-python3 -m py_compile obu/app/main.py sim/bridge/traci_bridge.py
-docker compose config
-docker compose build obu-merge obu-host obu-lead
+python3 -m py_compile scripts/generate_obu_compose.py obu/app/main.py sim/bridge/traci_bridge.py
+scripts/run_vanetza_scenario.sh config
 ```
 
 Smoke run:
 
 ```bash
-docker compose up -d mqtt-broker obu-lead obu-host obu-merge
-
 SUMO_GUI=false LOOP_SIM=false SUMO_END=80 STEP_DELAY_S=0 \
-SUMO_CFG=/data/sumo-lane-merge/aveiro_map/vanetza.sumocfg \
-docker compose run --rm traci-bridge
+scripts/run_vanetza_scenario.sh bridge
 ```
 
 Observed:
@@ -495,21 +538,20 @@ Observed:
 1. Commit or stash the current clean fix:
    - `docker-compose.yml` env overrides.
    - `MAX_MANOEUVRE_ID = 255`.
+   - Dynamic OBU generation through `scripts/run_vanetza_scenario.sh`.
 
 2. Run one controlled result extraction:
 
 ```bash
-docker compose up -d mqtt-broker obu-lead obu-host obu-merge
-
 SUMO_GUI=false LOOP_SIM=false SUMO_END=120 STEP_DELAY_S=0 \
 SUMO_EXTRA_ARGS='--summary-output /results/summary.xml --tripinfo-output /results/tripinfo.xml --collision-output /results/collisions.xml --fcd-output /results/fcd.xml' \
-docker compose run --rm traci-bridge
+scripts/run_vanetza_scenario.sh bridge
 ```
 
 3. Inspect:
 
 ```bash
-docker compose logs --no-color obu-merge obu-host obu-lead | \
+docker compose -f docker-compose.yml -f .generated/vanetza-obus.compose.yml logs --no-color | \
   rg "UPER|Encoding Error|Can't determine|Invalid payload"
 ```
 
@@ -526,4 +568,3 @@ docker compose logs --no-color obu-merge obu-host obu-lead | \
    - Keep ETSI fields valid and bounded.
 
 6. Expand scenarios after the MCM path is stable.
-

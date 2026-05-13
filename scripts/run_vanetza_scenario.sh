@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCENARIO_DIR="${ROOT_DIR}/sumo-lane-merge/aveiro_map/vanetza_scenarios"
+VANETZA_SCENARIO="${VANETZA_SCENARIO:-dense}"
+if [ -n "${SUMO_CFG:-}" ]; then
+    SUMO_CFG="$SUMO_CFG"
+else
+    SUMO_CFG="/data/sumo-lane-merge/aveiro_map/vanetza_scenarios/${VANETZA_SCENARIO}.sumocfg"
+fi
+OVERRIDE_FILE="${OBU_COMPOSE_FILE:-${ROOT_DIR}/.generated/vanetza-obus.compose.yml}"
+COMMAND="${1:-up}"
+
+if [ "$#" -gt 0 ]; then
+    shift
+fi
+
+cd "$ROOT_DIR"
+
+default_env() {
+    local name="$1"
+    local value="$2"
+    if [ -z "${!name:-}" ]; then
+        export "$name=$value"
+    else
+        export "$name"
+    fi
+}
+
+case "$VANETZA_SCENARIO" in
+    single-lane)
+        default_env MERGE_POINT_X "1647.94"
+        default_env MERGE_POINT_Y "758.48"
+        default_env RAMP_EDGE_IDS "1042215851"
+        default_env MAIN_EDGE_IDS "-251663459#1,111762619#0"
+        default_env RAMP_BBOX "0,0,0,0"
+        default_env MERGE_STATION_ID "104"
+        default_env MERGE_LANE_INDEX "0"
+        default_env GUI_ZOOM "1200"
+        default_env GUI_BOUNDARY_PADDING "70"
+        default_env GUI_MERGE_ZONE_LENGTH "12"
+        ;;
+esac
+
+generate() {
+    python3 scripts/generate_obu_compose.py \
+        --sumo-cfg "$SUMO_CFG" \
+        --output "$OVERRIDE_FILE"
+}
+
+compose() {
+    docker compose -f docker-compose.yml -f "$OVERRIDE_FILE" "$@"
+}
+
+case "$COMMAND" in
+    scenarios)
+        find "$SCENARIO_DIR" -maxdepth 1 -name '*.sumocfg' -printf '%f\n' \
+            | sed 's/\.sumocfg$//' \
+            | sort
+        ;;
+    generate)
+        generate
+        ;;
+    config)
+        generate
+        compose config "$@"
+        ;;
+    up)
+        generate
+        compose up --build "$@"
+        ;;
+    bridge)
+        generate
+        compose build
+        compose up -d --scale traci-bridge=0
+        compose run --rm traci-bridge "$@"
+        ;;
+    down)
+        if [ -f "$OVERRIDE_FILE" ]; then
+            compose down --remove-orphans "$@"
+        else
+            docker compose down --remove-orphans "$@"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 [up|bridge|down|config|generate|scenarios] [docker compose args...]" >&2
+        echo "Select a focused scenario with VANETZA_SCENARIO=base|gap|dense|ramp-platoon|blocked|single-lane" >&2
+        exit 2
+        ;;
+esac
