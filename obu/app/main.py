@@ -217,6 +217,8 @@ class OBUApp:
         self.merge_commit_clearance_ratio = float(env("MERGE_COMMIT_CLEARANCE_RATIO", "0.75"))
         self.ramp_edge_ids = parse_csv(env("RAMP_EDGE_IDS", "ramp_in"))
         self.main_edge_ids = parse_csv(env("MAIN_EDGE_IDS", "main_in,main_out"))
+        self.ramp_station_ids = {int(item) for item in parse_csv(env("RAMP_STATION_IDS", "")) if item.isdigit()}
+        self.main_station_ids = {int(item) for item in parse_csv(env("MAIN_STATION_IDS", "")) if item.isdigit()}
         self.ramp_y_threshold = float(env("RAMP_Y_THRESHOLD", "-1.0"))
         self.ramp_bbox = parse_bbox(env("RAMP_BBOX", ""))
         self.role_detection_distance = float(env("ROLE_DETECTION_DISTANCE", str(max(self.priority_distance * 2.0, 180.0))))
@@ -384,12 +386,20 @@ class OBUApp:
             return
 
         xy = latlon_to_xy(float(lat), float(lon), self.origin_lat, self.origin_lon)
+        distance_to_merge = self._distance_to_merge(xy["x"], xy["y"])
+        previous = self.neighbors.get(station_id)
+        previous_distance = previous.get("distance_to_merge") if previous else None
+        distance_delta = None
+        if previous_distance is not None:
+            distance_delta = distance_to_merge - float(previous_distance)
 
         self.neighbors[station_id] = {
             "x": xy["x"],
             "y": xy["y"],
             "speed": speed,
             "heading": heading,
+            "distance_to_merge": distance_to_merge,
+            "distance_delta": distance_delta,
             "timestamp": time.time(),
         }
 
@@ -650,6 +660,14 @@ class OBUApp:
         data = self.neighbors.get(station_id)
         if not data:
             return False
+        if station_id in self.ramp_station_ids:
+            distance = float(data.get("distance_to_merge") or self._distance_to_merge(float(data["x"]), float(data["y"])))
+            if distance > self.role_detection_distance:
+                return False
+            distance_delta = data.get("distance_delta")
+            if distance_delta is not None and float(distance_delta) > 1.0 and distance < self.min_clearance_m:
+                return False
+            return True
         if self.merge_station_id is not None and station_id == self.merge_station_id:
             return True
         x = float(data["x"])
@@ -669,6 +687,8 @@ class OBUApp:
         distance = self._distance_to_merge(float(data["x"]), float(data["y"]))
         if distance > self.role_detection_distance:
             return False
+        if self.main_station_ids:
+            return station_id in self.main_station_ids
         return not self._neighbor_is_merge_candidate(station_id)
 
     def _ramp_leader(self, self_distance: float) -> Optional[tuple[int, float, float]]:

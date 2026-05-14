@@ -103,18 +103,18 @@ def mac_address(index: int) -> str:
 
 
 def is_ramp_vehicle(vehicle: Vehicle, routes: dict[str, tuple[str, ...]]) -> bool:
-    if re.search(r"(merge|ramp)", vehicle.vehicle_id, re.IGNORECASE):
-        return True
     ramp_edges = {item.strip() for item in env("RAMP_EDGE_IDS", "34126779").split(",") if item.strip()}
     route_edges = routes.get(vehicle.route_id or "", ())
-    return bool(route_edges and route_edges[0] in ramp_edges)
+    if route_edges:
+        return route_edges[0] in ramp_edges
+    return bool(re.search(r"(merge|ramp)", vehicle.vehicle_id, re.IGNORECASE))
 
 
 def quote(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def common_obu_env(vehicle: Vehicle, index: int) -> list[tuple[str, str]]:
+def common_obu_env(vehicle: Vehicle, index: int, ramp_station_ids: str, main_station_ids: str) -> list[tuple[str, str]]:
     sid = str(station_id(index))
     values = {
         "VEHICLE_ID": vehicle.vehicle_id,
@@ -151,6 +151,8 @@ def common_obu_env(vehicle: Vehicle, index: int) -> list[tuple[str, str]]:
         "MERGE_STATION_ID": env("MERGE_STATION_ID", "0"),
         "RAMP_EDGE_IDS": env("RAMP_EDGE_IDS", "34126779"),
         "MAIN_EDGE_IDS": env("MAIN_EDGE_IDS", "560761994,1331698336,135424828"),
+        "RAMP_STATION_IDS": env("RAMP_STATION_IDS", ramp_station_ids),
+        "MAIN_STATION_IDS": env("MAIN_STATION_IDS", main_station_ids),
         "RAMP_Y_THRESHOLD": env("RAMP_Y_THRESHOLD", "-1.0"),
         "RAMP_BBOX": env("RAMP_BBOX", "205,2120,340,2225"),
         "ROLE_DETECTION_DISTANCE": env("ROLE_DETECTION_DISTANCE", "260.0"),
@@ -184,6 +186,16 @@ def common_obu_env(vehicle: Vehicle, index: int) -> list[tuple[str, str]]:
 def write_compose(output: Path, sumo_cfg: Path, vehicles: list[Vehicle], routes: dict[str, tuple[str, ...]]) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     vehicle_ids = ",".join(vehicle.vehicle_id for vehicle in vehicles)
+    ramp_station_ids = ",".join(
+        str(station_id(index))
+        for index, vehicle in enumerate(vehicles)
+        if is_ramp_vehicle(vehicle, routes)
+    )
+    main_station_ids = ",".join(
+        str(station_id(index))
+        for index, vehicle in enumerate(vehicles)
+        if not is_ramp_vehicle(vehicle, routes)
+    )
     track_vehicle = os.getenv("GUI_TRACK_VEHICLE", "Merge_Car")
     fit_network = os.getenv("GUI_FIT_NETWORK", "false")
 
@@ -225,7 +237,7 @@ def write_compose(output: Path, sumo_cfg: Path, vehicles: list[Vehicle], routes:
                 "    environment:",
             ]
         )
-        for key, value in common_obu_env(vehicle, index):
+        for key, value in common_obu_env(vehicle, index, ramp_station_ids, main_station_ids):
             lines.append(f"      - {quote(f'{key}={value}')}")
         lines.extend(
             [

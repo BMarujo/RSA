@@ -77,6 +77,13 @@ class TraciBridge:
         self.step_length = float(env("STEP_LENGTH", "0.1"))
         self.step_delay_s = float(env("STEP_DELAY_S", "0"))
         self.speed_command_duration_s = float(env("SPEED_COMMAND_DURATION_S", "1.0"))
+        self.collision_guard = env_bool("COLLISION_GUARD", "true")
+        self.collision_guard_lookahead = float(env("COLLISION_GUARD_LOOKAHEAD", "35.0"))
+        self.collision_guard_min_gap = float(env("COLLISION_GUARD_MIN_GAP", "6.5"))
+        self.collision_guard_headway_s = float(env("COLLISION_GUARD_HEADWAY_S", "0.65"))
+        self.collision_guard_speed_delta = float(env("COLLISION_GUARD_SPEED_DELTA", "0.8"))
+        self.collision_guard_min_speed = float(env("COLLISION_GUARD_MIN_SPEED", "1.5"))
+        self.collision_guard_duration_s = float(env("COLLISION_GUARD_DURATION_S", "0.8"))
         self.lane_change_duration_s = float(env("LANE_CHANGE_DURATION_S", "3.0"))
         self.lane_change_cooldown_s = float(env("LANE_CHANGE_COOLDOWN_S", "2.0"))
         self.sumo_end = env("SUMO_END", "")
@@ -96,6 +103,8 @@ class TraciBridge:
 
         self.gui_markers = env_bool("GUI_MARKERS", "true")
         self.gui_track_vehicle = os.getenv("GUI_TRACK_VEHICLE", "Merge_Car").strip()
+        self.gui_fixed_merge_view = env_bool("GUI_FIXED_MERGE_VIEW", "false")
+        self.gui_merge_view_radius = float(env("GUI_MERGE_VIEW_RADIUS", "95"))
         self.gui_fit_network = env_bool("GUI_FIT_NETWORK", "false")
         self.gui_boundary_padding = float(env("GUI_BOUNDARY_PADDING", "80"))
         self.gui_zoom = float(env("GUI_ZOOM", "1800"))
@@ -129,6 +138,8 @@ class TraciBridge:
         self.speed_commands: Dict[str, float] = {}
         self.lane_commands: Dict[str, int] = {}
         self.speed_mode_commands: Dict[str, int] = {}
+        self.initial_speed_mode = int(env("TRACI_DEFAULT_SPEED_MODE", "-1"))
+        self.initial_speed_mode_applied: set[str] = set()
         self.lane_command_state: Dict[str, Dict[str, float]] = {}
         self.fsm_status: Dict[str, Dict[str, Any]] = {}
         self.polygon_ids: set[str] = set()
@@ -192,6 +203,7 @@ class TraciBridge:
         self.badge_ids.clear()
         self.brake_light_ids.clear()
         self.previous_speeds.clear()
+        self.initial_speed_mode_applied.clear()
 
     def _configure_gui(self) -> None:
         if not self.sumo_gui:
@@ -213,6 +225,19 @@ class TraciBridge:
     def _set_initial_gui_view(self) -> None:
         if not self.gui_view_id:
             return
+        if self.gui_fixed_merge_view:
+            try:
+                radius = self.gui_merge_view_radius
+                traci.gui.setBoundary(
+                    self.gui_view_id,
+                    self.merge_point_x - radius,
+                    self.merge_point_y - radius,
+                    self.merge_point_x + radius,
+                    self.merge_point_y + radius,
+                )
+                return
+            except traci.TraCIException:
+                pass
         if self.gui_fit_network:
             try:
                 (min_x, min_y), (max_x, max_y) = traci.simulation.getNetBoundary()
@@ -244,6 +269,9 @@ class TraciBridge:
         self.client.publish(topic, json.dumps(payload))
 
     def _apply_actuators(self, vehicle_id: str) -> None:
+        if self.initial_speed_mode >= 0 and vehicle_id not in self.initial_speed_mode_applied:
+            traci.vehicle.setSpeedMode(vehicle_id, self.initial_speed_mode)
+            self.initial_speed_mode_applied.add(vehicle_id)
         if vehicle_id in self.speed_commands:
             target_speed = self.speed_commands[vehicle_id]
             if self.speed_command_duration_s > 0:
@@ -275,6 +303,36 @@ class TraciBridge:
                 }
         if vehicle_id in self.speed_mode_commands:
             traci.vehicle.setSpeedMode(vehicle_id, self.speed_mode_commands[vehicle_id])
+        self._apply_collision_guard(vehicle_id)
+
+    def _apply_collision_guard(self, vehicle_id: str) -> None:
+        if not self.collision_guard:
+            return
+        try:
+            leader = traci.vehicle.getLeader(vehicle_id, self.collision_guard_lookahead)
+        except traci.TraCIException:
+            return
+        if leader is None:
+            return
+
+        leader_id, gap = leader
+        try:
+            own_speed = traci.vehicle.getSpeed(vehicle_id)
+            leader_speed = traci.vehicle.getSpeed(leader_id)
+        except traci.TraCIException:
+            return
+
+        desired_gap = self.collision_guard_min_gap + own_speed * self.collision_guard_headway_s
+        if gap >= desired_gap:
+            return
+
+        ratio = max(gap / max(desired_gap, 0.1), 0.0)
+        target_speed = min(
+            own_speed,
+            max(leader_speed - self.collision_guard_speed_delta, self.collision_guard_min_speed),
+            max(own_speed * ratio, self.collision_guard_min_speed),
+        )
+        traci.vehicle.slowDown(vehicle_id, target_speed, max(self.step_length, self.collision_guard_duration_s))
 
     def _circle_shape(self, x: float, y: float, radius: float) -> list[tuple[float, float]]:
         return [
