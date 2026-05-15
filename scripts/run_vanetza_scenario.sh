@@ -29,6 +29,75 @@ default_env() {
 }
 
 case "$VANETZA_SCENARIO" in
+    dense)
+        default_env MERGE_POINT_X "194.89"
+        default_env MERGE_POINT_Y "2212.42"
+        default_env RAMP_EDGE_IDS "34126779"
+        default_env MAIN_EDGE_IDS "560761994,1331698336,135424828"
+        default_env RAMP_BBOX "205,2120,340,2225"
+        default_env MERGE_STATION_ID "0"
+        default_env MERGE_LANE_INDEX "1"
+
+        default_env PRIORITY_DISTANCE "180.0"
+        default_env ROLE_DETECTION_DISTANCE "320.0"
+        default_env ETA_THRESHOLD_S "18.0"
+        default_env NEIGHBOR_TIMEOUT_S "2.5"
+        default_env REQUEST_RETRY_S "0.25"
+        default_env RESPONSE_PERIOD_S "0.25"
+
+        default_env CRUISE_SPEED "7.5"
+        default_env MERGE_SPEED_BONUS "0.0"
+        default_env LEAD_SPEED_BONUS "0.0"
+
+        default_env DEFAULT_SPEED_MODE "0"
+        default_env PRIORITY_SPEED_MODE "0"
+        default_env TRACI_DEFAULT_SPEED_MODE "0"
+        default_env TRACI_DEFAULT_LANE_CHANGE_MODE "0"
+        default_env COLLISION_GUARD "false"
+
+        default_env TRACI_VEHICLE_DECEL "50.0"
+        default_env TRACI_VEHICLE_EMERGENCY_DECEL "50.0"
+        default_env SUMO_EXTRA_ARGS "--collision.action warn --collision.check-junctions true --emergencydecel.warning-threshold 100.0"
+
+        default_env MIN_SPEED "0.0"
+        default_env EMERGENCY_MIN_SPEED "0.0"
+        default_env ABORT_SPEED "0.0"
+        default_env HOST_YIELD_FLOOR_RATIO "0.0"
+        default_env MERGE_YIELD_FLOOR_RATIO "0.0"
+
+        default_env SAFE_HEADWAY_S "2.5"
+        default_env MIN_CLEARANCE_M "18.0"
+        default_env HOST_REJECT_DISTANCE_M "35.0"
+        default_env MERGE_ZONE_CLEARANCE_M "55.0"
+        default_env MERGE_STOP_MARGIN_M "22.0"
+        default_env MERGE_BLOCKED_APPROACH_S "5.0"
+
+        default_env RAMP_PLATOON_HEADWAY_S "3.0"
+        default_env RAMP_PLATOON_MIN_GAP "38.0"
+        default_env RAMP_PLATOON_SPEED_DELTA "1.5"
+        default_env MERGE_QUEUE_RELEASE_GAP "60.0"
+
+        default_env ENABLE_CAM_FOLLOWING "true"
+        default_env CAM_FOLLOW_HEADWAY_S "3.2"
+        default_env CAM_FOLLOW_MIN_GAP "26.0"
+        default_env CAM_FOLLOW_LOOKAHEAD "180.0"
+        default_env CAM_FOLLOW_LATERAL_TOLERANCE_M "10.0"
+        default_env CAM_FOLLOW_SPEED_DELTA "1.5"
+        default_env CAM_FOLLOW_CRITICAL_GAP_M "20.0"
+        default_env CAM_FOLLOW_BRAKE_DECEL "4.5"
+        default_env CAM_FOLLOW_EMERGENCY_DECEL "9.0"
+
+        default_env MAX_SPEED_STEP_UP "0.12"
+        default_env MAX_SPEED_STEP_DOWN "0.35"
+        default_env MAX_SPEED_STEP_EMERGENCY "1.2"
+
+        default_env GUI_TRACK_VEHICLE "none"
+        default_env GUI_FIXED_MERGE_VIEW "true"
+        default_env GUI_MERGE_VIEW_RADIUS "130"
+        default_env GUI_ZOOM "1200"
+        default_env GUI_BOUNDARY_PADDING "70"
+        default_env GUI_MERGE_ZONE_LENGTH "13"
+        ;;
     single-lane)
         default_env MERGE_POINT_X "1647.94"
         default_env MERGE_POINT_Y "758.48"

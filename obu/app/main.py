@@ -741,17 +741,24 @@ class OBUApp:
         return not self._neighbor_is_merge_candidate(station_id)
 
     def _all_main_clearance_ok(self) -> bool:
-        """Check that NO neighbor is within MIN_CLEARANCE_M of us."""
+        """Check that no main-road neighbor is inside the local merge clearance radius."""
         if not self.sensor_state:
             return False
+
         sx = float(self.sensor_state.get("x", 0.0))
         sy = float(self.sensor_state.get("y", 0.0))
+
         for station_id, data in self.neighbors.items():
+            if not self._neighbor_is_main_candidate(station_id):
+                continue
+
             dx = float(data["x"]) - sx
             dy = float(data["y"]) - sy
             dist = math.hypot(dx, dy)
+
             if dist <= self.min_clearance_m:
                 return False
+
         return True
 
     def _merge_zone_clearance_ok(self) -> bool:
