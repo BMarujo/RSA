@@ -84,6 +84,7 @@ class TraciBridge:
         self.collision_guard_speed_delta = float(env("COLLISION_GUARD_SPEED_DELTA", "0.8"))
         self.collision_guard_min_speed = float(env("COLLISION_GUARD_MIN_SPEED", "1.5"))
         self.collision_guard_duration_s = float(env("COLLISION_GUARD_DURATION_S", "0.8"))
+        self.collision_guard_max_decel = float(env("COLLISION_GUARD_MAX_DECEL", "3.5"))
         self.lane_change_duration_s = float(env("LANE_CHANGE_DURATION_S", "3.0"))
         self.lane_change_cooldown_s = float(env("LANE_CHANGE_COOLDOWN_S", "2.0"))
         self.sumo_end = env("SUMO_END", "")
@@ -332,7 +333,9 @@ class TraciBridge:
             max(leader_speed - self.collision_guard_speed_delta, self.collision_guard_min_speed),
             max(own_speed * ratio, self.collision_guard_min_speed),
         )
-        traci.vehicle.slowDown(vehicle_id, target_speed, max(self.step_length, self.collision_guard_duration_s))
+        duration = max(self.step_length, self.collision_guard_duration_s)
+        target_speed = max(target_speed, own_speed - self.collision_guard_max_decel * duration)
+        traci.vehicle.slowDown(vehicle_id, target_speed, duration)
 
     def _circle_shape(self, x: float, y: float, radius: float) -> list[tuple[float, float]]:
         return [
