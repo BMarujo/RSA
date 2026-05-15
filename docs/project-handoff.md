@@ -208,10 +208,12 @@ max_eta = host_eta - SAFE_HEADWAY_S
 
 5. Adjusts speed to fit inside the ETA window.
 6. Sends MCM request when near the merge zone.
-7. If gap is safe and allowed, sends lane/speed commands to merge.
-8. If not safe, yields or aborts depending on priority/fail-safe config.
+7. If gap is safe AND host sent MCM ACCEPT, sends lane/speed commands to merge.
+8. If REJECT received or negotiation times out, enters ABORT with a cooldown before
+   retrying. The merge car slows down and waits for conditions to change.
 
-Current Docker config has `MERGE_PRIORITY=true`, so the merge path is permissive.
+Docker config now uses `MERGE_PRIORITY=false` (strict negotiation). The merge car
+will NOT force its way in without an ACCEPT.
 
 ### Host Behavior
 
@@ -219,9 +221,10 @@ The host vehicle:
 
 1. Detects the merge candidate via CAMs.
 2. Computes the merge candidate ETA.
-3. If the merge vehicle is close enough, computes a target ETA after the merge car.
-4. Reduces speed to open a safe gap.
-5. Sends MCM ACCEPT periodically.
+3. Checks if yielding is safe (distance to merge > `HOST_REJECT_DISTANCE_M`).
+4. If too close to merge point, sends MCM REJECT.
+5. Otherwise, reduces speed to open a safe gap.
+6. Sends MCM ACCEPT periodically.
 
 ### Lead Behavior
 
@@ -501,8 +504,11 @@ at the time this handoff file was written.
    smoke test, but it is semantically heavy. A future cleanup should make request and
    response payloads clearer and smaller if Vanetza accepts them.
 
-3. `MERGE_PRIORITY=true` makes the merge behavior permissive. To demonstrate stricter
-   negotiation/fail-safe, test with `MERGE_PRIORITY=false`.
+3. `MERGE_PRIORITY=false` enforces strict negotiation. To test the older permissive
+   mode, set `MERGE_PRIORITY=true`.
+
+4. `COLLISION_GUARD=false` by default so vehicle behavior is solely V2X-driven.
+   Re-enable with `COLLISION_GUARD=true` if you need a safety net during development.
 
 4. Do not deeply edit `vanetza-nap` unless needed. Most bugs so far were in our payload
    values, Docker environment, or compose/runtime setup.
