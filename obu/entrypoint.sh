@@ -56,6 +56,9 @@ if [ -n "$START_EMBEDDED_MOSQUITTO" ] && [ "$START_EMBEDDED_MOSQUITTO" = "true" 
             echo "topic car/${VEHICLE_ID}/sensors/# in 0"
             echo "topic car/${VEHICLE_ID}/actuators/# out 0"
             echo "topic car/${VEHICLE_ID}/status/# out 0"
+            if [ "${MIRROR_VANETZA_TOPICS:-true}" = "true" ]; then
+                echo "topic vanetza/# out 0 \"\" \"obu/${VEHICLE_ID}/\""
+            fi
         fi
     } > /mosquitto.conf
     /usr/sbin/mosquitto -c /mosquitto.conf &

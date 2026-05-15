@@ -66,6 +66,20 @@ def heading_deg_to_etsi(value: Optional[float]) -> int:
     return clamp_int(scaled, default=3601, minimum=0, maximum=3601)
 
 
+def normalize_heading_deg(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        heading = float(value)
+    except (TypeError, ValueError):
+        return None
+    if int(round(heading)) == 3601:
+        return None
+    if abs(heading) > 360.0:
+        heading /= 10.0
+    return heading % 360.0
+
+
 def meters_per_deg_lon(lat_deg: float) -> float:
     return 111320.0 * math.cos(math.radians(lat_deg))
 
@@ -195,6 +209,9 @@ class OBUApp:
         self.merge_point_x = float(env("MERGE_POINT_X", "0"))
         self.merge_point_y = float(env("MERGE_POINT_Y", "0"))
         self.merge_lane_index = int(env("MERGE_LANE_INDEX", "0"))
+        self.merge_zone_clearance_m = float(env("MERGE_ZONE_CLEARANCE_M", "45.0"))
+        self.merge_stop_margin_m = float(env("MERGE_STOP_MARGIN_M", "18.0"))
+        self.merge_blocked_approach_s = float(env("MERGE_BLOCKED_APPROACH_S", "4.0"))
         self.eta_threshold_s = float(env("ETA_THRESHOLD_S", "5.0"))
         self.safe_headway_s = float(env("SAFE_HEADWAY_S", "1.5"))
         self.negotiation_timeout_s = float(env("NEGOTIATION_TIMEOUT_S", "2.0"))
@@ -205,15 +222,27 @@ class OBUApp:
         self.abort_speed = float(env("ABORT_SPEED", "2.0"))
         self.abort_cooldown_s = float(env("ABORT_COOLDOWN_S", "3.0"))
         self.min_speed = float(env("MIN_SPEED", "0.5"))
+        self.emergency_min_speed = float(env("EMERGENCY_MIN_SPEED", "0.0"))
         self.min_clearance_m = float(env("MIN_CLEARANCE_M", "8.0"))
         self.max_speed_step_up = float(env("MAX_SPEED_STEP_UP", "2.5"))
         self.max_speed_step_down = float(env("MAX_SPEED_STEP_DOWN", "0.45"))
+        self.max_speed_step_emergency = float(env("MAX_SPEED_STEP_EMERGENCY", "1.5"))
         self.merge_yield_floor_ratio = float(env("MERGE_YIELD_FLOOR_RATIO", "0.2"))
         self.host_yield_floor_ratio = float(env("HOST_YIELD_FLOOR_RATIO", "0.2"))
         self.host_reject_distance_m = float(env("HOST_REJECT_DISTANCE_M", "20.0"))
         self.ramp_platoon_headway_s = float(env("RAMP_PLATOON_HEADWAY_S", "1.4"))
         self.ramp_platoon_min_gap = float(env("RAMP_PLATOON_MIN_GAP", "14.0"))
         self.ramp_platoon_speed_delta = float(env("RAMP_PLATOON_SPEED_DELTA", "0.8"))
+        self.merge_queue_release_gap = float(env("MERGE_QUEUE_RELEASE_GAP", "34.0"))
+        self.enable_cam_following = env("ENABLE_CAM_FOLLOWING", "true").lower() == "true"
+        self.cam_follow_headway_s = float(env("CAM_FOLLOW_HEADWAY_S", "1.2"))
+        self.cam_follow_min_gap = float(env("CAM_FOLLOW_MIN_GAP", "10.0"))
+        self.cam_follow_lookahead = float(env("CAM_FOLLOW_LOOKAHEAD", "50.0"))
+        self.cam_follow_lateral_tolerance = float(env("CAM_FOLLOW_LATERAL_TOLERANCE_M", "3.8"))
+        self.cam_follow_speed_delta = float(env("CAM_FOLLOW_SPEED_DELTA", "0.8"))
+        self.cam_follow_critical_gap = float(env("CAM_FOLLOW_CRITICAL_GAP_M", "6.0"))
+        self.cam_follow_brake_decel = float(env("CAM_FOLLOW_BRAKE_DECEL", "4.5"))
+        self.cam_follow_emergency_decel = float(env("CAM_FOLLOW_EMERGENCY_DECEL", "9.0"))
         self.ramp_edge_ids = parse_csv(env("RAMP_EDGE_IDS", "ramp_in"))
         self.main_edge_ids = parse_csv(env("MAIN_EDGE_IDS", "main_in,main_out"))
         self.ramp_station_ids = {int(item) for item in parse_csv(env("RAMP_STATION_IDS", "")) if item.isdigit()}
@@ -273,6 +302,10 @@ class OBUApp:
         self.fsm_state = STATE_CRUISE
         self.fsm_state_since = self._sim_time()
         self.effective_role = self.role
+        self.following_active = False
+        self.following_station_id: Optional[int] = None
+        self.following_gap_m: Optional[float] = None
+        self.following_reason = ""
 
     def connect(self) -> None:
         self.client.connect(self.local_mqtt_host, self.local_mqtt_port, 60)
@@ -313,6 +346,13 @@ class OBUApp:
             return None
         return float(self.sensor_state.get("speed", 0.0))
 
+    def _current_heading(self) -> Optional[float]:
+        if self.sensor_state:
+            heading = normalize_heading_deg(self.sensor_state.get("heading"))
+            if heading is not None:
+                return heading
+        return normalize_heading_deg(self.last_heading)
+
     def _sim_time(self) -> float:
         return float(self.sensor_state.get("time", 0.0)) if self.sensor_state else 0.0
 
@@ -348,12 +388,13 @@ class OBUApp:
         candidates.sort(key=lambda item: (item[0], item[1]))
         return candidates[0][1]
 
-    def _set_target_speed(self, speed: float) -> None:
-        target = max(speed, self.min_speed)
+    def _set_target_speed(self, speed: float, emergency: bool = False) -> None:
+        target = max(speed, self.emergency_min_speed if emergency else self.min_speed)
         current = self._current_speed()
         if current is not None:
             upper = max(current + self.max_speed_step_up, self.min_speed)
-            lower = max(current - self.max_speed_step_down, self.min_speed)
+            step_down = self.max_speed_step_emergency if emergency else self.max_speed_step_down
+            lower = max(current - step_down, self.emergency_min_speed if emergency else self.min_speed)
             target = min(max(target, lower), upper)
         self.target_speed = target
 
@@ -378,7 +419,7 @@ class OBUApp:
             high = cam_params.get("highFrequencyContainer", {})
             veh = high.get("basicVehicleContainerHighFrequency", {})
             speed = veh.get("speed", {}).get("speedValue")
-            heading = veh.get("heading", {}).get("headingValue")
+            heading = normalize_heading_deg(veh.get("heading", {}).get("headingValue"))
         except AttributeError:
             return
 
@@ -462,7 +503,9 @@ class OBUApp:
         veh_speed = veh.setdefault("speed", {})
         veh_speed["speedValue"] = speed
 
-        heading = self._estimate_heading(x, y)
+        heading = self._current_heading()
+        if heading is None:
+            heading = self._estimate_heading(x, y)
         if heading is not None:
             veh_heading = veh.setdefault("heading", {})
             veh_heading["headingValue"] = heading
@@ -596,6 +639,10 @@ class OBUApp:
             "target_speed": self.target_speed,
             "target_lane_index": self.target_lane_index,
             "target_speed_mode": self.target_speed_mode,
+            "following_active": self.following_active,
+            "following_station_id": self.following_station_id,
+            "following_gap_m": self.following_gap_m,
+            "following_reason": self.following_reason,
             "pending_request": self.pending_request is not None,
             "timestamp": self._sim_time(),
         }
@@ -704,6 +751,15 @@ class OBUApp:
             dy = float(data["y"]) - sy
             dist = math.hypot(dx, dy)
             if dist <= self.min_clearance_m:
+                return False
+        return True
+
+    def _merge_zone_clearance_ok(self) -> bool:
+        for station_id, data in self.neighbors.items():
+            if not self._neighbor_is_main_candidate(station_id):
+                continue
+            distance = self._distance_to_merge(float(data["x"]), float(data["y"]))
+            if distance <= self.merge_zone_clearance_m:
                 return False
         return True
 
@@ -854,7 +910,11 @@ class OBUApp:
         if ramp_leader is not None:
             _leader_id, ramp_gap, leader_speed = ramp_leader
             current_speed = self._current_speed() or self.cruise_speed
-            desired_gap = max(self.ramp_platoon_min_gap, current_speed * self.ramp_platoon_headway_s)
+            desired_gap = max(
+                self.ramp_platoon_min_gap,
+                current_speed * self.ramp_platoon_headway_s,
+                self.merge_queue_release_gap if distance_to_merge <= self.priority_distance else 0.0,
+            )
             if ramp_gap < desired_gap:
                 self._set_state(STATE_YIELDING)
                 follow_speed = max(
@@ -939,12 +999,23 @@ class OBUApp:
         # Check ALL main-road neighbors, not just the selected lead/host
         if not self._all_main_clearance_ok():
             clearance_ok = False
+        if not self._merge_zone_clearance_ok():
+            clearance_ok = False
 
         can_merge = gap_possible and gap_ahead_ok and gap_behind_ok and clearance_ok
 
         # --- Set priority speed mode when approaching merge zone ---
         if distance_to_merge <= self.priority_distance:
             self.target_speed_mode = self.priority_speed_mode
+
+        if not clearance_ok and distance_to_merge <= self.priority_distance:
+            self._set_state(STATE_YIELDING if host_id is None else STATE_NEGOTIATING)
+            stop_distance = max(distance_to_merge - self.merge_stop_margin_m, 0.0)
+            blocked_speed = stop_distance / max(self.merge_blocked_approach_s, 0.1)
+            current_speed = self._current_speed() or self.cruise_speed
+            self._set_target_speed(min(current_speed, blocked_speed), emergency=distance_to_merge <= self.merge_stop_margin_m + 12.0)
+            self.target_lane_index = None
+            return
 
         # --- Far from merge point: just cruise ---
         if eta > self.eta_threshold_s:
@@ -1023,65 +1094,97 @@ class OBUApp:
         return is_main_static or passed_merge
 
     def _apply_car_following(self) -> None:
-        """Cap target_speed to maintain safe following distance from any vehicle ahead."""
-        if not self.sensor_state:
+        """Cap target_speed from CAM-only perception for same-lane following."""
+        self.following_active = False
+        self.following_station_id = None
+        self.following_gap_m = None
+        self.following_reason = ""
+
+        if not self.enable_cam_following or not self.sensor_state:
             return
-            
+
+        own_heading = self._current_heading()
+        if own_heading is None:
+            return
+
         own_x = float(self.sensor_state.get("x", 0.0))
         own_y = float(self.sensor_state.get("y", 0.0))
         own_speed = self._current_speed() or 0.0
         own_dist = self._self_distance_to_merge() or 0.0
-        own_heading = self.last_heading or 0.0
-        own_on_main = self._is_on_main_road(self.station_id, own_x, own_y, own_heading)
-        
-        # Direction vector for "ahead" check
         rad = math.radians(90 - own_heading)
         fwd_x = math.cos(rad)
         fwd_y = math.sin(rad)
-        
-        min_follow_speed = None
+
+        min_follow_speed: Optional[float] = None
+        follow_station_id: Optional[int] = None
+        follow_gap: Optional[float] = None
+        follow_reason = ""
         is_emergency = False
-        
+
         for station_id, data in self.neighbors.items():
             nx = float(data.get("x", 0.0))
             ny = float(data.get("y", 0.0))
+            if data.get("speed") is None:
+                continue
             n_speed = float(data.get("speed", 0.0))
             n_dist = float(data.get("distance_to_merge", 0.0))
-            n_heading = float(data.get("heading", 0.0))
-            n_on_main = self._is_on_main_road(station_id, nx, ny, n_heading)
-            
             dx = nx - own_x
             dy = ny - own_y
-            
-            gap = None
-            if own_on_main == n_on_main:
-                # Same road -> use heading dot-product
-                dot = dx * fwd_x + dy * fwd_y
-                if dot <= 0: continue
-                gap = math.hypot(dx, dy)
-            else:
-                # Different roads -> use distance to merge
-                # Someone is "ahead" if they are closer to the merge point than us
-                if n_dist >= own_dist: continue
-                gap = own_dist - n_dist
 
-            if gap is None: continue
-            
-            # Center-to-center distance fix: subtract vehicle lengths (approx 5m)
-            # We use a 10m minimum gap for center-to-center measurements
-            safe_gap = 10.0 + own_speed * 1.2
+            longitudinal = dx * fwd_x + dy * fwd_y
+            lateral = abs(-dx * fwd_y + dy * fwd_x)
+            gap: Optional[float] = None
+            reason = ""
+
+            if (
+                0.0 < longitudinal <= self.cam_follow_lookahead
+                and lateral <= self.cam_follow_lateral_tolerance
+            ):
+                gap = max(0.0, longitudinal - self.vehicle_length)
+                reason = "same_lane_cam"
+            elif own_dist <= self.priority_distance and n_dist < own_dist:
+                gap = own_dist - n_dist
+                if gap <= self.cam_follow_lookahead:
+                    reason = "merge_conflict_cam"
+                else:
+                    gap = None
+
+            if gap is None:
+                continue
+
+            closing_speed = max(own_speed - n_speed, 0.0)
+            brake_decel = max(self.cam_follow_brake_decel, 0.1)
+            emergency_decel = max(self.cam_follow_emergency_decel, brake_decel)
+            closing_buffer = (closing_speed * closing_speed) / (2.0 * brake_decel)
+            safe_gap = self.cam_follow_min_gap + (own_speed * self.cam_follow_headway_s) + closing_buffer
             if gap < safe_gap:
-                # Calculate speed needed to maintain gap
-                target = n_speed
-                if gap < 6.0: # Critical gap
-                    target = min(target, own_speed * 0.5)
-                
+                available_gap = max(gap - self.cam_follow_min_gap, 0.0)
+                headway_speed = max(available_gap / max(self.cam_follow_headway_s, 0.1), 0.0)
+                braking_speed = math.sqrt(max(0.0, (n_speed * n_speed) + (2.0 * brake_decel * available_gap)))
+                emergency_speed = math.sqrt(max(0.0, (n_speed * n_speed) + (2.0 * emergency_decel * available_gap)))
+                target = min(n_speed - self.cam_follow_speed_delta, headway_speed, braking_speed)
+                target = max(target, self.emergency_min_speed)
+                if gap < self.cam_follow_critical_gap:
+                    target = min(target, own_speed * 0.35, emergency_speed)
+
                 if min_follow_speed is None or target < min_follow_speed:
                     min_follow_speed = target
-                    if (own_speed - target) > 2.0:
-                        is_emergency = True
+                    follow_station_id = station_id
+                    follow_gap = gap
+                    follow_reason = reason
+                    is_emergency = (
+                        gap < self.cam_follow_critical_gap
+                        or gap < self.cam_follow_min_gap
+                        or (own_speed - target) > self.max_speed_step_down
+                    )
 
         if min_follow_speed is not None:
+            self.following_active = True
+            self.following_station_id = follow_station_id
+            self.following_gap_m = follow_gap
+            self.following_reason = follow_reason
+            if self.fsm_state == STATE_CRUISE:
+                self._set_state(STATE_YIELDING)
             self._set_target_speed(min_follow_speed, emergency=is_emergency)
 
     def _latest_request(self) -> Optional[Dict[str, Any]]:

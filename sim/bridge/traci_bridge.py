@@ -77,7 +77,7 @@ class TraciBridge:
         self.step_length = float(env("STEP_LENGTH", "0.1"))
         self.step_delay_s = float(env("STEP_DELAY_S", "0"))
         self.speed_command_duration_s = float(env("SPEED_COMMAND_DURATION_S", "1.0"))
-        self.collision_guard = env_bool("COLLISION_GUARD", "true")
+        self.collision_guard = env_bool("COLLISION_GUARD", "false")
         self.collision_guard_lookahead = float(env("COLLISION_GUARD_LOOKAHEAD", "35.0"))
         self.collision_guard_min_gap = float(env("COLLISION_GUARD_MIN_GAP", "6.5"))
         self.collision_guard_headway_s = float(env("COLLISION_GUARD_HEADWAY_S", "0.65"))
@@ -85,9 +85,12 @@ class TraciBridge:
         self.collision_guard_min_speed = float(env("COLLISION_GUARD_MIN_SPEED", "1.5"))
         self.collision_guard_duration_s = float(env("COLLISION_GUARD_DURATION_S", "0.8"))
         self.collision_guard_max_decel = float(env("COLLISION_GUARD_MAX_DECEL", "3.5"))
+        self.vehicle_decel = float(env("TRACI_VEHICLE_DECEL", "50.0"))
+        self.vehicle_emergency_decel = float(env("TRACI_VEHICLE_EMERGENCY_DECEL", "50.0"))
         self.lane_change_duration_s = float(env("LANE_CHANGE_DURATION_S", "3.0"))
         self.lane_change_cooldown_s = float(env("LANE_CHANGE_COOLDOWN_S", "2.0"))
         self.sumo_end = env("SUMO_END", "")
+        self.sumo_end_s = float(self.sumo_end) if self.sumo_end else None
         self.sumo_extra_args = env("SUMO_EXTRA_ARGS", "")
         self.loop_sim = env("LOOP_SIM", "false").lower() == "true"
         self.loop_pause_s = float(env("LOOP_PAUSE_S", "0"))
@@ -140,7 +143,9 @@ class TraciBridge:
         self.lane_commands: Dict[str, int] = {}
         self.speed_mode_commands: Dict[str, int] = {}
         self.initial_speed_mode = int(env("TRACI_DEFAULT_SPEED_MODE", "-1"))
+        self.initial_lane_change_mode = int(env("TRACI_DEFAULT_LANE_CHANGE_MODE", "-1"))
         self.initial_speed_mode_applied: set[str] = set()
+        self.initial_lane_change_mode_applied: set[str] = set()
         self.lane_command_state: Dict[str, Dict[str, float]] = {}
         self.fsm_status: Dict[str, Dict[str, Any]] = {}
         self.polygon_ids: set[str] = set()
@@ -205,6 +210,7 @@ class TraciBridge:
         self.brake_light_ids.clear()
         self.previous_speeds.clear()
         self.initial_speed_mode_applied.clear()
+        self.initial_lane_change_mode_applied.clear()
 
     def _configure_gui(self) -> None:
         if not self.sumo_gui:
@@ -258,12 +264,14 @@ class TraciBridge:
         except traci.TraCIException:
             pass
 
-    def _publish_sensor(self, vehicle_id: str, x: float, y: float, speed: float, lane_id: str) -> None:
+    def _publish_sensor(self, vehicle_id: str, x: float, y: float, speed: float, lane_id: str, heading: float) -> None:
         payload = {
             "x": x,
             "y": y,
             "speed": speed,
+            "heading": heading,
             "lane_id": lane_id,
+            "time": traci.simulation.getTime(),
             "timestamp": time.time(),
         }
         topic = self.sensor_topic_fmt.format(vehicle_id=vehicle_id)
@@ -272,9 +280,12 @@ class TraciBridge:
     def _apply_actuators(self, vehicle_id: str) -> None:
         if self.initial_speed_mode >= 0 and vehicle_id not in self.initial_speed_mode_applied:
             traci.vehicle.setSpeedMode(vehicle_id, self.initial_speed_mode)
-            traci.vehicle.setEmergencyDecel(vehicle_id, 9.0)
-            traci.vehicle.setDecel(vehicle_id, 9.0) # Allow OBU to command up to 9.0 m/s^2
+            traci.vehicle.setEmergencyDecel(vehicle_id, self.vehicle_emergency_decel)
+            traci.vehicle.setDecel(vehicle_id, self.vehicle_decel)
             self.initial_speed_mode_applied.add(vehicle_id)
+        if self.initial_lane_change_mode >= 0 and vehicle_id not in self.initial_lane_change_mode_applied:
+            traci.vehicle.setLaneChangeMode(vehicle_id, self.initial_lane_change_mode)
+            self.initial_lane_change_mode_applied.add(vehicle_id)
         if vehicle_id in self.speed_commands:
             target_speed = self.speed_commands[vehicle_id]
             # Determine the effective speed_mode for this vehicle.
@@ -763,9 +774,10 @@ class TraciBridge:
                 x, y = traci.vehicle.getPosition(vehicle_id)
                 speed = traci.vehicle.getSpeed(vehicle_id)
                 lane_id = traci.vehicle.getLaneID(vehicle_id)
+                heading = traci.vehicle.getAngle(vehicle_id)
             except traci.TraCIException:
                 continue
-            self._publish_sensor(vehicle_id, x, y, speed, lane_id)
+            self._publish_sensor(vehicle_id, x, y, speed, lane_id, heading)
             self._apply_actuators(vehicle_id)
         self._update_gui(list(vehicle_ids))
 
@@ -785,6 +797,14 @@ class TraciBridge:
                         continue
                     break
                 if traci.simulation.getMinExpectedNumber() == 0:
+                    if self.loop_sim:
+                        traci.close()
+                        if self.loop_pause_s > 0:
+                            time.sleep(self.loop_pause_s)
+                        self.start_sumo()
+                        continue
+                    break
+                if self.sumo_end_s is not None and traci.simulation.getTime() >= self.sumo_end_s:
                     if self.loop_sim:
                         traci.close()
                         if self.loop_pause_s > 0:
