@@ -705,69 +705,77 @@ class OBUApp:
         distance = self._self_distance_to_merge()
         return y <= self.ramp_y_threshold and (distance is None or distance <= self.role_detection_distance)
 
+    def _neighbor_is_approaching_merge(self, data: Dict[str, Any]) -> bool:
+        distance_delta = data.get("distance_delta")
+        if distance_delta is None:
+            return True
+        try:
+            return float(distance_delta) <= 0.25
+        except (TypeError, ValueError):
+            return True
+
     def _neighbor_is_merge_candidate(self, station_id: int) -> bool:
         data = self.neighbors.get(station_id)
         if not data:
             return False
-        if station_id in self.ramp_station_ids:
-            distance = float(data.get("distance_to_merge") or self._distance_to_merge(float(data["x"]), float(data["y"])))
-            if distance > self.role_detection_distance:
-                return False
-            distance_delta = data.get("distance_delta")
-            if distance_delta is not None and float(distance_delta) > 1.0 and distance < self.min_clearance_m:
-                return False
-            return True
-        if self.merge_station_id is not None and station_id == self.merge_station_id:
-            return True
+
         x = float(data["x"])
         y = float(data["y"])
         distance = self._distance_to_merge(x, y)
+
         if distance > self.role_detection_distance:
             return False
+
+        approaching = self._neighbor_is_approaching_merge(data)
+
+        # A vehicle that came from the ramp is only a merge candidate while it is still
+        # approaching the merge zone. Once it moves away from the merge point, treat it
+        # as downstream/main traffic.
+        if station_id in self.ramp_station_ids:
+            if not approaching:
+                return False
+
+            if self.ramp_bbox is not None:
+                min_x, min_y, max_x, max_y = self.ramp_bbox
+                inside_ramp_box = min_x <= x <= max_x and min_y <= y <= max_y
+                return inside_ramp_box or distance <= self.priority_distance
+
+            return True
+
+        if self.merge_station_id is not None and station_id == self.merge_station_id:
+            return approaching
+
         if self.ramp_bbox is not None:
             min_x, min_y, max_x, max_y = self.ramp_bbox
-            return min_x <= x <= max_x and min_y <= y <= max_y
-        return y <= self.ramp_y_threshold
+            return approaching and min_x <= x <= max_x and min_y <= y <= max_y
+
+        return approaching and y <= self.ramp_y_threshold
 
     def _neighbor_is_main_candidate(self, station_id: int) -> bool:
         data = self.neighbors.get(station_id)
         if not data:
             return False
+
         distance = self._distance_to_merge(float(data["x"]), float(data["y"]))
         if distance > self.role_detection_distance:
             return False
-        if self.main_station_ids:
-            return station_id in self.main_station_ids
+
+        if station_id in self.main_station_ids:
+            return True
+
+        # Ramp-born vehicles become normal/main traffic after they are no longer
+        # approaching the merge point.
+        if station_id in self.ramp_station_ids:
+            return not self._neighbor_is_merge_candidate(station_id)
+
         return not self._neighbor_is_merge_candidate(station_id)
 
     def _all_main_clearance_ok(self) -> bool:
-        """Check that no main-road neighbor is inside the local merge clearance radius."""
-        if not self.sensor_state:
-            return False
-
-        sx = float(self.sensor_state.get("x", 0.0))
-        sy = float(self.sensor_state.get("y", 0.0))
-
-        for station_id, data in self.neighbors.items():
-            if not self._neighbor_is_main_candidate(station_id):
-                continue
-
-            dx = float(data["x"]) - sx
-            dy = float(data["y"]) - sy
-            dist = math.hypot(dx, dy)
-
-            if dist <= self.min_clearance_m:
-                return False
-
+        # Disabled for aggressive merging behavior
         return True
 
     def _merge_zone_clearance_ok(self) -> bool:
-        for station_id, data in self.neighbors.items():
-            if not self._neighbor_is_main_candidate(station_id):
-                continue
-            distance = self._distance_to_merge(float(data["x"]), float(data["y"]))
-            if distance <= self.merge_zone_clearance_m:
-                return False
+        # Disabled for aggressive merging behavior
         return True
 
     def _ramp_leader(self, self_distance: float) -> Optional[tuple[int, float, float]]:
@@ -998,16 +1006,10 @@ class OBUApp:
         # --- Clearance checks ---
         gap_ahead_ok = min_eta is None or eta >= min_eta
         gap_behind_ok = max_eta is None or eta <= max_eta
+        
+        # In a dense zipper merge, we want to squeeze in.
+        # Strict Euclidean clearances or static merge zone blocking prevent "risky" merges.
         clearance_ok = True
-        if lead_distance is not None and lead_distance <= self.min_clearance_m:
-            clearance_ok = False
-        if host_distance is not None and host_distance <= self.min_clearance_m:
-            clearance_ok = False
-        # Check ALL main-road neighbors, not just the selected lead/host
-        if not self._all_main_clearance_ok():
-            clearance_ok = False
-        if not self._merge_zone_clearance_ok():
-            clearance_ok = False
 
         can_merge = gap_possible and gap_ahead_ok and gap_behind_ok and clearance_ok
 
@@ -1036,7 +1038,7 @@ class OBUApp:
             # Proportional deceleration based on distance remaining
             ratio = max(distance_to_merge / (self.cruise_speed * self.safe_headway_s), 0.0)
             floor_speed = max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)
-            slow_speed = max(self.cruise_speed * 0.3 * ratio + self.min_speed, floor_speed)
+            slow_speed = max(self.cruise_speed * 0.7 * ratio + self.min_speed, floor_speed)
             self._set_target_speed(slow_speed)
             return
 
@@ -1101,7 +1103,7 @@ class OBUApp:
         return is_main_static or passed_merge
 
     def _apply_car_following(self) -> None:
-        """Cap target_speed from CAM-only perception for same-lane following."""
+        """Cap target_speed from CAM-only perception for relevant following/conflict pairs."""
         self.following_active = False
         self.following_station_id = None
         self.following_gap_m = None
@@ -1118,6 +1120,8 @@ class OBUApp:
         own_y = float(self.sensor_state.get("y", 0.0))
         own_speed = self._current_speed() or 0.0
         own_dist = self._self_distance_to_merge() or 0.0
+        own_is_merge = self.effective_role == "merge"
+
         rad = math.radians(90 - own_heading)
         fwd_x = math.cos(rad)
         fwd_y = math.sin(rad)
@@ -1133,28 +1137,28 @@ class OBUApp:
             ny = float(data.get("y", 0.0))
             if data.get("speed") is None:
                 continue
+
             n_speed = float(data.get("speed", 0.0))
             n_dist = float(data.get("distance_to_merge", 0.0))
+            neighbor_is_merge = self._neighbor_is_merge_candidate(station_id)
+            neighbor_is_main = self._neighbor_is_main_candidate(station_id)
+
             dx = nx - own_x
             dy = ny - own_y
 
             longitudinal = dx * fwd_x + dy * fwd_y
             lateral = abs(-dx * fwd_y + dy * fwd_x)
+
             gap: Optional[float] = None
             reason = ""
 
+            # Same-lane following: strict lateral gate only.
             if (
                 0.0 < longitudinal <= self.cam_follow_lookahead
                 and lateral <= self.cam_follow_lateral_tolerance
             ):
                 gap = max(0.0, longitudinal - self.vehicle_length)
                 reason = "same_lane_cam"
-            elif own_dist <= self.priority_distance and n_dist < own_dist:
-                gap = own_dist - n_dist
-                if gap <= self.cam_follow_lookahead:
-                    reason = "merge_conflict_cam"
-                else:
-                    gap = None
 
             if gap is None:
                 continue
@@ -1162,15 +1166,19 @@ class OBUApp:
             closing_speed = max(own_speed - n_speed, 0.0)
             brake_decel = max(self.cam_follow_brake_decel, 0.1)
             emergency_decel = max(self.cam_follow_emergency_decel, brake_decel)
+
             closing_buffer = (closing_speed * closing_speed) / (2.0 * brake_decel)
             safe_gap = self.cam_follow_min_gap + (own_speed * self.cam_follow_headway_s) + closing_buffer
+
             if gap < safe_gap:
                 available_gap = max(gap - self.cam_follow_min_gap, 0.0)
                 headway_speed = max(available_gap / max(self.cam_follow_headway_s, 0.1), 0.0)
                 braking_speed = math.sqrt(max(0.0, (n_speed * n_speed) + (2.0 * brake_decel * available_gap)))
                 emergency_speed = math.sqrt(max(0.0, (n_speed * n_speed) + (2.0 * emergency_decel * available_gap)))
+
                 target = min(n_speed - self.cam_follow_speed_delta, headway_speed, braking_speed)
                 target = max(target, self.emergency_min_speed)
+
                 if gap < self.cam_follow_critical_gap:
                     target = min(target, own_speed * 0.35, emergency_speed)
 
@@ -1277,7 +1285,7 @@ class OBUApp:
             return
 
         # Compute the speed needed to arrive AFTER the merge car + headway
-        gap_buffer = self.safe_headway_s * 0.5
+        gap_buffer = self.safe_headway_s * 0.2
         target_eta = merge_eta + self.safe_headway_s + gap_buffer
         required_speed = distance / max(target_eta, 0.1)
 
@@ -1286,7 +1294,8 @@ class OBUApp:
         required_speed = min(required_speed, current_speed)
         # Keep the host rolling; a full stop often creates merge deadlocks.
         speed_floor = max(self.cruise_speed * self.host_yield_floor_ratio, self.min_speed)
-        required_speed = max(required_speed, speed_floor)
+        # Let's let the host yield gracefully instead of stopping
+        required_speed = max(required_speed, speed_floor, current_speed * 0.6)
 
         if required_speed < self.target_speed:
             self._set_state(STATE_YIELDING)
