@@ -183,8 +183,8 @@ class OBUApp:
         self.priority_merge = env("MERGE_PRIORITY", "true").lower() == "true"
         merge_station_id = int(env("MERGE_STATION_ID", "0"))
         self.merge_station_id = merge_station_id if merge_station_id > 0 else None
-        self.default_speed_mode = int(env("DEFAULT_SPEED_MODE", "31"))
-        self.priority_speed_mode = int(env("PRIORITY_SPEED_MODE", "31"))
+        self.default_speed_mode = int(env("DEFAULT_SPEED_MODE", "0"))
+        self.priority_speed_mode = int(env("PRIORITY_SPEED_MODE", "0"))
         self.priority_distance = float(env("PRIORITY_DISTANCE", "40.0"))
 
         self.cam_period_s = int(env("CAM_PERIOD_MS", "100")) / 1000.0
@@ -203,18 +203,17 @@ class OBUApp:
         self.neighbor_timeout_s = float(env("NEIGHBOR_TIMEOUT_S", "1.0"))
         self.yield_speed_delta = float(env("YIELD_SPEED_DELTA", "3.0"))
         self.abort_speed = float(env("ABORT_SPEED", "2.0"))
+        self.abort_cooldown_s = float(env("ABORT_COOLDOWN_S", "3.0"))
         self.min_speed = float(env("MIN_SPEED", "0.5"))
         self.min_clearance_m = float(env("MIN_CLEARANCE_M", "8.0"))
         self.max_speed_step_up = float(env("MAX_SPEED_STEP_UP", "2.5"))
-        self.max_speed_step_down = float(env("MAX_SPEED_STEP_DOWN", "2.0"))
-        self.merge_yield_floor_ratio = float(env("MERGE_YIELD_FLOOR_RATIO", "0.55"))
-        self.host_yield_floor_ratio = float(env("HOST_YIELD_FLOOR_RATIO", "0.55"))
+        self.max_speed_step_down = float(env("MAX_SPEED_STEP_DOWN", "0.45"))
+        self.merge_yield_floor_ratio = float(env("MERGE_YIELD_FLOOR_RATIO", "0.2"))
+        self.host_yield_floor_ratio = float(env("HOST_YIELD_FLOOR_RATIO", "0.2"))
+        self.host_reject_distance_m = float(env("HOST_REJECT_DISTANCE_M", "20.0"))
         self.ramp_platoon_headway_s = float(env("RAMP_PLATOON_HEADWAY_S", "1.4"))
         self.ramp_platoon_min_gap = float(env("RAMP_PLATOON_MIN_GAP", "14.0"))
         self.ramp_platoon_speed_delta = float(env("RAMP_PLATOON_SPEED_DELTA", "0.8"))
-        self.merge_commit_distance = float(env("MERGE_COMMIT_DISTANCE", "45.0"))
-        self.merge_commit_min_speed = float(env("MERGE_COMMIT_MIN_SPEED", "8.0"))
-        self.merge_commit_clearance_ratio = float(env("MERGE_COMMIT_CLEARANCE_RATIO", "0.75"))
         self.ramp_edge_ids = parse_csv(env("RAMP_EDGE_IDS", "ramp_in"))
         self.main_edge_ids = parse_csv(env("MAIN_EDGE_IDS", "main_in,main_out"))
         self.ramp_station_ids = {int(item) for item in parse_csv(env("RAMP_STATION_IDS", "")) if item.isdigit()}
@@ -272,7 +271,7 @@ class OBUApp:
         self.target_speed_mode: int = self.default_speed_mode
 
         self.fsm_state = STATE_CRUISE
-        self.fsm_state_since = time.time()
+        self.fsm_state_since = self._sim_time()
         self.effective_role = self.role
 
     def connect(self) -> None:
@@ -307,12 +306,15 @@ class OBUApp:
     def _set_state(self, state: str) -> None:
         if self.fsm_state != state:
             self.fsm_state = state
-            self.fsm_state_since = time.time()
+            self.fsm_state_since = self._sim_time()
 
     def _current_speed(self) -> Optional[float]:
         if not self.sensor_state:
             return None
         return float(self.sensor_state.get("speed", 0.0))
+
+    def _sim_time(self) -> float:
+        return float(self.sensor_state.get("time", 0.0)) if self.sensor_state else 0.0
 
     def _base_cruise_speed(self) -> float:
         if self.effective_role == "merge":
@@ -356,7 +358,7 @@ class OBUApp:
         self.target_speed = target
 
     def _prune_neighbors(self) -> None:
-        now = time.time()
+        now = self._sim_time()
         stale = [sid for sid, data in self.neighbors.items() if now - data.get("timestamp", 0) > self.neighbor_timeout_s]
         for sid in stale:
             self.neighbors.pop(sid, None)
@@ -400,7 +402,7 @@ class OBUApp:
             "heading": heading,
             "distance_to_merge": distance_to_merge,
             "distance_delta": distance_delta,
-            "timestamp": time.time(),
+            "timestamp": self._sim_time(),
         }
 
     def _handle_mcm(self, payload: Dict[str, Any]) -> None:
@@ -424,7 +426,7 @@ class OBUApp:
         self.mcm_messages[station_id] = {
             "action": action,
             "manoeuvre_id": manoeuvre_id,
-            "timestamp": time.time(),
+            "timestamp": self._sim_time(),
         }
 
     def _estimate_heading(self, x: float, y: float) -> Optional[float]:
@@ -548,7 +550,7 @@ class OBUApp:
         self.denm_seq += 1
         action_id["originatingStationId"] = self.station_id
         action_id["sequenceNumber"] = self.denm_seq
-        now = time.time()
+        now = self._sim_time()
         management["referenceTime"] = now
         management["detectionTime"] = now
         management["stationType"] = self.station_type
@@ -566,15 +568,15 @@ class OBUApp:
                 return
             self.target_speed = float(self.sensor_state.get("speed", 0.0))
 
-        payload = {"target_speed": float(self.target_speed), "timestamp": time.time()}
+        payload = {"target_speed": float(self.target_speed), "timestamp": self._sim_time()}
         self._publish_json(self.actuator_speed_topic, payload)
 
         if self.target_lane_index is not None:
-            lane_payload = {"target_lane_index": int(self.target_lane_index), "timestamp": time.time()}
+            lane_payload = {"target_lane_index": int(self.target_lane_index), "timestamp": self._sim_time()}
             self._publish_json(self.actuator_lane_topic, lane_payload)
 
         if self.target_speed_mode is not None:
-            mode_payload = {"speed_mode": int(self.target_speed_mode), "timestamp": time.time()}
+            mode_payload = {"speed_mode": int(self.target_speed_mode), "timestamp": self._sim_time()}
             self._publish_json(self.actuator_speed_mode_topic, mode_payload)
 
     def _publish_status(self) -> None:
@@ -587,7 +589,7 @@ class OBUApp:
             "role_mode": self.role_mode,
             "effective_role": self.effective_role,
             "fsm_state": self.fsm_state,
-            "fsm_state_age_s": time.time() - self.fsm_state_since,
+            "fsm_state_age_s": self._sim_time() - self.fsm_state_since,
             "distance_to_merge_m": distance,
             "merge_eta_s": eta,
             "neighbor_count": len(self.neighbors),
@@ -595,7 +597,7 @@ class OBUApp:
             "target_lane_index": self.target_lane_index,
             "target_speed_mode": self.target_speed_mode,
             "pending_request": self.pending_request is not None,
-            "timestamp": time.time(),
+            "timestamp": self._sim_time(),
         }
         if self.sensor_state:
             payload["lane_id"] = self.sensor_state.get("lane_id")
@@ -691,6 +693,20 @@ class OBUApp:
             return station_id in self.main_station_ids
         return not self._neighbor_is_merge_candidate(station_id)
 
+    def _all_main_clearance_ok(self) -> bool:
+        """Check that NO neighbor is within MIN_CLEARANCE_M of us."""
+        if not self.sensor_state:
+            return False
+        sx = float(self.sensor_state.get("x", 0.0))
+        sy = float(self.sensor_state.get("y", 0.0))
+        for station_id, data in self.neighbors.items():
+            dx = float(data["x"]) - sx
+            dy = float(data["y"]) - sy
+            dist = math.hypot(dx, dy)
+            if dist <= self.min_clearance_m:
+                return False
+        return True
+
     def _ramp_leader(self, self_distance: float) -> Optional[tuple[int, float, float]]:
         leaders: list[tuple[float, int, float]] = []
         for station_id, data in self.neighbors.items():
@@ -758,7 +774,7 @@ class OBUApp:
             return
         payload = self._build_mcm(action, manoeuvre_id)
         self._publish_json(self.mcm_in_topic, payload)
-        self.last_mcm_sent = time.time()
+        self.last_mcm_sent = self._sim_time()
 
     def _send_denm(self) -> None:
         if not self.enable_denm:
@@ -767,7 +783,7 @@ class OBUApp:
         self._publish_json(self.denm_in_topic, payload)
 
     def step(self) -> None:
-        now = time.time()
+        now = self._sim_time()
         if now - self.last_cam_sent >= self.cam_period_s:
             cam_payload = self._build_cam()
             self._publish_json(self.cam_in_topic, cam_payload)
@@ -810,6 +826,7 @@ class OBUApp:
             self._fsm_host()
         elif self.effective_role == "lead":
             self._fsm_lead()
+        self._apply_car_following()
 
     def _fsm_merge(self) -> None:
         eta = self._merge_eta()
@@ -849,6 +866,15 @@ class OBUApp:
                 self.target_lane_index = None
                 self.target_speed_mode = self.default_speed_mode
                 return
+
+        # --- ABORT cooldown: wait before retrying negotiation ---
+        if self.fsm_state == STATE_ABORT:
+            abort_age = self._sim_time() - self.fsm_state_since
+            if abort_age < self.abort_cooldown_s:
+                self._set_target_speed(max(self.abort_speed, self.min_speed))
+                return
+            # Cooldown expired — allow re-evaluation
+            self._set_state(STATE_CRUISE)
 
         # --- Identify neighbors by ETA to merge point ---
         lead_id = self._select_lead_candidate(eta)
@@ -910,23 +936,14 @@ class OBUApp:
             clearance_ok = False
         if host_distance is not None and host_distance <= self.min_clearance_m:
             clearance_ok = False
-        # NOTE: no lead car visible = road is clear ahead (removed inverted check)
+        # Check ALL main-road neighbors, not just the selected lead/host
+        if not self._all_main_clearance_ok():
+            clearance_ok = False
 
         can_merge = gap_possible and gap_ahead_ok and gap_behind_ok and clearance_ok
 
-        critical_clearance = max(self.min_clearance_m * self.merge_commit_clearance_ratio, 1.0)
-        lead_critical_clear = lead_distance is None or lead_distance > critical_clearance
-        host_critical_clear = host_distance is None or host_distance > critical_clearance
-        can_commit = (
-            self.priority_merge
-            and distance_to_merge <= self.merge_commit_distance
-            and lead_critical_clear
-            and host_critical_clear
-        )
-
         # --- Set priority speed mode when approaching merge zone ---
-        # Enable earlier and more aggressively so SUMO doesn't block acceleration
-        if self.priority_merge and distance_to_merge <= self.priority_distance:
+        if distance_to_merge <= self.priority_distance:
             self.target_speed_mode = self.priority_speed_mode
 
         # --- Far from merge point: just cruise ---
@@ -935,16 +952,7 @@ class OBUApp:
                 self._set_state(STATE_CRUISE)
             return
 
-        if can_commit and not can_merge:
-            self._set_state(STATE_MERGING)
-            commit_speed = max(self.merge_commit_min_speed, self.cruise_speed + self.merge_speed_bonus)
-            self._set_target_speed(commit_speed)
-            self.target_lane_index = self.merge_lane_index
-            self.target_speed_mode = self.priority_speed_mode
-            self.pending_request = None
-            return
-
-        # --- Close but can't merge: graduated slowdown, not hard stop ---
+        # --- Close but can't merge: graduated slowdown ---
         if not can_merge and distance_to_merge <= self.cruise_speed * self.safe_headway_s:
             self._set_state(STATE_YIELDING)
             # Proportional deceleration based on distance remaining
@@ -952,9 +960,6 @@ class OBUApp:
             floor_speed = max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)
             slow_speed = max(self.cruise_speed * 0.3 * ratio + self.min_speed, floor_speed)
             self._set_target_speed(slow_speed)
-            # Keep priority speed mode so we can accelerate away quickly
-            if self.priority_merge:
-                self.target_speed_mode = self.priority_speed_mode
             return
 
         # --- MCM Negotiation with host ---
@@ -965,40 +970,36 @@ class OBUApp:
                 self.pending_request = {
                     "host_id": host_id,
                     "manoeuvre_id": manoeuvre_id,
-                    "timestamp": time.time(),
+                    "timestamp": self._sim_time(),
                 }
                 self._send_mcm(MCM_ACTION_REQUEST, manoeuvre_id)
                 self._set_state(STATE_NEGOTIATING)
-            elif time.time() - self.last_mcm_sent >= self.request_retry_s:
+            elif self._sim_time() - self.last_mcm_sent >= self.request_retry_s:
                 self._send_mcm(MCM_ACTION_REQUEST, self.pending_request["manoeuvre_id"])
 
             response = self.mcm_messages.get(host_id)
             if response is not None and self.pending_request is not None:
-                # Accept response if manoeuvre_id matches OR if priority merge
                 mid_match = response.get("manoeuvre_id") == self.pending_request.get("manoeuvre_id")
-                if mid_match or self.priority_merge:
+                if mid_match:
                     response_action = response.get("action")
                     if response_action == MCM_ACTION_ACCEPT:
                         self.pending_request = None
-                    elif response_action == MCM_ACTION_REJECT and not self.priority_merge:
+                    elif response_action == MCM_ACTION_REJECT:
                         self._set_state(STATE_ABORT)
                         self._set_target_speed(max(self.abort_speed, self.min_speed))
                         self._send_denm()
                         self.pending_request = None
                         return
 
-            if self.pending_request and time.time() - self.pending_request["timestamp"] > self.negotiation_timeout_s:
-                if not self.priority_merge:
-                    self._set_state(STATE_ABORT)
-                    self._set_target_speed(max(self.abort_speed, self.min_speed))
-                    self._send_denm()
-                    self.pending_request = None
-                    return
-                # Priority merge: proceed without response
+            if self.pending_request and self._sim_time() - self.pending_request["timestamp"] > self.negotiation_timeout_s:
+                self._set_state(STATE_ABORT)
+                self._set_target_speed(max(self.abort_speed, self.min_speed))
+                self._send_denm()
                 self.pending_request = None
+                return
 
-        # --- Execute merge or continue negotiating ---
-        allowed_by_mcm = self.priority_merge or host_id is None or response_action == MCM_ACTION_ACCEPT
+        # --- Execute merge ONLY when gap is safe AND host accepted ---
+        allowed_by_mcm = host_id is None or response_action == MCM_ACTION_ACCEPT
         if can_merge and allowed_by_mcm:
             self._set_state(STATE_MERGING)
             merge_target_speed = self.cruise_speed + 2.0 * self.merge_speed_bonus
@@ -1008,8 +1009,83 @@ class OBUApp:
         elif not can_merge:
             self._set_state(STATE_NEGOTIATING if host_id is not None else STATE_YIELDING)
 
+
+    def _is_on_main_road(self, station_id: int, x: float, y: float, heading: float) -> bool:
+        """Determine if a vehicle is currently on the main road."""
+        is_main_static = station_id in self.main_station_ids
+        
+        # Heading-based check for vehicles past the merge point
+        dx = x - self.merge_point_x
+        dy = y - self.merge_point_y
+        rad = math.radians(90 - heading)
+        passed_merge = (dx * math.cos(rad) + dy * math.sin(rad)) > 0
+        
+        return is_main_static or passed_merge
+
+    def _apply_car_following(self) -> None:
+        """Cap target_speed to maintain safe following distance from any vehicle ahead."""
+        if not self.sensor_state:
+            return
+            
+        own_x = float(self.sensor_state.get("x", 0.0))
+        own_y = float(self.sensor_state.get("y", 0.0))
+        own_speed = self._current_speed() or 0.0
+        own_dist = self._self_distance_to_merge() or 0.0
+        own_heading = self.last_heading or 0.0
+        own_on_main = self._is_on_main_road(self.station_id, own_x, own_y, own_heading)
+        
+        # Direction vector for "ahead" check
+        rad = math.radians(90 - own_heading)
+        fwd_x = math.cos(rad)
+        fwd_y = math.sin(rad)
+        
+        min_follow_speed = None
+        is_emergency = False
+        
+        for station_id, data in self.neighbors.items():
+            nx = float(data.get("x", 0.0))
+            ny = float(data.get("y", 0.0))
+            n_speed = float(data.get("speed", 0.0))
+            n_dist = float(data.get("distance_to_merge", 0.0))
+            n_heading = float(data.get("heading", 0.0))
+            n_on_main = self._is_on_main_road(station_id, nx, ny, n_heading)
+            
+            dx = nx - own_x
+            dy = ny - own_y
+            
+            gap = None
+            if own_on_main == n_on_main:
+                # Same road -> use heading dot-product
+                dot = dx * fwd_x + dy * fwd_y
+                if dot <= 0: continue
+                gap = math.hypot(dx, dy)
+            else:
+                # Different roads -> use distance to merge
+                # Someone is "ahead" if they are closer to the merge point than us
+                if n_dist >= own_dist: continue
+                gap = own_dist - n_dist
+
+            if gap is None: continue
+            
+            # Center-to-center distance fix: subtract vehicle lengths (approx 5m)
+            # We use a 10m minimum gap for center-to-center measurements
+            safe_gap = 10.0 + own_speed * 1.2
+            if gap < safe_gap:
+                # Calculate speed needed to maintain gap
+                target = n_speed
+                if gap < 6.0: # Critical gap
+                    target = min(target, own_speed * 0.5)
+                
+                if min_follow_speed is None or target < min_follow_speed:
+                    min_follow_speed = target
+                    if (own_speed - target) > 2.0:
+                        is_emergency = True
+
+        if min_follow_speed is not None:
+            self._set_target_speed(min_follow_speed, emergency=is_emergency)
+
     def _latest_request(self) -> Optional[Dict[str, Any]]:
-        now = time.time()
+        now = self._sim_time()
         merge_id = self._merge_candidate_id()
         if merge_id is not None:
             merge_eta = self._neighbor_eta(merge_id)
@@ -1080,6 +1156,16 @@ class OBUApp:
         if distance is None:
             return
 
+        # --- Check if yielding is safe; REJECT if not ---
+        # If the host is too close to the merge point it cannot slow down in time
+        if distance <= self.host_reject_distance_m:
+            last_sent = self.last_mcm_response.get(req_station_id, 0)
+            if self._sim_time() - last_sent >= self.response_period_s:
+                self._send_mcm(MCM_ACTION_REJECT, req_manoeuvre_id)
+                self.last_mcm_response[req_station_id] = self._sim_time()
+            self._set_state(STATE_CRUISE)
+            return
+
         # Compute the speed needed to arrive AFTER the merge car + headway
         gap_buffer = self.safe_headway_s * 0.5
         target_eta = merge_eta + self.safe_headway_s + gap_buffer
@@ -1087,26 +1173,22 @@ class OBUApp:
 
         # Proportional yield — don't drop too far below cruise
         current_speed = self._current_speed() or self.cruise_speed
-        if self.priority_merge:
-            # Hard yield: merge car has priority
-            yield_floor = max(self.cruise_speed - self.yield_speed_delta, self.min_speed)
-            required_speed = min(required_speed, yield_floor)
         required_speed = min(required_speed, current_speed)
         # Keep the host rolling; a full stop often creates merge deadlocks.
         speed_floor = max(self.cruise_speed * self.host_yield_floor_ratio, self.min_speed)
         required_speed = max(required_speed, speed_floor)
 
-        if required_speed < self.target_speed or self.priority_merge:
+        if required_speed < self.target_speed:
             self._set_state(STATE_YIELDING)
             self._set_target_speed(required_speed)
         else:
             self._set_state(STATE_CRUISE)
 
-        # Send MCM ACCEPT with the CORRECT manoeuvre_id
+        # Send MCM ACCEPT — we can yield safely
         last_sent = self.last_mcm_response.get(req_station_id, 0)
-        if time.time() - last_sent >= self.response_period_s:
+        if self._sim_time() - last_sent >= self.response_period_s:
             self._send_mcm(MCM_ACTION_ACCEPT, req_manoeuvre_id)
-            self.last_mcm_response[req_station_id] = time.time()
+            self.last_mcm_response[req_station_id] = self._sim_time()
 
     def _fsm_lead(self) -> None:
         merge_id = self._merge_candidate_id()

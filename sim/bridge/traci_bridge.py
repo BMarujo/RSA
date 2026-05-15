@@ -272,13 +272,19 @@ class TraciBridge:
     def _apply_actuators(self, vehicle_id: str) -> None:
         if self.initial_speed_mode >= 0 and vehicle_id not in self.initial_speed_mode_applied:
             traci.vehicle.setSpeedMode(vehicle_id, self.initial_speed_mode)
+            traci.vehicle.setEmergencyDecel(vehicle_id, 9.0)
+            traci.vehicle.setDecel(vehicle_id, 9.0) # Allow OBU to command up to 9.0 m/s^2
             self.initial_speed_mode_applied.add(vehicle_id)
         if vehicle_id in self.speed_commands:
             target_speed = self.speed_commands[vehicle_id]
-            if self.speed_command_duration_s > 0:
-                traci.vehicle.slowDown(vehicle_id, target_speed, self.speed_command_duration_s)
-            else:
+            # Determine the effective speed_mode for this vehicle.
+            effective_sm = self.speed_mode_commands.get(vehicle_id, self.initial_speed_mode)
+            if effective_sm == 0 or self.speed_command_duration_s <= 0:
+                # Full TraCI control — set speed directly so SUMO's
+                # car-following model cannot interfere.
                 traci.vehicle.setSpeed(vehicle_id, target_speed)
+            else:
+                traci.vehicle.slowDown(vehicle_id, target_speed, self.speed_command_duration_s)
         if vehicle_id in self.lane_commands:
             target_lane = self.lane_commands[vehicle_id]
             lane_id = traci.vehicle.getLaneID(vehicle_id)
