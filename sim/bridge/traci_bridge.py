@@ -308,7 +308,12 @@ class TraciBridge:
                 and int(last.get("target_lane", -1)) == target_lane
                 and now - last.get("timestamp", 0.0) < self.lane_change_cooldown_s
             )
-            if (
+            if current_lane is not None and current_lane == target_lane:
+                # Vehicle has reached the target lane — clear stale command
+                # so SUMO can manage lane changes naturally from here on.
+                self.lane_commands.pop(vehicle_id, None)
+                self.lane_command_state.pop(vehicle_id, None)
+            elif (
                 current_lane is not None
                 and current_lane != target_lane
                 and target_lane < traci.edge.getLaneNumber(edge_id)

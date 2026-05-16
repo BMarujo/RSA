@@ -803,7 +803,7 @@ class OBUApp:
         if distance_delta is None:
             return True
         try:
-            return float(distance_delta) <= 0.25
+            return float(distance_delta) <= 0.0
         except (TypeError, ValueError):
             return True
 
@@ -818,6 +818,15 @@ class OBUApp:
 
         if distance > self.role_detection_distance:
             return False
+
+        # A neighbor clearly moving away from the merge point is never a candidate.
+        distance_delta = data.get("distance_delta")
+        if distance_delta is not None:
+            try:
+                if float(distance_delta) > 0.5:
+                    return False
+            except (TypeError, ValueError):
+                pass
 
         approaching = self._neighbor_is_approaching_merge(data)
 

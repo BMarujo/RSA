@@ -50,15 +50,15 @@ case "$VANETZA_SCENARIO" in
         default_env MERGE_SPEED_BONUS "0.4"
         default_env LEAD_SPEED_BONUS "0.0"
 
-        default_env DEFAULT_SPEED_MODE "0"
-        default_env PRIORITY_SPEED_MODE "0"
-        default_env TRACI_DEFAULT_SPEED_MODE "0"
-        default_env TRACI_DEFAULT_LANE_CHANGE_MODE "0"
-        default_env COLLISION_GUARD "false"
+        default_env DEFAULT_SPEED_MODE "31"
+        default_env PRIORITY_SPEED_MODE "31"
+        default_env TRACI_DEFAULT_SPEED_MODE "31"
+        default_env TRACI_DEFAULT_LANE_CHANGE_MODE "1621"
+        default_env COLLISION_GUARD "true"
 
-        default_env TRACI_VEHICLE_DECEL "50.0"
-        default_env TRACI_VEHICLE_EMERGENCY_DECEL "50.0"
-        default_env SUMO_EXTRA_ARGS "--collision.action warn --collision.check-junctions true --emergencydecel.warning-threshold 100.0"
+        default_env TRACI_VEHICLE_DECEL "4.5"
+        default_env TRACI_VEHICLE_EMERGENCY_DECEL "9.0"
+        default_env SUMO_EXTRA_ARGS "--collision.action warn --collision.check-junctions true --emergencydecel.warning-threshold 5.0"
 
         default_env MIN_SPEED "0.0"
         default_env EMERGENCY_MIN_SPEED "0.0"
