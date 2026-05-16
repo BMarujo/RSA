@@ -261,6 +261,10 @@ class OBUApp:
         self.ramp_station_ids = {int(item) for item in parse_csv(env("RAMP_STATION_IDS", "")) if item.isdigit()}
         self.is_ramp_vehicle = self.station_id in self.ramp_station_ids
         self.merge_completed = False
+        self.merge_completed_since = 0.0
+        self.past_merge_point = False
+        self.min_distance_to_merge_seen = float("inf")
+        self.post_merge_lock_s = float(env("POST_MERGE_LOCK_S", "3.0"))
         self.merge_committed = False
         self.merge_committed_since = 0.0
         self.merge_commit_timeout_s = float(env("MERGE_COMMIT_TIMEOUT_S", "8.0"))
@@ -273,6 +277,10 @@ class OBUApp:
         self.desired_speed = env("DESIRED_SPEED", "")
         self.host_clear_lane_index = int(env("HOST_CLEAR_LANE_INDEX", "1"))
         self.host_cooperative_lane_change = env("HOST_COOPERATIVE_LANE_CHANGE", "true").lower() == "true"
+        self.host_clear_lane_hold_s = float(env("HOST_CLEAR_LANE_HOLD_S", "6.0"))
+        self.host_clear_lane_until = 0.0
+        self.host_clear_for_station: Optional[int] = None
+        self.host_return_lock_distance_m = float(env("HOST_RETURN_LOCK_DISTANCE_M", "90.0"))
         self.enable_mcm = env("ENABLE_MCM", "true").lower() == "true"
         self.enable_denm = env("ENABLE_DENM", "false").lower() == "true"
         self.publish_idle_actuators = env("PUBLISH_IDLE_ACTUATORS", "true").lower() == "true"
@@ -419,6 +427,25 @@ class OBUApp:
         x = float(self.sensor_state.get("x", 0.0))
         y = float(self.sensor_state.get("y", 0.0))
         return self._distance_to_merge(x, y)
+
+    def _update_self_merge_progress(self) -> None:
+        distance = self._self_distance_to_merge()
+        if distance is None:
+            return
+
+        if distance < self.min_distance_to_merge_seen:
+            self.min_distance_to_merge_seen = distance
+            return
+
+        if (
+            self.min_distance_to_merge_seen <= self.merge_stop_margin_m
+            and distance > self.min_distance_to_merge_seen + 6.0
+        ):
+            self.past_merge_point = True
+            
+            if self.is_ramp_vehicle:
+                self.merge_completed = True
+                self.merge_committed = False
 
     def _merge_candidate_id(self) -> Optional[int]:
         if self.merge_station_id is not None and self.merge_station_id in self.neighbors:
@@ -970,21 +997,32 @@ class OBUApp:
         if not self.sensor_state:
             return False
 
+        if self.merge_completed:
+            return True
+
         lane_id = str(self.sensor_state.get("lane_id", ""))
         lane_index = parse_lane_index(lane_id)
         edge_id = edge_id_from_lane(lane_id)
+        distance = self._self_distance_to_merge()
 
         return (
             edge_id in self.main_edge_ids
             and lane_index is not None
             and lane_index == self.merge_lane_index
+            and distance is not None
+            and distance > self.merge_stop_margin_m
         )
 
     def _resolve_role(self) -> str:
         if self.role_mode != "auto":
             return self.role
 
-        if self.is_ramp_vehicle and not self.merge_completed:
+        if self.past_merge_point:
+            return "cruise"
+
+        if self.is_ramp_vehicle:
+            if self.merge_completed:
+                return "host"
             return "merge"
 
         if self._self_is_on_ramp():
@@ -1039,6 +1077,41 @@ class OBUApp:
         payload = self._build_denm()
         self._publish_json(self.denm_in_topic, payload)
 
+    def _lock_left_lane_near_merge(self) -> None:
+        if not self.sensor_state:
+            return
+
+        lane_id = str(self.sensor_state.get("lane_id", ""))
+        lane_index = parse_lane_index(lane_id)
+        distance = self._self_distance_to_merge()
+
+        if distance is None:
+            return
+
+        if (
+            lane_index == self.host_clear_lane_index
+            and distance <= self.host_return_lock_distance_m
+        ):
+            self.target_lane_index = self.host_clear_lane_index
+
+    def _hold_host_clear_lane(self, merge_station_id: Optional[int]) -> None:
+        if not self.host_cooperative_lane_change:
+            return
+
+        self.host_clear_lane_until = max(
+            self.host_clear_lane_until,
+            self._sim_time() + self.host_clear_lane_hold_s,
+        )
+        self.host_clear_for_station = merge_station_id
+
+        lane_id = str(self.sensor_state.get("lane_id", ""))
+        lane_index = parse_lane_index(lane_id)
+
+        # Se está na lane de merge/direita, manda sair para a esquerda.
+        # Se já está na esquerda, continua a publicar o alvo para o TraCI manter a lane.
+        if lane_index in (self.merge_lane_index, self.host_clear_lane_index):
+            self.target_lane_index = self.host_clear_lane_index
+
     def step(self) -> None:
         now = self._sim_time()
         if now - self.last_cam_sent >= self.cam_period_s:
@@ -1062,6 +1135,7 @@ class OBUApp:
         if not self.sensor_state:
             return
 
+        self._update_self_merge_progress()
         self._prune_neighbors()
         self._prune_mcm_messages()
 
@@ -1081,12 +1155,22 @@ class OBUApp:
 
         pre_state = self.fsm_state
 
-        if self.effective_role == "merge":
+        if self.effective_role == "cruise":
+            self._set_state(STATE_CRUISE)
+        elif self.effective_role == "merge":
             self._fsm_merge()
         elif self.effective_role == "host":
             self._fsm_host()
         elif self.effective_role == "lead":
             self._fsm_lead()
+
+        if (
+            self.host_clear_lane_until > self._sim_time()
+            and self.effective_role in ("host", "lead")
+        ):
+            self.target_lane_index = self.host_clear_lane_index
+
+        self._lock_left_lane_near_merge()
         self._apply_car_following()
 
         # --- Periodic debug log (every ~1s) ---
@@ -1154,6 +1238,9 @@ class OBUApp:
         edge_id = edge_id_from_lane(lane_id)
 
         if self._self_merge_completed():
+            if not self.merge_completed:
+                self.merge_completed_since = self._sim_time()
+
             self.merge_completed = True
             self.merge_committed = False
             self._set_state(STATE_CRUISE)
@@ -1778,6 +1865,7 @@ class OBUApp:
 
         # --- Check if yielding is safe; REJECT if not ---
         if distance <= self.host_reject_distance_m:
+            self._lock_left_lane_near_merge()
             if has_real_request:
                 last_sent = self.last_mcm_response.get(req_station_id, 0)
                 if self._sim_time() - last_sent >= self.response_period_s:
@@ -1803,12 +1891,8 @@ class OBUApp:
             self._set_state(STATE_YIELDING)
             self._set_target_speed(required_speed)
             
-            if self.host_cooperative_lane_change:
-                lane_id = str(self.sensor_state.get("lane_id", ""))
-                lane_index = parse_lane_index(lane_id)
-            
-                if lane_index == self.merge_lane_index:
-                    self.target_lane_index = self.host_clear_lane_index
+            if has_real_request:
+                self._hold_host_clear_lane(req_station_id)
             
             log.debug(
                 "[%.1f] %s HOST_YIELD: for merge=%d merge_eta=%.2f own_eta=%.2f "

@@ -39,6 +39,10 @@ case "$VANETZA_SCENARIO" in
         default_env MERGE_LANE_INDEX "0"
         default_env HOST_CLEAR_LANE_INDEX "1"
         default_env HOST_COOPERATIVE_LANE_CHANGE "true"
+        default_env LANE_CHANGE_DURATION_S "5.0"
+        default_env LANE_CHANGE_COOLDOWN_S "5.0"
+        default_env HOST_CLEAR_LANE_HOLD_S "12.0"
+        default_env HOST_RETURN_LOCK_DISTANCE_M "90.0"
 
         default_env PRIORITY_DISTANCE "180.0"
         default_env ROLE_DETECTION_DISTANCE "320.0"
@@ -87,9 +91,9 @@ case "$VANETZA_SCENARIO" in
         default_env MERGE_COMMIT_TIMEOUT_S "8.0"
 
         default_env RAMP_PLATOON_HEADWAY_S "1.2"
-        default_env RAMP_PLATOON_MIN_GAP "8.0"
+        default_env RAMP_PLATOON_MIN_GAP "10.0"
         default_env RAMP_PLATOON_SPEED_DELTA "1.0"
-        default_env MERGE_QUEUE_RELEASE_GAP "10.5"
+        default_env MERGE_QUEUE_RELEASE_GAP "14.0"
 
         default_env ENABLE_CAM_FOLLOWING "true"
         default_env CAM_FOLLOW_HEADWAY_S "1.5"
