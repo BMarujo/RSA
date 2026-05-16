@@ -271,6 +271,8 @@ class OBUApp:
         self.role_detection_distance = float(env("ROLE_DETECTION_DISTANCE", str(max(self.priority_distance * 2.0, 180.0))))
 
         self.desired_speed = env("DESIRED_SPEED", "")
+        self.host_clear_lane_index = int(env("HOST_CLEAR_LANE_INDEX", "1"))
+        self.host_cooperative_lane_change = env("HOST_COOPERATIVE_LANE_CHANGE", "true").lower() == "true"
         self.enable_mcm = env("ENABLE_MCM", "true").lower() == "true"
         self.enable_denm = env("ENABLE_DENM", "false").lower() == "true"
         self.publish_idle_actuators = env("PUBLISH_IDLE_ACTUATORS", "true").lower() == "true"
@@ -1800,6 +1802,14 @@ class OBUApp:
         if required_speed < self.target_speed:
             self._set_state(STATE_YIELDING)
             self._set_target_speed(required_speed)
+            
+            if self.host_cooperative_lane_change:
+                lane_id = str(self.sensor_state.get("lane_id", ""))
+                lane_index = parse_lane_index(lane_id)
+            
+                if lane_index == self.merge_lane_index:
+                    self.target_lane_index = self.host_clear_lane_index
+            
             log.debug(
                 "[%.1f] %s HOST_YIELD: for merge=%d merge_eta=%.2f own_eta=%.2f "
                 "target_eta=%.2f req_spd=%.2f dist=%.1f",

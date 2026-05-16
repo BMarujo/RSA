@@ -200,6 +200,8 @@ def common_obu_env(vehicle: Vehicle, index: int, ramp_station_ids: str, main_sta
         "CAM_FOLLOW_BRAKE_DECEL": env("CAM_FOLLOW_BRAKE_DECEL", "4.5"),
         "CAM_FOLLOW_EMERGENCY_DECEL": env("CAM_FOLLOW_EMERGENCY_DECEL", "9.0"),
         "MERGE_LANE_INDEX": env("MERGE_LANE_INDEX", "1"),
+        "HOST_CLEAR_LANE_INDEX": env("HOST_CLEAR_LANE_INDEX", "1"),
+        "HOST_COOPERATIVE_LANE_CHANGE": env("HOST_COOPERATIVE_LANE_CHANGE", "true"),
         "ENABLE_MCM": env("ENABLE_MCM", "true"),
         "ENABLE_DENM": env("ENABLE_DENM", "false"),
         "ETA_THRESHOLD_S": env("ETA_THRESHOLD_S", "12.0"),

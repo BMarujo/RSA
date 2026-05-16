@@ -36,7 +36,9 @@ case "$VANETZA_SCENARIO" in
         default_env MAIN_EDGE_IDS "560761994,1331698336,135424828"
         default_env RAMP_BBOX "205,2120,340,2225"
         default_env MERGE_STATION_ID "0"
-        default_env MERGE_LANE_INDEX "1"
+        default_env MERGE_LANE_INDEX "0"
+        default_env HOST_CLEAR_LANE_INDEX "1"
+        default_env HOST_COOPERATIVE_LANE_CHANGE "true"
 
         default_env PRIORITY_DISTANCE "180.0"
         default_env ROLE_DETECTION_DISTANCE "320.0"
@@ -47,7 +49,7 @@ case "$VANETZA_SCENARIO" in
         default_env NEGOTIATION_TIMEOUT_S "3.5"
 
         default_env CRUISE_SPEED "7.5"
-        default_env MERGE_SPEED_BONUS "0.4"
+        default_env MERGE_SPEED_BONUS "0.0"
         default_env LEAD_SPEED_BONUS "0.0"
 
         default_env DEFAULT_SPEED_MODE "31"
@@ -80,7 +82,7 @@ case "$VANETZA_SCENARIO" in
         default_env FINAL_MERGE_GUARD_M "28.0"
         default_env FINAL_MERGE_CLEARANCE_M "10.0"
         default_env MERGE_OCCUPANCY_S "3.2"
-        default_env MIN_MERGE_ENTRY_SPEED "5.2"
+        default_env MIN_MERGE_ENTRY_SPEED "4.5"
         default_env MERGE_ENTRY_SPEED_GUARD_M "35.0"
         default_env MERGE_COMMIT_TIMEOUT_S "8.0"
 

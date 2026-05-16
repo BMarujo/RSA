@@ -280,8 +280,8 @@ class TraciBridge:
     def _apply_actuators(self, vehicle_id: str) -> None:
         if self.initial_speed_mode >= 0 and vehicle_id not in self.initial_speed_mode_applied:
             traci.vehicle.setSpeedMode(vehicle_id, self.initial_speed_mode)
-            traci.vehicle.setEmergencyDecel(vehicle_id, self.vehicle_emergency_decel)
             traci.vehicle.setDecel(vehicle_id, self.vehicle_decel)
+            traci.vehicle.setEmergencyDecel(vehicle_id, self.vehicle_emergency_decel)
             self.initial_speed_mode_applied.add(vehicle_id)
         if self.initial_lane_change_mode >= 0 and vehicle_id not in self.initial_lane_change_mode_applied:
             traci.vehicle.setLaneChangeMode(vehicle_id, self.initial_lane_change_mode)
