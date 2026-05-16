@@ -788,6 +788,9 @@ class TraciBridge:
             while True:
                 try:
                     self.step()
+                except traci.exceptions.FatalTraCIError as exc:
+                    print(f"SUMO closed TraCI connection: {exc}")
+                    break
                 except traci.TraCIException:
                     if self.loop_sim:
                         traci.close()
