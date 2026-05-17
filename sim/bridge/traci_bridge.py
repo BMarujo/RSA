@@ -310,7 +310,7 @@ class TraciBridge:
             )
             if current_lane is not None and current_lane == target_lane:
                 # Vehicle has reached the target lane — clear stale command
-                # so SUMO can manage lane changes naturally from here on.
+                # so we do not keep reissuing an already completed maneuver.
                 self.lane_commands.pop(vehicle_id, None)
                 self.lane_command_state.pop(vehicle_id, None)
             elif (

@@ -268,6 +268,7 @@ class OBUApp:
         self.merge_committed = False
         self.merge_committed_since = 0.0
         self.merge_commit_timeout_s = float(env("MERGE_COMMIT_TIMEOUT_S", "8.0"))
+        self.merge_commit_distance_m = float(env("MERGE_COMMIT_DISTANCE_M", "55.0"))
         
         self.main_station_ids = {int(item) for item in parse_csv(env("MAIN_STATION_IDS", "")) if item.isdigit()}
         self.ramp_y_threshold = float(env("RAMP_Y_THRESHOLD", "-1.0"))
@@ -1064,6 +1065,132 @@ class OBUApp:
         candidates.sort(key=lambda item: (item[0], item[1]))
         return candidates[0][1]
 
+    def _main_candidate_etas(self) -> list[tuple[float, int]]:
+        candidates: list[tuple[float, int]] = []
+        for eta, station_id in self._neighbor_etas():
+            if not self._neighbor_is_main_candidate(station_id):
+                continue
+            candidates.append((eta, station_id))
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        return candidates
+
+    def _merge_slot_window(
+        self,
+        lead_eta: Optional[float],
+        host_eta: Optional[float],
+    ) -> tuple[Optional[float], Optional[float], bool]:
+        min_eta = lead_eta + self.safe_headway_s if lead_eta is not None else None
+        host_buffer_s = self.safe_headway_s + self.merge_occupancy_s
+        max_eta = host_eta - host_buffer_s if host_eta is not None else None
+
+        gap_possible = True
+        if min_eta is not None and max_eta is not None and max_eta < min_eta:
+            gap_possible = False
+
+        return min_eta, max_eta, gap_possible
+
+    def _desired_eta_for_window(
+        self,
+        eta: float,
+        min_eta: Optional[float],
+        max_eta: Optional[float],
+    ) -> float:
+        desired_eta = eta
+        if min_eta is not None and desired_eta < min_eta:
+            desired_eta = min_eta
+        if max_eta is not None and desired_eta > max_eta:
+            desired_eta = max_eta
+        return desired_eta
+
+    def _select_merge_slot(
+        self,
+        eta: float,
+    ) -> tuple[
+        Optional[int],
+        Optional[int],
+        Optional[float],
+        Optional[float],
+        Optional[float],
+        Optional[float],
+        bool,
+        float,
+    ]:
+        """Choose the earliest reachable safe slot in the main-road ETA order.
+
+        The old logic picked the nearest lead/host around the current ETA. In
+        dense traffic that can lock the merge vehicle onto an impossible gap.
+        This scans all adjacent main-road vehicles and skips slots that have
+        already been missed or cannot fit the merge occupancy window.
+        """
+        main_etas = self._main_candidate_etas()
+        if not main_etas:
+            return None, None, None, None, None, None, True, eta
+
+        slots: list[
+            tuple[
+                float,
+                int,
+                Optional[int],
+                Optional[int],
+                Optional[float],
+                Optional[float],
+                Optional[float],
+                Optional[float],
+                bool,
+            ]
+        ] = []
+
+        for index in range(len(main_etas) + 1):
+            lead_eta = main_etas[index - 1][0] if index > 0 else None
+            lead_id = main_etas[index - 1][1] if index > 0 else None
+            host_eta = main_etas[index][0] if index < len(main_etas) else None
+            host_id = main_etas[index][1] if index < len(main_etas) else None
+
+            min_eta, max_eta, gap_possible = self._merge_slot_window(lead_eta, host_eta)
+            if not gap_possible:
+                continue
+
+            # If the upper bound has already passed, this slot is gone; choose a
+            # later slot instead of asking the old host to keep yielding forever.
+            if max_eta is not None and eta > max_eta:
+                continue
+
+            desired_eta = self._desired_eta_for_window(eta, min_eta, max_eta)
+            slots.append((
+                desired_eta,
+                index,
+                lead_id,
+                host_id,
+                lead_eta,
+                host_eta,
+                min_eta,
+                max_eta,
+                True,
+            ))
+
+        if slots:
+            slots.sort(key=lambda item: (item[0], item[1]))
+            (
+                desired_eta,
+                _index,
+                lead_id,
+                host_id,
+                lead_eta,
+                host_eta,
+                min_eta,
+                max_eta,
+                gap_possible,
+            ) = slots[0]
+            return lead_id, host_id, lead_eta, host_eta, min_eta, max_eta, gap_possible, desired_eta
+
+        # Fallback: if every bounded slot is already missed, queue behind the
+        # last main-road vehicle. This is conservative, but it is controlled by
+        # the OBU instead of letting the renderer decide.
+        lead_eta, lead_id = main_etas[-1]
+        min_eta, max_eta, gap_possible = self._merge_slot_window(lead_eta, None)
+        desired_eta = self._desired_eta_for_window(eta, min_eta, max_eta)
+        return lead_id, None, lead_eta, None, min_eta, max_eta, gap_possible, desired_eta
+
     def _send_mcm(self, action: int, manoeuvre_id: Optional[int] = None) -> None:
         if not self.enable_mcm:
             return
@@ -1326,20 +1453,9 @@ class OBUApp:
             # Cooldown expired — allow re-evaluation
             self._set_state(STATE_CRUISE)
 
-        # --- Identify neighbors by ETA to merge point ---
-        lead_id = self._select_lead_candidate(eta)
-        lead_eta = self._neighbor_eta(lead_id) if lead_id is not None else None
-
-        host_id = self._select_host_candidate(eta)
-        host_eta = None
-        if host_id is not None:
-            host_eta = self._neighbor_eta(host_id)
-            if host_eta is None:
-                host_id = None
-
         # --- Don't merge blind: after this vehicle starts receiving sensors,
         #     wait briefly for CAM/MCM neighbor state before allowing a merge.
-        if distance_to_merge <= self.priority_distance and lead_id is None and host_id is None:
+        if distance_to_merge <= self.priority_distance:
             first_sensor_time = self.first_sensor_time
             local_age = 0.0
             if first_sensor_time is not None:
@@ -1352,34 +1468,29 @@ class OBUApp:
                 self._set_target_speed(max(self.cruise_speed * 0.5, self.min_speed))
                 self.target_lane_index = None
                 log.debug(
-                    "[%.1f] %s WAIT_NEIGHBORS: age=%.2f neighbors=%d lead=None host=None",
+                    "[%.1f] %s WAIT_NEIGHBORS: age=%.2f neighbors=%d required=%d",
                     self._sim_time(), self.vehicle_id, local_age, len(self.neighbors),
+                    self.merge_min_neighbors_before_merge,
                 )
                 return
+
+        # --- Identify the target merge slot by ETA order on the main road ---
+        (
+            lead_id,
+            host_id,
+            lead_eta,
+            host_eta,
+            min_eta,
+            max_eta,
+            gap_possible,
+            desired_eta,
+        ) = self._select_merge_slot(eta)
 
         lead_distance = self._neighbor_distance(lead_id) if lead_id is not None else None
         host_distance = self._neighbor_distance(host_id) if host_id is not None else None
 
-        # --- Compute the safe ETA window [min_eta, max_eta] ---
-        min_eta = lead_eta + self.safe_headway_s if lead_eta is not None else None
-
-        # The host must arrive after the merge vehicle has reached the merge point
-        # AND had time to clear the lane-change / junction conflict area.
-        host_buffer_s = self.safe_headway_s + self.merge_occupancy_s
-        max_eta = host_eta - host_buffer_s if host_eta is not None else None
-
-        gap_possible = True
-        if min_eta is not None and max_eta is not None and max_eta < min_eta:
-            gap_possible = False
-
         # --- Adjust speed to aim for the gap ---
-        desired_eta = eta
-        if gap_possible:
-            if min_eta is not None and desired_eta < min_eta:
-                desired_eta = min_eta
-            if max_eta is not None and desired_eta > max_eta:
-                desired_eta = max_eta
-        else:
+        if not gap_possible:
             # No gap — aim to arrive AFTER the host car passes
             if host_eta is not None:
                 desired_eta = max(desired_eta, host_eta + self.safe_headway_s)
@@ -1434,12 +1545,13 @@ class OBUApp:
             and slot_ok
             and entry_speed_ok
         )
+        commit_ready = distance_to_merge <= self.merge_commit_distance_m
 
         log.debug(
             "[%.1f] %s MERGE_DECISION: eta=%.2f dist=%.1f "
             "lead=%s(eta=%s dist=%s) host=%s(eta=%s dist=%s) "
-            "min_eta=%s max_eta=%s gap_possible=%s ahead=%s behind=%s "
-            "clearance=%s slot=%s entry_speed=%s -> can_merge=%s",
+            "min_eta=%s max_eta=%s desired_eta=%.2f gap_possible=%s ahead=%s behind=%s "
+            "clearance=%s slot=%s entry_speed=%s commit_ready=%s -> can_merge=%s",
             self._sim_time(), self.vehicle_id, eta, distance_to_merge,
             lead_id, f"{lead_eta:.2f}" if lead_eta else "None",
             f"{lead_distance:.1f}" if lead_distance else "None",
@@ -1447,8 +1559,9 @@ class OBUApp:
             f"{host_distance:.1f}" if host_distance else "None",
             f"{min_eta:.2f}" if min_eta else "None",
             f"{max_eta:.2f}" if max_eta else "None",
+            desired_eta,
             gap_possible, gap_ahead_ok, gap_behind_ok,
-            clearance_ok, slot_ok, entry_speed_ok, can_merge,
+            clearance_ok, slot_ok, entry_speed_ok, commit_ready, can_merge,
         )
 
         # --- Set priority speed mode when approaching merge zone ---
@@ -1550,7 +1663,7 @@ class OBUApp:
         allowed_by_mcm = host_id is None or response_action == MCM_ACTION_ACCEPT
         final_guard_ok = self._final_merge_lane_clear(lead_id, host_id, distance_to_merge)
         
-        if can_merge and allowed_by_mcm and final_guard_ok:
+        if can_merge and allowed_by_mcm and final_guard_ok and commit_ready:
             was_merging = self.fsm_state == STATE_MERGING
             self._set_state(STATE_MERGING)
 
@@ -1569,6 +1682,14 @@ class OBUApp:
 
             self.target_lane_index = self.merge_lane_index
             self.target_speed_mode = self.priority_speed_mode
+        elif can_merge and allowed_by_mcm and final_guard_ok:
+            self._set_state(STATE_NEGOTIATING if host_id is not None else STATE_CRUISE)
+            self.target_lane_index = None
+            log.debug(
+                "[%.1f] %s WAIT_COMMIT_DISTANCE: dist=%.1f > %.1f host=%s",
+                self._sim_time(), self.vehicle_id, distance_to_merge,
+                self.merge_commit_distance_m, host_id,
+            )
         elif not can_merge or not final_guard_ok:
             self._set_state(STATE_NEGOTIATING if host_id is not None else STATE_YIELDING)
             self.target_lane_index = None
