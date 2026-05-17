@@ -1,0 +1,206 @@
+Generated /home/andrealex/RSA/.generated/vanetza-obus.compose.yml with 7 OBU service(s).
+Vehicles: Lead_Car, Main_Blocker_1, Main_Blocker_2, Host_Car, Main_Back, Merge_Car, Ramp_Back
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-traci-bridge:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 5.71kB done
+#1 DONE 0.0s
+
+#2 [traci-bridge internal] load build definition from Dockerfile
+#2 transferring dockerfile: 997B done
+#2 DONE 0.0s
+
+#3 [traci-bridge internal] load metadata for ghcr.io/eclipse-sumo/sumo:latest
+#3 DONE 0.0s
+
+#4 [obu-lead-car internal] load metadata for ghcr.io/nap-it/vanetza-nap:latest
+#4 DONE 0.0s
+
+#5 [traci-bridge 1/6] FROM ghcr.io/eclipse-sumo/sumo:latest
+#5 DONE 0.0s
+
+#6 [obu-main-front-left 1/9] FROM ghcr.io/nap-it/vanetza-nap:latest
+#6 DONE 0.0s
+
+#7 [obu-ramp-merge-3 internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [traci-bridge 6/6] COPY sim/bridge/traci_bridge.py /app/traci_bridge.py
+#8 CACHED
+
+#9 [obu-ramp-merge-4 internal] load build context
+#9 transferring context: 202.02kB done
+#9 DONE 0.0s
+
+#10 [traci-bridge internal] load build context
+#10 transferring context: 38.43kB done
+#10 DONE 0.0s
+
+#11 [obu-ramp-merge-3 5/9] RUN pip3 install --no-cache-dir -r /app/requirements.txt
+#11 CACHED
+
+#12 [traci-bridge] exporting to image
+#12 exporting layers done
+#12 writing image sha256:57f1c204f5e66219e20134b9ef7bb87435df001605adb213022f79fa8541d04e done
+#12 naming to docker.io/library/rsa-traci-bridge:latest done
+#12 DONE 0.0s
+
+#13 [obu-main-mid-right internal] load build definition from Dockerfile
+#13 transferring dockerfile: 499B done
+#13 ...
+
+#14 [obu-ramp-merge-2 6/9] COPY obu/app /app
+#14 DONE 0.0s
+
+#15 [traci-bridge] resolving provenance for metadata file
+#15 DONE 0.0s
+
+#16 [obu-ramp-merge-5 7/9] COPY obu/entrypoint.sh /entrypoint-obu.sh
+#16 DONE 0.0s
+
+#17 [obu-lead-car 8/9] COPY obu/config/vanetza-obu.ini /config.ini
+#17 DONE 0.0s
+
+#18 [obu-main-back-right 9/9] RUN chmod +x /entrypoint-obu.sh
+#18 DONE 0.1s
+
+#19 [obu-lead-car] exporting to image
+#19 exporting layers 0.0s done
+#19 writing image sha256:9f47100ac09a28963b6e85493395c3757108f0a7444eaf4f3e34dce2e45137fd done
+#19 naming to docker.io/library/rsa-obu:latest 0.0s done
+#19 DONE 0.1s
+
+#20 [obu-ramp-merge-5] exporting to image
+#20 exporting layers done
+#20 writing image sha256:e46b11cacc2252949fa61b4b378972b3fed1aca61a985a2fb67b93bc5153a8cb 0.0s done
+#20 naming to docker.io/library/rsa-obu:latest 0.0s done
+#20 DONE 0.1s
+
+#21 [obu-ramp-back] exporting to image
+#21 exporting layers done
+#21 writing image sha256:e9b11db633654b7684ff58e8d3f2ac5bf3743a7e989ad4ac0e05d1edcf02dbdf 0.0s done
+#21 naming to docker.io/library/rsa-obu:latest 0.0s done
+#21 DONE 0.2s
+
+#22 [obu-ramp-merge-4] exporting to image
+#22 exporting layers 0.0s done
+#22 writing image sha256:59f04983162d0028de50a138cfb8dc9c0b46fe1e3d297937879c0fa6ed2c78eb 0.0s done
+#22 naming to docker.io/library/rsa-obu:latest 0.0s done
+#22 DONE 0.1s
+
+#23 [obu-main-back-right] exporting to image
+#23 exporting layers 0.0s done
+#23 writing image sha256:2ef2acaab4c8a34c168ce3e8ef035deb270ad982251ca8408b9117bd951fdcb1 0.0s done
+#23 naming to docker.io/library/rsa-obu:latest 0.0s done
+#23 DONE 0.1s
+
+#24 [obu-main-back-left] exporting to image
+#24 exporting layers 0.0s done
+#24 writing image sha256:b02673051616675aa48491542c536ad31425da602bd513bb23cc1cdbabbf11bb done
+#24 naming to docker.io/library/rsa-obu:latest 0.0s done
+#24 DONE 0.1s
+
+#25 [obu-main-front-left] exporting to image
+#25 exporting layers 0.0s done
+#25 writing image sha256:6b060921b84740fb79e2ee27ab6c04d67dd83d41b7f793cb539783642e1e4797 done
+#25 naming to docker.io/library/rsa-obu:latest 0.0s done
+#25 DONE 0.1s
+
+#26 [obu-host-car] exporting to image
+#26 exporting layers 0.0s done
+#26 writing image sha256:f56c9fd9e952cc62ff1ba3296dd0f8742452a13d9708ad347a6255830481fd65 0.0s done
+#26 naming to docker.io/library/rsa-obu:latest 0.0s done
+#26 DONE 0.1s
+
+#27 [obu-merge-car] exporting to image
+#27 exporting layers 0.0s done
+#27 writing image sha256:be096e24e7c1ba9fac6c7f555bb5197b40f10cbbcd7faf78e6586b012a39617b 0.0s done
+#27 naming to docker.io/library/rsa-obu:latest 0.0s done
+#27 DONE 0.1s
+
+#28 [obu-ramp-merge-2] exporting to image
+#28 exporting layers 0.0s done
+#28 writing image sha256:933bdcf85ba3c273d78749e60ef75928ced4756d98e44fa21f91cdebd3cdff3b 0.0s done
+#28 naming to docker.io/library/rsa-obu:latest 0.0s done
+#28 DONE 0.1s
+
+#29 [obu-ramp-merge-3] exporting to image
+#29 exporting layers 0.0s done
+#29 writing image sha256:b7631994e6a046a241b855ba19f5101de7c4473c5dc99c7faf049bdab146d46d 0.0s done
+#29 naming to docker.io/library/rsa-obu:latest 0.0s done
+#29 DONE 0.1s
+
+#30 [obu-main-mid-right] exporting to image
+#30 exporting layers 0.0s done
+#30 writing image sha256:f13a4788e1066aea9aa6defe06248b5f9dbab932725e9cfa4814304a97ee032f 0.0s done
+#30 naming to docker.io/library/rsa-obu:latest 0.0s done
+#30 DONE 0.2s
+
+#13 [obu-main-mid-right internal] load build definition from Dockerfile
+#13 ...
+
+#31 [obu-ramp-merge-4] resolving provenance for metadata file
+#31 DONE 0.1s
+
+#32 [obu-lead-car] resolving provenance for metadata file
+#32 DONE 0.2s
+
+#33 [obu-main-back-right] resolving provenance for metadata file
+#33 DONE 0.1s
+
+#34 [obu-ramp-merge-5] resolving provenance for metadata file
+#34 DONE 0.1s
+
+#35 [obu-host-car] resolving provenance for metadata file
+#35 DONE 0.1s
+
+#36 [obu-main-front-left] resolving provenance for metadata file
+#36 DONE 0.1s
+
+#37 [obu-main-back-left] resolving provenance for metadata file
+#37 DONE 0.2s
+
+#38 [obu-ramp-back] resolving provenance for metadata file
+#38 DONE 0.0s
+
+#39 [obu-merge-car] resolving provenance for metadata file
+#39 DONE 0.1s
+
+#40 [obu-ramp-merge-3] resolving provenance for metadata file
+#40 DONE 0.0s
+
+#41 [obu-main-mid-right] resolving provenance for metadata file
+#41 DONE 0.0s
+
+#42 [obu-ramp-merge-2] resolving provenance for metadata file
+#42 DONE 0.0s
+ Image rsa-traci-bridge:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Network rsa_v2x_net Creating 
+ Network rsa_v2x_net Error Error response from daemon: network with name rsa_v2x_net already exists
+ Container rsa-mqtt-broker-1 Creating 
+ Container rsa-mqtt-broker-1 Error response from daemon: Conflict. The container name "/rsa-mqtt-broker-1" is already in use by container "28006e8851fbf944df22b5299fd0c4fff26da2be80e9c03ea0284f4fcb552e49". You have to remove (or rename) that container to be able to reuse that name. 
+Error response from daemon: Conflict. The container name "/rsa-mqtt-broker-1" is already in use by container "28006e8851fbf944df22b5299fd0c4fff26da2be80e9c03ea0284f4fcb552e49". You have to remove (or rename) that container to be able to reuse that name.

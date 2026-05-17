@@ -270,7 +270,7 @@ def write_compose(output: Path, sumo_cfg: Path, vehicles: list[Vehicle], routes:
                 "    build:",
                 "      context: .",
                 "      dockerfile: obu/Dockerfile",
-                "    restart: unless-stopped",
+                "    restart: no",
                 "    depends_on:",
                 "      - mqtt-broker",
                 "    cap_add:",

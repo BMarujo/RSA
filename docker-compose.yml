@@ -1,7 +1,7 @@
 services:
   mqtt-broker:
     image: eclipse-mosquitto:2
-    restart: unless-stopped
+    restart: no
     ports:
       - "1883:1883"
     volumes:
@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: sim/bridge/Dockerfile
-    restart: unless-stopped
+    restart: no
     depends_on:
       - mqtt-broker
     environment:
