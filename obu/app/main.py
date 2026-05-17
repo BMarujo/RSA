@@ -531,9 +531,28 @@ class OBUApp:
 
         return False
 
+    def _host_yield_effective(self, host_id: Optional[int]) -> bool:
+        if host_id is None:
+            return False
+
+        data = self.neighbors.get(host_id)
+        if not data:
+            return False
+
+        host_speed = float(data.get("speed", 999.0))
+
+        # Se sabemos que este host aceitou/reservou, comparar com target_speed se existir
+        if self.pending_request is not None:
+            target = self.pending_request.get("host_target_speed")
+            if target is not None:
+                return host_speed <= float(target) + 0.5
+
+        # fallback: pelo menos deve estar claramente abaixo do cruise
+        return host_speed <= self.cruise_speed - 0.8
+
     def _base_cruise_speed(self) -> float:
         if self.effective_role == "merge":
-            return self.cruise_speed + self.merge_speed_bonus
+            return self.cruise_speed * 0.9
         return self.cruise_speed
 
     def _distance_to_merge(self, x: float, y: float) -> float:
@@ -1710,9 +1729,22 @@ class OBUApp:
         if self.pending_request is None or self.pending_request.get("host_id") != host_id:
             self.mcm_messages.pop(host_id, None)
             manoeuvre_id = self._next_manoeuvre_id()
+            
+            # Estimate host target speed (what we are asking for)
+            host_target_speed = None
+            if host_id in self.neighbors:
+                h_data = self.neighbors[host_id]
+                h_dist = self._distance_to_merge(float(h_data["x"]), float(h_data["y"]))
+                own_eta = self._merge_eta()
+                if own_eta is not None:
+                    # Host should arrive after us + headway + occupancy
+                    target_eta = own_eta + self.safe_headway_s + self.merge_occupancy_s
+                    host_target_speed = h_dist / max(target_eta, 0.1)
+
             self.pending_request = {
                 "host_id": host_id,
                 "host_eta": host_eta,
+                "host_target_speed": host_target_speed,
                 "lead_id": lead_id,
                 "lead_eta": lead_eta,
                 "manoeuvre_id": manoeuvre_id,
@@ -1853,7 +1885,7 @@ class OBUApp:
 
             recover_spd = max(
                 self.min_merge_entry_speed,
-                self.cruise_speed + self.merge_speed_bonus,
+                self.cruise_speed * 0.9,
                 self.min_speed,
             )
             self.skip_car_following_this_step = True
@@ -1913,7 +1945,7 @@ class OBUApp:
             current_speed = self._current_speed() or 0.0
             keep_speed = max(
                 self.min_merge_entry_speed,
-                self.cruise_speed + self.merge_speed_bonus,
+                self.cruise_speed * 0.9,
                 self.min_speed,
             )
             if (
@@ -1932,7 +1964,6 @@ class OBUApp:
                     keep_speed,
                 )
             self._set_target_speed(keep_speed, force=current_speed < self.min_merge_entry_speed)
-
             self.skip_car_following_this_step = True
 
             log.debug(
@@ -2238,7 +2269,7 @@ class OBUApp:
             self._set_target_speed(min(adjusted_speed, ceiling_speed))
         else:
             # On track — maintain merge speed
-            self._set_target_speed(self.cruise_speed + self.merge_speed_bonus)
+            self._set_target_speed(self.cruise_speed * 0.9)
 
         # --- Clearance checks ---
         gap_ahead_ok = min_eta is None or eta >= min_eta
@@ -2273,6 +2304,7 @@ class OBUApp:
             and entry_speed_ok
         )
         commit_ready = distance_to_merge <= self.merge_commit_distance_m
+        final_guard_ok = self._final_merge_lane_clear(lead_id, host_id, distance_to_merge)
 
         log.debug(
             "[%.1f] %s FINAL_GAP_CHECK: lead_gap_ok=%s host_gap_ok=%s "
@@ -2292,7 +2324,7 @@ class OBUApp:
             "lead=%s(eta=%s dist=%s) host=%s(eta=%s dist=%s) "
             "min_eta=%s max_eta=%s desired_eta=%.2f gap_possible=%s ahead=%s behind=%s "
             "lead_gap=%s host_gap=%s "
-            "clearance=%s slot=%s entry_speed=%s commit_ready=%s -> can_merge=%s",
+            "clearance=%s slot=%s entry_speed=%s commit_ready=%s final_guard=%s -> can_merge=%s",
             self._sim_time(), self.vehicle_id, eta, distance_to_merge,
             lead_id, f"{lead_eta:.2f}" if lead_eta else "None",
             f"{lead_distance:.1f}" if lead_distance else "None",
@@ -2303,7 +2335,7 @@ class OBUApp:
             desired_eta,
             gap_possible, gap_ahead_ok, gap_behind_ok,
             lead_gap_ok, host_gap_ok,
-            clearance_ok, slot_ok, entry_speed_ok, commit_ready, can_merge,
+            clearance_ok, slot_ok, entry_speed_ok, commit_ready, final_guard_ok, can_merge,
         )
 
         # --- Set priority speed mode when approaching merge zone ---
@@ -2349,7 +2381,7 @@ class OBUApp:
                     
                 recover_spd = max(
                     self.min_merge_entry_speed,
-                    self.cruise_speed + self.merge_speed_bonus,
+                    self.cruise_speed * 0.9,
                     self.min_speed,
                 )
                 
@@ -2407,6 +2439,44 @@ class OBUApp:
             or response_action == MCM_ACTION_ACCEPT
         )
 
+        host_yield_ok = self._host_yield_effective(host_id)
+
+        if not host_yield_ok and response_action == MCM_ACTION_ACCEPT:
+            accepted_at = self.pending_request.get("accepted_at")
+            if (
+                accepted_at is not None
+                and self._sim_time() - accepted_at > 1.0
+                and host_gap_ok
+                and final_guard_ok
+            ):
+                host_yield_ok = True
+                log.debug(
+                    "[%.1f] %s MERGE_HOST_YIELD_EFFECT_TIMEOUT_OK: host=%s gap_safe=True",
+                    self._sim_time(), self.vehicle_id, host_id,
+                )
+
+        if response_action == MCM_ACTION_ACCEPT and not host_yield_ok:
+            log.debug(
+                "[%.1f] %s MERGE_WAIT_HOST_YIELD_EFFECT: host=%s",
+                self._sim_time(), self.vehicle_id, host_id,
+            )
+            self.target_lane_index = None
+            self._set_state(STATE_NEGOTIATING)
+            # Calm down speed while waiting for host to slow down
+            self._set_target_speed(
+                min(self._current_speed() or self.cruise_speed, self.cruise_speed * 0.85),
+                force=True,
+            )
+            return
+
+        if response_action == MCM_ACTION_ACCEPT and host_yield_ok:
+            # Maintain a calm speed even after ACCEPT but before physical commit
+            if not commit_ready or not final_guard_ok or not can_merge:
+                 self._set_target_speed(
+                    min(self._current_speed() or self.cruise_speed, self.cruise_speed * 0.85),
+                    force=True,
+                )
+
         if response_action == MCM_ACTION_ACCEPT:
             if not lead_gap_ok or not host_gap_ok:
                 if self.slot_blocked_since <= 0.0:
@@ -2428,8 +2498,6 @@ class OBUApp:
                     return
             else:
                 self.slot_blocked_since = 0.0
-
-        final_guard_ok = self._final_merge_lane_clear(lead_id, host_id, distance_to_merge)
 
         fail_reasons = []
         if not lead_gap_ok:
@@ -2497,7 +2565,7 @@ class OBUApp:
                 self.committed_host_id = host_id
                 self.committed_manoeuvre_id = self.pending_request.get("manoeuvre_id") if self.pending_request else None
 
-            merge_target_speed = self.cruise_speed + self.merge_speed_bonus
+            merge_target_speed = max(self.min_merge_entry_speed, self.cruise_speed * 0.9, self.min_speed)
             self._set_target_speed(merge_target_speed)
 
             if not was_merging:

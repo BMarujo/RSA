@@ -304,15 +304,24 @@ class TraciBridge:
             current_lane = parse_lane_index(lane_id)
             now = traci.simulation.getTime()
             last = self.lane_command_state.get(vehicle_id)
+            
             recently_requested = (
                 last is not None
                 and int(last.get("target_lane", -1)) == target_lane
                 and str(last.get("edge_id", "")) == edge_id
                 and now - last.get("timestamp", 0.0) < self.lane_change_cooldown_s
             )
+            
+            print(
+                f"LANE_CMD_STATE veh={vehicle_id} edge={edge_id} lane={current_lane} "
+                f"target={target_lane} lane_count={traci.edge.getLaneNumber(edge_id)} "
+                f"recently={recently_requested} speed={traci.vehicle.getSpeed(vehicle_id):.2f}"
+            )
+            
             if current_lane is not None and current_lane == target_lane:
-                # Vehicle has reached the target lane — clear stale command
-                # so we do not keep reissuing an already completed maneuver.
+                # Vehicle has reached the target lane. 
+                # Only clear if it's not a temporary transition lane or if requested to stop.
+                print(f"LANE_CMD_CLEAR veh={vehicle_id} edge={edge_id} target={target_lane}")
                 self.lane_commands.pop(vehicle_id, None)
                 self.lane_command_state.pop(vehicle_id, None)
                 if self.initial_lane_change_mode >= 0:
@@ -320,17 +329,30 @@ class TraciBridge:
             elif (
                 current_lane is not None
                 and current_lane != target_lane
-                and target_lane < traci.edge.getLaneNumber(edge_id)
-                and not recently_requested
             ):
-                if self.command_lane_change_mode >= 0:
-                    traci.vehicle.setLaneChangeMode(vehicle_id, self.command_lane_change_mode)
-                traci.vehicle.changeLane(vehicle_id, target_lane, self.lane_change_duration_s)
-                self.lane_command_state[vehicle_id] = {
-                    "edge_id": edge_id,
-                    "target_lane": float(target_lane),
-                    "timestamp": now,
-                }
+                if target_lane < traci.edge.getLaneNumber(edge_id):
+                    if not recently_requested:
+                        print(
+                            f"LANE_CMD_APPLY veh={vehicle_id} edge={edge_id} from_lane={current_lane} "
+                            f"target={target_lane} duration={self.lane_change_duration_s:.2f} "
+                            f"mode={self.command_lane_change_mode} speed={traci.vehicle.getSpeed(vehicle_id):.2f}"
+                        )
+                        if self.command_lane_change_mode >= 0:
+                            traci.vehicle.setLaneChangeMode(vehicle_id, self.command_lane_change_mode)
+                        try:
+                            traci.vehicle.changeLane(vehicle_id, target_lane, self.lane_change_duration_s)
+                            self.lane_command_state[vehicle_id] = {
+                                "edge_id": edge_id,
+                                "target_lane": float(target_lane),
+                                "timestamp": now,
+                            }
+                        except traci.TraCIException as exc:
+                            print(f"LANE_CMD_FAILED veh={vehicle_id} edge={edge_id} error={exc}")
+                else:
+                    print(
+                        f"LANE_CMD_WAIT_EDGE veh={vehicle_id} edge={edge_id} lane={current_lane} "
+                        f"target={target_lane} lane_count={traci.edge.getLaneNumber(edge_id)}"
+                    )
         if vehicle_id in self.speed_mode_commands:
             traci.vehicle.setSpeedMode(vehicle_id, self.speed_mode_commands[vehicle_id])
         self._apply_collision_guard(vehicle_id)
