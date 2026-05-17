@@ -1704,8 +1704,8 @@ class OBUApp:
             # We enforce sticking to the same lead/host pairing locally so we stop hopping
             l_id, h_id = self.locked_slot
             # Basic check to make sure they are still around
-            l_active = True if l_id is None else bool(self.neighbor_knowledge.get(l_id))
-            h_active = True if h_id is None else bool(self.neighbor_knowledge.get(h_id))
+            l_active = l_id is None or l_id in self.neighbors
+            h_active = h_id is None or h_id in self.neighbors
             if l_active and h_active:
                 lead_id = l_id
                 host_id = h_id
@@ -2286,7 +2286,8 @@ class OBUApp:
             self._set_state(STATE_YIELDING)
             self._set_target_speed(required_speed)
 
-            self._hold_host_clear_lane(req_station_id)
+            # Temporarily disabled to guarantee merging relies purely on longitudinal acceleration
+            # self._hold_host_clear_lane(req_station_id)
             
             log.debug(
                 "[%.1f] %s HOST_YIELD: for merge=%d merge_eta=%.2f own_eta=%.2f "
