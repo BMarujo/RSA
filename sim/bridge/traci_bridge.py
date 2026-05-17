@@ -89,6 +89,7 @@ class TraciBridge:
         self.vehicle_emergency_decel = float(env("TRACI_VEHICLE_EMERGENCY_DECEL", "50.0"))
         self.lane_change_duration_s = float(env("LANE_CHANGE_DURATION_S", "3.0"))
         self.lane_change_cooldown_s = float(env("LANE_CHANGE_COOLDOWN_S", "2.0"))
+        self.command_lane_change_mode = int(env("TRACI_COMMAND_LANE_CHANGE_MODE", "256"))
         self.sumo_end = env("SUMO_END", "")
         self.sumo_end_s = float(self.sumo_end) if self.sumo_end else None
         self.sumo_extra_args = env("SUMO_EXTRA_ARGS", "")
@@ -313,12 +314,16 @@ class TraciBridge:
                 # so we do not keep reissuing an already completed maneuver.
                 self.lane_commands.pop(vehicle_id, None)
                 self.lane_command_state.pop(vehicle_id, None)
+                if self.initial_lane_change_mode >= 0:
+                    traci.vehicle.setLaneChangeMode(vehicle_id, self.initial_lane_change_mode)
             elif (
                 current_lane is not None
                 and current_lane != target_lane
                 and target_lane < traci.edge.getLaneNumber(edge_id)
                 and not recently_requested
             ):
+                if self.command_lane_change_mode >= 0:
+                    traci.vehicle.setLaneChangeMode(vehicle_id, self.command_lane_change_mode)
                 traci.vehicle.changeLane(vehicle_id, target_lane, self.lane_change_duration_s)
                 self.lane_command_state[vehicle_id] = {
                     "target_lane": float(target_lane),

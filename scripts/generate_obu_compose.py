@@ -173,6 +173,7 @@ def common_obu_env(vehicle: Vehicle, index: int, ramp_station_ids: str, main_sta
         "FINAL_MERGE_GUARD_M": env("FINAL_MERGE_GUARD_M", "28.0"),
         "FINAL_MERGE_CLEARANCE_M": env("FINAL_MERGE_CLEARANCE_M", "10.0"),
         "MERGE_OCCUPANCY_S": env("MERGE_OCCUPANCY_S", "3.0"),
+        "MERGE_COMMIT_HEADWAY_S": env("MERGE_COMMIT_HEADWAY_S", "1.5"),
         "MIN_MERGE_ENTRY_SPEED": env("MIN_MERGE_ENTRY_SPEED", "5.0"),
         "MERGE_ENTRY_SPEED_GUARD_M": env("MERGE_ENTRY_SPEED_GUARD_M", "35.0"),
         "MERGE_COMMIT_TIMEOUT_S": env("MERGE_COMMIT_TIMEOUT_S", "8.0"),
