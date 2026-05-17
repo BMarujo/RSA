@@ -1865,14 +1865,28 @@ class OBUApp:
             if not self.merge_completed:
                 self.merge_completed_since = self._sim_time()
 
+            log.debug(
+                "[%.1f] %s MERGE_COMPLETED: edge=%s lane=%s committed_age=%.1f",
+                self._sim_time(),
+                self.vehicle_id,
+                edge_id,
+                lane_index,
+                self._sim_time() - self.merge_committed_since if self.merge_committed else 0.0,
+            )
+
             self.merge_completed = True
             self.merge_committed = False
             self.committed_lead_id = None
             self.committed_host_id = None
             self.committed_manoeuvre_id = None
             self._set_state(STATE_CRUISE)
-            self._set_target_speed(self.cruise_speed)
-            self.target_speed_mode = self.default_speed_mode
+            
+            # Enforce exit speed after merge completion
+            exit_speed = max(self.cruise_speed, self.min_merge_entry_speed)
+            self._set_target_speed(exit_speed, force=True)
+            self.target_speed_mode = self.priority_speed_mode
+            self.skip_car_following_this_step = True
+            
             self.target_lane_index = None
             self.pending_request = None
             return
@@ -2425,13 +2439,10 @@ class OBUApp:
         )
 
         hostless_merge_allowed = (
-            host_id is None
+            self.allow_hostless_merge
+            and host_id is None
             and not pending_blocks_after_last
-            and (
-                self.allow_hostless_merge
-                or slot_reason == "true_after_last_main"
-            )
-            and (slot_reason == "true_after_last_main" or not has_relevant_main)
+            and not has_relevant_main
         )
 
         allowed_by_mcm = (
@@ -2609,6 +2620,13 @@ class OBUApp:
         if self.skip_car_following_this_step:
             self.skip_car_following_this_step = False
             return
+            
+        # Post-merge cooldown: allow some breathing room to avoid immediate deadlock
+        if (
+            self.merge_completed
+            and self._sim_time() - self.merge_completed_since < self.post_merge_lock_s
+        ):
+            return
 
         self.following_active = False
         self.following_station_id = None
@@ -2669,7 +2687,6 @@ class OBUApp:
                     continue
 
             # Merge-conflict following: MCM fallback for merge-vs-main pairs.
-            # Merge-conflict following: MCM fallback for merge-vs-main pairs.
             elif own_is_merge and own_dist <= self.merge_conflict_follow_distance_m:
                 # Merge conflict is NOT a physical bumper-to-bumper gap.
                 # It is only a soft ETA correction for ramp vehicles near the actual merge.
@@ -2720,6 +2737,10 @@ class OBUApp:
                 # Do not command a full stop unless the gap is physically critical.
                 soft_floor = max(self.cruise_speed * 0.35, self.min_speed)
                 hard_floor = max(self.cruise_speed * 0.30, self.emergency_min_speed)
+
+                if self.merge_completed and gap < 3.0:
+                    # If already on the highway, maintain a higher floor to keep traffic flowing
+                    soft_floor = max(self.cruise_speed * 0.45, self.min_speed)
 
                 target = min(
                     max(n_speed - self.cam_follow_speed_delta, soft_floor),
