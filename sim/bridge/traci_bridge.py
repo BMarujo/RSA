@@ -302,11 +302,12 @@ class TraciBridge:
             lane_id = traci.vehicle.getLaneID(vehicle_id)
             edge_id = lane_id.rsplit("_", 1)[0]
             current_lane = parse_lane_index(lane_id)
-            now = time.time()
+            now = traci.simulation.getTime()
             last = self.lane_command_state.get(vehicle_id)
             recently_requested = (
                 last is not None
                 and int(last.get("target_lane", -1)) == target_lane
+                and str(last.get("edge_id", "")) == edge_id
                 and now - last.get("timestamp", 0.0) < self.lane_change_cooldown_s
             )
             if current_lane is not None and current_lane == target_lane:
@@ -326,6 +327,7 @@ class TraciBridge:
                     traci.vehicle.setLaneChangeMode(vehicle_id, self.command_lane_change_mode)
                 traci.vehicle.changeLane(vehicle_id, target_lane, self.lane_change_duration_s)
                 self.lane_command_state[vehicle_id] = {
+                    "edge_id": edge_id,
                     "target_lane": float(target_lane),
                     "timestamp": now,
                 }
