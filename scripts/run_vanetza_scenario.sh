@@ -39,7 +39,7 @@ case "$VANETZA_SCENARIO" in
         default_env MERGE_LANE_INDEX "1"
         default_env HOST_CLEAR_LANE_INDEX "1"
         default_env HOST_COOPERATIVE_LANE_CHANGE "false"
-        default_env LANE_CHANGE_DURATION_S "5.0"
+        default_env LANE_CHANGE_DURATION_S "2.0"
         default_env LANE_CHANGE_COOLDOWN_S "5.0"
         default_env HOST_CLEAR_LANE_HOLD_S "12.0"
         default_env HOST_RETURN_LOCK_DISTANCE_M "90.0"

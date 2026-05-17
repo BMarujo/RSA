@@ -280,6 +280,7 @@ class OBUApp:
         self.merge_committed_since = 0.0
         self.merge_commit_timeout_s = float(env("MERGE_COMMIT_TIMEOUT_S", "8.0"))
         self.merge_commit_distance_m = float(env("MERGE_COMMIT_DISTANCE_M", "55.0"))
+        self.merge_lane_prepare_distance_m = float(env("MERGE_LANE_PREPARE_DISTANCE_M", "95.0"))
         
         self.main_station_ids = {int(item) for item in parse_csv(env("MAIN_STATION_IDS", "")) if item.isdigit()}
         self.ramp_y_threshold = float(env("RAMP_Y_THRESHOLD", "-1.0"))
@@ -1338,6 +1339,8 @@ class OBUApp:
             return True
 
         if lead_id is None and host_id is None and self.main_station_ids:
+            if self.merge_committed or (self.is_ramp_vehicle and self.past_merge_point):
+                return True
             log.debug(
                 "[%.1f] %s FINAL_GUARD: REJECTED blind merge without main-road context at dist=%.1f",
                 self._sim_time(), self.vehicle_id, distance_to_merge
@@ -1345,6 +1348,8 @@ class OBUApp:
             return False
 
         if lead_id is None and host_id is None:
+            if self.merge_committed or (self.is_ramp_vehicle and self.past_merge_point):
+                return True
             log.debug(
                 "[%.1f] %s FINAL_GUARD: REJECTED blind merge at dist=%.1f",
                 self._sim_time(), self.vehicle_id, distance_to_merge
@@ -1557,6 +1562,7 @@ class OBUApp:
 
             self._set_state(STATE_MERGING)
             self.target_speed_mode = self.priority_speed_mode
+            self.target_lane_index = self.merge_lane_index
 
             keep_speed = max(
                 self.min_merge_entry_speed,
@@ -1564,41 +1570,6 @@ class OBUApp:
                 self.min_speed,
             )
             self._set_target_speed(keep_speed)
-
-            if lane_index != self.merge_lane_index:
-                (
-                    keep_lead_id,
-                    keep_host_id,
-                    _keep_lead_eta,
-                    _keep_host_eta,
-                    _keep_min_eta,
-                    _keep_max_eta,
-                    _keep_gap_possible,
-                    _keep_desired_eta,
-                ) = self._select_merge_slot(eta)
-                keep_guard_ok = self._final_merge_lane_clear(keep_lead_id, keep_host_id, distance_to_merge)
-                if not keep_guard_ok:
-                    current_speed = self._current_speed() or self.cruise_speed
-                    hold_speed = max(
-                        self.min_merge_entry_speed,
-                        self.cruise_speed * self.merge_yield_floor_ratio,
-                        self.min_speed,
-                    )
-                    self.target_lane_index = None
-                    self._set_target_speed(min(current_speed, hold_speed))
-                    log.debug(
-                        "[%.1f] %s MERGE_COMMIT_HOLD: guard blocked lane command "
-                        "edge=%s lane=%s lead=%s host=%s",
-                        self._sim_time(),
-                        self.vehicle_id,
-                        edge_id,
-                        lane_index,
-                        keep_lead_id,
-                        keep_host_id,
-                    )
-                    return
-
-            self.target_lane_index = self.merge_lane_index
 
             log.debug(
                 "[%.1f] %s MERGE_COMMIT_KEEPALIVE: age=%.1f edge=%s lane=%s target_lane=%d",
@@ -1610,12 +1581,16 @@ class OBUApp:
                 self.merge_lane_index,
             )
 
-            if commit_age < self.merge_commit_timeout_s:
+            if commit_age >= self.merge_commit_timeout_s:
+                log.debug(
+                    "[%.1f] %s MERGE_COMMIT_TIMEOUT: edge=%s lane=%s target_lane=%d -> recovery",
+                    self._sim_time(), self.vehicle_id, edge_id, lane_index, self.merge_lane_index,
+                )
+                self.pending_request = None
+                self.merge_committed = False
+                self.merge_committed_since = 0.0
+                self._set_state(STATE_NEGOTIATING if not self.past_merge_point else STATE_MERGING)
                 return
-
-            # Timeout: keep trying, but avoid permanent stale pending request.
-            self.pending_request = None
-            self.merge_committed_since = self._sim_time()
             return
 
         ramp_leader = self._ramp_leader(distance_to_merge)
@@ -1842,47 +1817,25 @@ class OBUApp:
         # --- Far from merge point: just cruise ---
         if eta > self.eta_threshold_s:
             if self.is_ramp_vehicle and self.past_merge_point and not self.merge_completed:
-                (
-                    recovery_lead_id,
-                    recovery_host_id,
-                    _recovery_lead_eta,
-                    _recovery_host_eta,
-                    _recovery_min_eta,
-                    _recovery_max_eta,
-                    _recovery_gap_possible,
-                    _recovery_desired_eta,
-                ) = self._select_merge_slot(eta)
-                recovery_guard_ok = self._final_merge_lane_clear(
-                    recovery_lead_id,
-                    recovery_host_id,
-                    distance_to_merge,
-                )
-
-                self.target_speed_mode = self.priority_speed_mode
-                self._set_target_speed(max(self.min_merge_entry_speed, self.cruise_speed * 0.4, self.min_speed))
-
-                if not recovery_guard_ok:
-                    self._set_state(STATE_YIELDING)
-                    self.target_lane_index = None
-                    log.debug(
-                        "[%.1f] %s MISSED_MERGE_RECOVERY_HOLD: guard blocked recovery "
-                        "lead=%s host=%s eta=%.1f",
-                        self._sim_time(),
-                        self.vehicle_id,
-                        recovery_lead_id,
-                        recovery_host_id,
-                        eta,
-                    )
-                    return
-
+                lane_id_str = str(self.sensor_state.get("lane_id", ""))
+                current_lane_index = parse_lane_index(lane_id_str)
+                current_edge_id = edge_id_from_lane(lane_id_str)
+                
                 self._set_state(STATE_MERGING)
-                self.target_lane_index = self.merge_lane_index
+                self.target_speed_mode = self.priority_speed_mode
+                
+                if current_lane_index != self.merge_lane_index:
+                    self.target_lane_index = self.merge_lane_index
+                    
+                self._set_target_speed(
+                    max(self.min_merge_entry_speed, self.cruise_speed * 0.6, 3.0),
+                    emergency=True,
+                )
+                
                 log.debug(
-                    "[%.1f] %s MISSED_MERGE_RECOVERY: keeping lane command target_lane=%d eta=%.1f",
-                    self._sim_time(),
-                    self.vehicle_id,
-                    self.merge_lane_index,
-                    eta,
+                    "[%.1f] %s MISSED_MERGE_RECOVERY: edge=%s lane=%s target_lane=%d speed_target=%.2f",
+                    self._sim_time(), self.vehicle_id, current_edge_id, current_lane_index,
+                    self.merge_lane_index, self.target_speed or 0.0,
                 )
                 return
 
@@ -1974,7 +1927,12 @@ class OBUApp:
             self.target_speed_mode = self.priority_speed_mode
         elif can_merge and allowed_by_mcm and final_guard_ok:
             self._set_state(STATE_NEGOTIATING if host_id is not None else STATE_CRUISE)
-            self.target_lane_index = None
+            
+            if distance_to_merge <= self.merge_lane_prepare_distance_m:
+                self.target_lane_index = self.merge_lane_index
+            else:
+                self.target_lane_index = None
+                
             log.debug(
                 "[%.1f] %s WAIT_COMMIT_DISTANCE: dist=%.1f > %.1f host=%s",
                 self._sim_time(), self.vehicle_id, distance_to_merge,
