@@ -294,6 +294,11 @@ class OBUApp:
         self.host_clear_lane_until = 0.0
         self.host_clear_for_station: Optional[int] = None
         self.host_return_lock_distance_m = float(env("HOST_RETURN_LOCK_DISTANCE_M", "90.0"))
+        
+        self.locked_slot: Optional[Tuple[Optional[int], Optional[int]]] = None
+        self.locked_slot_until = 0.0
+        self.slot_lock_s = float(env("SLOT_LOCK_S", "4.0"))
+        
         self.enable_mcm = env("ENABLE_MCM", "true").lower() == "true"
         self.enable_denm = env("ENABLE_DENM", "false").lower() == "true"
         self.publish_idle_actuators = env("PUBLISH_IDLE_ACTUATORS", "true").lower() == "true"
@@ -590,6 +595,14 @@ class OBUApp:
         rational = basic.get("rational", {})
         action = self._parse_mcm_action(rational.get("manoeuvreCooperationCost"))
         manoeuvre_id = self._parse_received_manoeuvre_id(basic.get("manoeuvreId"))
+        
+        target_station_id = basic.get("targetStationId")
+        if action == MCM_ACTION_REQUEST and target_station_id is not None:
+            try:
+                if int(target_station_id) != self.station_id:
+                    return
+            except (ValueError, TypeError):
+                pass
 
         if action is None or manoeuvre_id is None:
             return
@@ -670,7 +683,7 @@ class OBUApp:
         self.last_position = {"x": x, "y": y}
         return cam
 
-    def _build_mcm(self, action: int, manoeuvre_id: Optional[int]) -> Dict[str, Any]:
+    def _build_mcm(self, action: int, manoeuvre_id: Optional[int], target_station_id: Optional[int] = None) -> Dict[str, Any]:
         mcm = copy.deepcopy(self.mcm_template)
         if not self.sensor_state:
             return mcm
@@ -682,6 +695,11 @@ class OBUApp:
 
         manoeuvre_id = self._normalize_manoeuvre_id(manoeuvre_id)
         action = clamp_int(action, default=MCM_ACTION_REQUEST)
+        
+        basic = mcm.setdefault("basicContainer", {})
+        basic["stationId"] = self.station_id
+        if target_station_id is not None:
+            basic["targetStationId"] = int(target_station_id)
 
         mcm["stationId"] = self.station_id
         basic = mcm.setdefault("basicContainer", {})
@@ -1197,10 +1215,10 @@ class OBUApp:
         self.pending_request = None
         self._set_state(STATE_CRUISE)
 
-    def _send_mcm(self, action: int, manoeuvre_id: Optional[int] = None) -> None:
+    def _send_mcm(self, action: int, manoeuvre_id: Optional[int] = None, target_station_id: Optional[int] = None) -> None:
         if not self.enable_mcm:
             return
-        payload = self._build_mcm(action, manoeuvre_id)
+        payload = self._build_mcm(action, manoeuvre_id, target_station_id)
         self._publish_json(self.mcm_in_topic, payload)
         self.last_mcm_sent = self._sim_time()
         log.debug(
@@ -1465,7 +1483,7 @@ class OBUApp:
                 "[%.1f] %s MCM_REQUEST: host=%s manoeuvre=%s",
                 self._sim_time(), self.vehicle_id, host_id, manoeuvre_id,
             )
-            self._send_mcm(MCM_ACTION_REQUEST, manoeuvre_id)
+            self._send_mcm(MCM_ACTION_REQUEST, manoeuvre_id, target_station_id=host_id)
             self._set_state(STATE_NEGOTIATING)
         elif self._sim_time() - self.last_mcm_sent >= self.request_retry_s:
             log.debug(
@@ -1475,7 +1493,7 @@ class OBUApp:
                 host_id,
                 self.pending_request["manoeuvre_id"],
             )
-            self._send_mcm(MCM_ACTION_REQUEST, self.pending_request["manoeuvre_id"])
+            self._send_mcm(MCM_ACTION_REQUEST, self.pending_request["manoeuvre_id"], target_station_id=host_id)
 
         response = self.mcm_messages.get(host_id)
         response_action = None
@@ -1664,6 +1682,12 @@ class OBUApp:
                 return
 
         # --- Identify the target merge slot by ETA order on the main road ---
+        current_time = self._sim_time()
+        
+        # Determine slot locked status
+        if self.locked_slot_until < current_time:
+            self.locked_slot = None
+            
         (
             lead_id,
             host_id,
@@ -1674,6 +1698,21 @@ class OBUApp:
             gap_possible,
             desired_eta,
         ) = self._select_merge_slot(eta)
+        
+        # Override with locked slot if applicable
+        if self.locked_slot is not None:
+            # We enforce sticking to the same lead/host pairing locally so we stop hopping
+            l_id, h_id = self.locked_slot
+            # Basic check to make sure they are still around
+            l_active = True if l_id is None else bool(self.neighbor_knowledge.get(l_id))
+            h_active = True if h_id is None else bool(self.neighbor_knowledge.get(h_id))
+            if l_active and h_active:
+                lead_id = l_id
+                host_id = h_id
+        else:
+            # Lock this current decision
+            self.locked_slot = (lead_id, host_id)
+            self.locked_slot_until = current_time + self.slot_lock_s
 
         lead_distance = self._neighbor_distance(lead_id) if lead_id is not None else None
         host_distance = self._neighbor_distance(host_id) if host_id is not None else None
