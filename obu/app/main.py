@@ -299,6 +299,9 @@ class OBUApp:
         self.locked_slot_until = 0.0
         self.slot_lock_s = float(env("SLOT_LOCK_S", "4.0"))
         
+        self.active_merge_request: Optional[Dict[str, Any]] = None
+        self.active_merge_request_until = 0.0
+        
         self.enable_mcm = env("ENABLE_MCM", "true").lower() == "true"
         self.enable_denm = env("ENABLE_DENM", "false").lower() == "true"
         self.publish_idle_actuators = env("PUBLISH_IDLE_ACTUATORS", "true").lower() == "true"
@@ -489,8 +492,13 @@ class OBUApp:
         candidates.sort(key=lambda item: (item[0], item[1]))
         return candidates[0][1]
 
-    def _set_target_speed(self, speed: float, emergency: bool = False) -> None:
+    def _set_target_speed(self, speed: float, emergency: bool = False, force: bool = False) -> None:
         target = max(speed, self.emergency_min_speed if emergency else self.min_speed)
+        
+        if force:
+            self.target_speed = target
+            return
+            
         current = self._current_speed()
         if current is not None:
             upper = max(current + self.max_speed_step_up, self.min_speed)
@@ -575,6 +583,13 @@ class OBUApp:
             return None
         return parsed
 
+    def _mcm_target_station_id(self, mcm_payload: Dict[str, Any]) -> Optional[int]:
+        veh = mcm_payload.get("mcmContainer", {}).get("vehicleManoeuvreContainer", {})
+        advice = veh.get("manoeuvreAdvice", [])
+        if advice and isinstance(advice, list) and isinstance(advice[0], dict) and advice[0].get("executantID") is not None:
+            return int(advice[0]["executantID"])
+        return None
+
     def _handle_mcm(self, payload: Dict[str, Any]) -> None:
         if not self.sensor_state:
             return
@@ -596,24 +611,25 @@ class OBUApp:
         action = self._parse_mcm_action(rational.get("manoeuvreCooperationCost"))
         manoeuvre_id = self._parse_received_manoeuvre_id(basic.get("manoeuvreId"))
         
-        target_station_id = basic.get("targetStationId")
-        if action == MCM_ACTION_REQUEST and target_station_id is not None:
-            try:
-                if int(target_station_id) != self.station_id:
-                    return
-            except (ValueError, TypeError):
-                pass
+        target_station_id = self._mcm_target_station_id(mcm_payload)
+        
+        if action == MCM_ACTION_REQUEST:
+            if target_station_id is None:
+                return
+            if target_station_id != self.station_id:
+                return
 
         if action is None or manoeuvre_id is None:
             return
 
         log.debug(
-            "[%.1f] %s MCM_RX_%s: from=%d manoeuvre=%s",
+            "[%.1f] %s MCM_RX_%s: from=%d manoeuvre=%s target=%s",
             self._sim_time(),
             self.vehicle_id,
             mcm_action_name(action),
             station_id,
             manoeuvre_id,
+            target_station_id
         )
 
         if action in (MCM_ACTION_ACCEPT, MCM_ACTION_REJECT):
@@ -699,7 +715,11 @@ class OBUApp:
         basic = mcm.setdefault("basicContainer", {})
         basic["stationId"] = self.station_id
         if target_station_id is not None:
-            basic["targetStationId"] = int(target_station_id)
+            veh = mcm.setdefault("mcmContainer", {}).setdefault("vehicleManoeuvreContainer", {})
+            advice = veh.setdefault("manoeuvreAdvice", [{}])
+            if not advice:
+                advice.append({})
+            advice[0]["executantID"] = int(target_station_id)
 
         mcm["stationId"] = self.station_id
         basic = mcm.setdefault("basicContainer", {})
@@ -1709,7 +1729,15 @@ class OBUApp:
             if l_active and h_active:
                 lead_id = l_id
                 host_id = h_id
-        else:
+                
+                lead_eta = self._neighbor_eta(lead_id) if lead_id is not None else None
+                host_eta = self._neighbor_eta(host_id) if host_id is not None else None
+                min_eta, max_eta, gap_possible = self._merge_slot_window(lead_eta, host_eta)
+                desired_eta = self._desired_eta_for_window(eta, min_eta, max_eta)
+            else:
+                self.locked_slot = None
+                
+        if self.locked_slot is None:
             # Lock this current decision
             self.locked_slot = (lead_id, host_id)
             self.locked_slot_until = current_time + self.slot_lock_s
@@ -1866,16 +1894,14 @@ class OBUApp:
                 if current_lane_index != self.merge_lane_index:
                     self.target_lane_index = self.merge_lane_index
                     
-                self._set_target_speed(
-                    max(self.min_merge_entry_speed, self.cruise_speed * 0.6, 3.0),
-                    emergency=True,
-                )
+                recover_spd = max(self.min_merge_entry_speed, self.cruise_speed * 0.6, 3.0)
                 
                 log.debug(
                     "[%.1f] %s MISSED_MERGE_RECOVERY: edge=%s lane=%s target_lane=%d speed_target=%.2f",
                     self._sim_time(), self.vehicle_id, current_edge_id, current_lane_index,
-                    self.merge_lane_index, self.target_speed or 0.0,
+                    self.merge_lane_index, recover_spd,
                 )
+                self._set_target_speed(recover_spd, force=True)
                 return
 
             if self.fsm_state in (STATE_NEGOTIATING, STATE_MERGING, STATE_YIELDING):
@@ -2199,8 +2225,21 @@ class OBUApp:
             self._set_state(STATE_CRUISE)
             return
 
+        now = self._sim_time()
         req_station_id = request["station_id"]
         req_manoeuvre_id = request.get("manoeuvre_id") or 0
+
+        # Enforce host reservation: only 1 ramp car per host at a time
+        if self.active_merge_request is not None and now < self.active_merge_request_until:
+            active_station = self.active_merge_request.get("station_id")
+            if active_station is not None and active_station != req_station_id:
+                last_sent = self.last_mcm_response.get(req_station_id, 0)
+                if now - last_sent >= self.response_period_s:
+                    self._send_mcm(MCM_ACTION_REJECT, req_manoeuvre_id)
+                    self.last_mcm_response[req_station_id] = now
+                log.debug("[%.1f] %s HOST_RESERVED: reject %s", now, self.vehicle_id, req_station_id)
+                self._set_state(STATE_CRUISE)
+                return
 
         if (
             self.following_active
