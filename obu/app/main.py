@@ -919,14 +919,14 @@ class OBUApp:
             else:
                 self.pending_host_lost_since = 0.0
         if self.locked_slot is None and hid is not None: self.locked_slot, self.locked_slot_until = (lid, hid), curt + self.slot_lock_s
-        if maxe and maxe <= 0.0: self.locked_slot, self.pending_request, self.merge_authorized = None, None, False; self._set_state(STATE_NEGOTIATING); return
+        if maxe and maxe <= 0.0: self.locked_slot, self.pending_request, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = None, None, False, False, 0.0; self._set_state(STATE_NEGOTIATING); return
         if not gp: de = max(e, mine) if mine else e
         if de > e + 0.05: self._set_target_speed(max(dtm / max(de, 0.1), self.cruise_speed * 0.4))
         elif de < e - 0.05: self._set_target_speed(min(dtm / max(de, 0.1), self.cruise_speed + self.merge_speed_bonus))
         else: self._set_target_speed(self.cruise_speed * 0.9)
         if self.fsm_state == STATE_NEGOTIATING and cspd < 0.1:
             if not hasattr(self, '_stop_since'): self._stop_since = curt
-            if curt - self._stop_since > 3.0: log.debug("[%.1f] %s STOPPED_TOO_LONG: host %s", curt, self.vehicle_id, hid); self.pending_request, self.merge_authorized, self._stop_since = None, False, curt
+            if curt - self._stop_since > 3.0: log.debug("[%.1f] %s STOPPED_TOO_LONG: host %s", curt, self.vehicle_id, hid); self.pending_request, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since, self._stop_since = None, False, False, 0.0, curt
         else: self._stop_since = curt
         lgok, hgok, cok, fgok = (e - le) >= self.safe_headway_s if le else True, (he - e) >= self.merge_commit_headway_s if he else True, self._all_main_clearance_ok(), self._final_merge_lane_clear(lid, hid, dtm)
         esok, cready = dtm > self.merge_entry_speed_guard_m or cspd >= self.min_merge_entry_speed, (dtm <= self.merge_commit_distance_m or self.past_merge_point)
@@ -941,7 +941,7 @@ class OBUApp:
         hlma = self.allow_hostless_merge and hid is None and self.pending_request is None and not has_rm; amcm = hlma or ra == 2
         if hid is None and not self.allow_hostless_merge:
             amcm = False
-            if self.merge_authorized: log.debug("[%.1f] %s MERGE_AUTH_CLEAR_HOSTLESS_DISABLED", curt, self.vehicle_id); self.merge_authorized = False
+            if self.merge_authorized: log.debug("[%.1f] %s MERGE_AUTH_CLEAR_HOSTLESS_DISABLED", curt, self.vehicle_id); self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = False, False, 0.0
         hyok = self._host_yield_effective(hid)
         if not hyok and ra == 2 and self.pending_request:
             aat = self.pending_request.get("accepted_at")
