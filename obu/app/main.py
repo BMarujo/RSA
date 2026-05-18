@@ -354,7 +354,7 @@ class OBUApp:
             if clean_merge: self.count_merge_completed_clean += 1
             if self.had_merge_timeout_this_attempt: log.debug("[%.1f] %s MERGE_COMPLETED_AFTER_TIMEOUT: eid=%s lane=%d", curt, self.vehicle_id, eid, lidx)
             else: log.debug("[%.1f] %s MERGE_COMPLETED: eid=%s lane=%d clean=%s", curt, self.vehicle_id, eid, lidx, clean_merge)
-            self.merge_completed, self.merge_committed, self.merge_authorized, self.merge_authorized_since, self.had_merge_timeout_this_attempt, self.merge_deadlock_since, self.merge_safety_hold_since = True, False, False, 0.0, False, 0.0, 0.0
+            self.merge_completed, self.merge_committed, self.merge_authorized, self.merge_authorized_since, self.had_merge_timeout_this_attempt, self.merge_deadlock_since, self.merge_safety_hold_since, self.accepted_slot_invalid_since = True, False, False, 0.0, False, 0.0, 0.0, 0.0
             self.merge_physical_started_once = False
             self.committed_lead_id, self.committed_host_id, self.committed_manoeuvre_id, self.recovery_triggered_this_merge = None, None, None, False
             self._set_state(STATE_CRUISE); self.target_lane_index, self.pending_request = None, None
@@ -788,6 +788,7 @@ class OBUApp:
                 h = self.neighbors[hid]; dist = self._distance_to_merge(float(h["x"]), float(h["y"])); oe = self._merge_eta()
                 if oe: ht = dist / max(oe + self.safe_headway_s + self.merge_occupancy_s, 0.1)
             self.pending_request = {"host_id": hid, "host_eta": he, "host_target_speed": ht, "lead_id": lid, "lead_eta": le, "manoeuvre_id": mid, "timestamp": self._sim_time()}
+            self.accepted_slot_invalid_since = 0.0
             self._send_mcm(1, mid, target_station_id=hid); self._set_state(STATE_NEGOTIATING)
         elif not self.pending_request.get("accepted_at") and self._sim_time() - self.last_mcm_sent >= self.request_retry_s:
             self._send_mcm(1, self.pending_request["manoeuvre_id"], target_station_id=hid)
@@ -814,8 +815,9 @@ class OBUApp:
                         log.debug("[%.1f] %s MCM_ACCEPT_MATCHED: host=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, hid, self.pending_request["manoeuvre_id"])
                         self.merge_accepted = True
                         self.merge_accepted_since = self._sim_time()
+                        self.accepted_slot_invalid_since = 0.0
                     self.pending_request["accepted_at"] = self._sim_time()
-                elif ra == 3: log.debug("[%.1f] %s MCM_REJECT: host=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, hid, self.pending_request["manoeuvre_id"]); self.rejected_hosts_until[hid] = self._sim_time() + 1.5; self.pending_request, self.merge_authorized, self.merge_accepted = None, False, False; self._set_state(STATE_NEGOTIATING); self._set_target_speed(max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)); return 3
+                elif ra == 3: log.debug("[%.1f] %s MCM_REJECT: host=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, hid, self.pending_request["manoeuvre_id"]); self.rejected_hosts_until[hid] = self._sim_time() + 1.5; self.pending_request, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = None, False, False, 0.0; self._set_state(STATE_NEGOTIATING); self._set_target_speed(max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)); return 3
             elif not fresh:
                 if resp.get("action") == 2: log.debug("[%.1f] %s MCM_ACCEPT_STALE: host=%d manoeuvre=%s", self._sim_time(), self.vehicle_id, hid, resp.get("manoeuvre_id"))
                 self.mcm_messages.pop(hid, None)
@@ -826,7 +828,7 @@ class OBUApp:
             p_time = float(self.pending_request["accepted_at" if self.pending_request.get("accepted_at") else "timestamp"])
             age, tout = self._sim_time() - p_time, self.merge_accept_timeout_s if self.pending_request.get("accepted_at") else self.negotiation_timeout_s
             if age > tout:
-                oh = self.pending_request.get("host_id"); self.pending_request, self.merge_authorized, self.merge_accepted, self.mcm_retry_blocked_until = None, False, False, self._sim_time() + self.mcm_timeout_cooldown_s
+                oh = self.pending_request.get("host_id"); self.pending_request, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since, self.mcm_retry_blocked_until = None, False, False, 0.0, self._sim_time() + self.mcm_timeout_cooldown_s
                 if oh: self.mcm_messages.pop(int(oh), None)
                 log.debug("[%.1f] %s MCM_TIMEOUT: host=%s giving up", self._sim_time(), self.vehicle_id, oh); self._set_state(STATE_NEGOTIATING); self._set_target_speed(max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)); return 3
         return ra
@@ -859,14 +861,14 @@ class OBUApp:
                 if self.merge_safety_hold_since <= 0.0: self.merge_safety_hold_since = curt
                 if curt - self.merge_safety_hold_since > self.merge_safety_hold_timeout_s:
                     self._log_timeline_event("ABORT_SAFETY_HOLD")
-                    log.debug("[%.1f] %s MERGE_COMMIT_ABORT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); self.merge_committed, self.merge_authorized, self.pending_request = False, False, None; self._set_state(STATE_NEGOTIATING); return
+                    log.debug("[%.1f] %s MERGE_COMMIT_ABORT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); self.merge_committed, self.merge_authorized, self.pending_request, self.merge_accepted, self.accepted_slot_invalid_since = False, False, None, False, 0.0; self._set_state(STATE_NEGOTIATING); return
                 self._set_target_speed(max(self.min_merge_entry_speed * 0.5, self.min_speed), force=True); log.debug("[%.1f] %s MERGE_COMMIT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); return
             self.merge_safety_hold_since = 0.0; self._set_target_speed(max(self.min_merge_entry_speed, self.cruise_speed * 0.9)); self.skip_car_following_this_step = True
-            if ca >= self.merge_commit_timeout_s: self._log_timeline_event("TIMEOUT"); log.debug("[%.1f] %s MERGE_COMMIT_TIMEOUT", curt, self.vehicle_id); self.had_merge_timeout_this_attempt, self.pending_request, self.merge_committed, self.merge_authorized = True, None, False, False; self._set_state(STATE_NEGOTIATING); return
+            if ca >= self.merge_commit_timeout_s: self._log_timeline_event("TIMEOUT"); log.debug("[%.1f] %s MERGE_COMMIT_TIMEOUT", curt, self.vehicle_id); self.had_merge_timeout_this_attempt, self.pending_request, self.merge_committed, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = True, None, False, False, False, 0.0; self._set_state(STATE_NEGOTIATING); return
             return
         if self.merge_authorized and not self.merge_committed:
             auth_age = curt - self.merge_authorized_since
-            if auth_age > self.merge_authorized_timeout_s: self._log_timeline_event("TIMEOUT"); log.debug("[%.1f] %s MERGE_AUTHORIZED_TIMEOUT: age=%.1f pending=%s", curt, self.vehicle_id, auth_age, self.pending_request); self.merge_authorized, self.pending_request, self.locked_slot = False, None, None; self._set_state(STATE_NEGOTIATING); return
+            if auth_age > self.merge_authorized_timeout_s: self._log_timeline_event("TIMEOUT"); log.debug("[%.1f] %s MERGE_AUTHORIZED_TIMEOUT: age=%.1f pending=%s", curt, self.vehicle_id, auth_age, self.pending_request); self.merge_authorized, self.pending_request, self.merge_accepted, self.accepted_slot_invalid_since, self.locked_slot = False, None, False, 0.0, None; self._set_state(STATE_NEGOTIATING); return
         if self.pending_request is None and not self.merge_committed and self.fsm_state not in (STATE_NEGOTIATING, STATE_MERGING) and self._has_ramp_leader_close(dtm): self._set_state(STATE_YIELDING); self._set_target_speed(max(cspd - self.ramp_platoon_speed_delta, self.min_speed)); return
         if curt < self.mcm_retry_blocked_until: self._set_state(STATE_YIELDING); self._set_target_speed(max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)); return
         if self.pending_request is None and not self.merge_committed and dtm > self.mcm_request_distance_m: self._set_state(STATE_CRUISE); return
@@ -913,7 +915,7 @@ class OBUApp:
                 self.pending_host_lost_since = 0.0
                 self._log_timeline_event("TIMEOUT")
                 log.debug("[%.1f] %s MCM_PENDING_ABANDON: host=%d %s", curt, self.vehicle_id, phid, "lost" if phe is None else f"ahead(eta={phe:.2f}<=own={e:.2f})")
-                self.mcm_messages.pop(phid, None); self.pending_request, self.merge_authorized, self.merge_accepted = None, False, False; lid, hid, le, he, mine, maxe, gp, de, sreas = lc, hc, lec, hec, mic, mxc, gpc, dec, src
+                self.mcm_messages.pop(phid, None); self.pending_request, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = None, False, False, 0.0; lid, hid, le, he, mine, maxe, gp, de, sreas = lc, hc, lec, hec, mic, mxc, gpc, dec, src
             else:
                 self.pending_host_lost_since = 0.0
         if self.locked_slot is None and hid is not None: self.locked_slot, self.locked_slot_until = (lid, hid), curt + self.slot_lock_s
@@ -984,14 +986,15 @@ class OBUApp:
                     log.debug("[%.1f] %s MERGE_AUTHORIZED_BY_MCM: host=%s manoeuvre=%s", curt, self.vehicle_id, hid, self.pending_request.get("manoeuvre_id") if self.pending_request else 0)
                 else:
                     if curt - self.last_accepted_wait_log > 1.0:
+                        def fmt_gap(v): return f"{v:.2f}" if v is not None else "None"
                         reason = []
                         if not hyok: reason.append("hyok=False")
-                        if not lgok: reason.append(f"lgok=False(gap={lg_v:.2f} if lg_v else 'None')")
-                        if not hgok: reason.append(f"hgok=False(gap={hg_v:.2f} if hg_v else 'None')")
+                        if not lgok: reason.append(f"lgok=False(gap={fmt_gap(lg_v)})")
+                        if not hgok: reason.append(f"hgok=False(gap={fmt_gap(hg_v)})")
                         if not fgok: reason.append("fgok=False")
                         if not lclear: reason.append("lclear=False")
                         if not cok: reason.append("cok=False")
-                        if not lgok_proj: reason.append(f"lgok_proj=False(t1={lg1_v:.2f}, t2={lg2_v:.2f})")
+                        if not lgok_proj: reason.append(f"lgok_proj=False(t1={fmt_gap(lg1_v)}, t2={fmt_gap(lg2_v)})")
                         log.debug("[%.1f] %s MERGE_ACCEPTED_WAIT_SLOT_VALID: reason=%s", curt, self.vehicle_id, ",".join(reason))
                         self.last_accepted_wait_log = curt
 
@@ -1002,7 +1005,7 @@ class OBUApp:
                 if inv_age > self.accepted_slot_invalid_timeout_s:
                     self._log_timeline_event("SLOT_EXPIRED")
                     log.debug("[%.1f] %s MERGE_ACCEPTED_SLOT_EXPIRED: age=%.1f dtm=%.1f", curt, self.vehicle_id, inv_age, dtm)
-                    self.pending_request, self.merge_accepted, self.merge_authorized = None, False, False
+                    self.pending_request, self.merge_accepted, self.merge_authorized, self.accepted_slot_invalid_since = None, False, False, 0.0
                     if hid: self.mcm_messages.pop(int(hid), None)
                     self._set_state(STATE_NEGOTIATING); return
             else:
