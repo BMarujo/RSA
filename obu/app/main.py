@@ -150,6 +150,8 @@ class OBUApp:
         self.cam_follow_lookahead, self.cam_follow_lateral_tolerance = float(env("CAM_FOLLOW_LOOKAHEAD", "50.0")), float(env("CAM_FOLLOW_LATERAL_TOLERANCE_M", "3.8"))
         self.cam_follow_speed_delta, self.cam_follow_critical_gap = float(env("CAM_FOLLOW_SPEED_DELTA", "0.8")), float(env("CAM_FOLLOW_CRITICAL_GAP_M", "6.0"))
         self.cam_follow_brake_decel, self.cam_follow_emergency_decel = float(env("CAM_FOLLOW_BRAKE_DECEL", "4.5")), float(env("CAM_FOLLOW_EMERGENCY_DECEL", "9.0"))
+        self.final_guard_ttc_s = float(env("FINAL_GUARD_TTC_S", "3.0"))
+        self.final_guard_lateral_mult = float(env("FINAL_GUARD_LATERAL_MULT", "2.0"))
         self.ramp_edge_ids, self.main_edge_ids = parse_csv(env("RAMP_EDGE_IDS", "ramp_in")), parse_csv(env("MAIN_EDGE_IDS", "main_in,main_out"))
         self.ramp_station_ids = {int(i) for i in parse_csv(env("RAMP_STATION_IDS", "")) if i.isdigit()}
         self.is_ramp_vehicle = self.station_id in self.ramp_station_ids
@@ -264,7 +266,9 @@ class OBUApp:
         elif msg.topic == self.mcm_out_topic: self._handle_mcm(p)
 
     def _set_state(self, s):
-        if self.fsm_state != s: self.fsm_state, self.fsm_state_since = s, self._sim_time()
+        if self.fsm_state != s:
+            self.fsm_state, self.fsm_state_since = s, self._sim_time()
+            if s == STATE_MERGING: self.merge_merging_started_since = self._sim_time()
 
     def _current_speed(self): return float(self.sensor_state.get("speed", 0.0)) if self.sensor_state else None
     def _current_heading(self):
@@ -355,6 +359,10 @@ class OBUApp:
             if clean_merge: self.count_merge_completed_clean += 1
             if self.had_merge_timeout_this_attempt: log.debug("[%.1f] %s MERGE_COMPLETED_AFTER_TIMEOUT: eid=%s lane=%d", curt, self.vehicle_id, eid, lidx)
             else: log.debug("[%.1f] %s MERGE_COMPLETED: eid=%s lane=%d clean=%s", curt, self.vehicle_id, eid, lidx, clean_merge)
+            if self.had_merge_timeout_this_attempt:
+                dur = curt - getattr(self, 'merge_physical_started_since', -1.0)
+                lcs = self.lane_command_status.get("state", "NONE") if self.lane_command_status else "NONE"
+                log.info("MERGE_COMPLETION_LATENCY_DIAG: vehicle=%s start_time=%.1f merging_time=%.1f clear_time=%.1f completed_time=%.1f duration_start_to_complete=%.1f lane_cmd_state=%s edge=%s lane=%s", self.vehicle_id, getattr(self, 'merge_physical_started_since', -1.0), getattr(self, 'merge_merging_started_since', -1.0), getattr(self, 'last_lane_clear_time', -1.0), curt, dur, lcs, eid, lidx)
             self.merge_completed, self.merge_committed, self.merge_authorized, self.merge_authorized_since, self.had_merge_timeout_this_attempt, self.merge_deadlock_since, self.merge_safety_hold_since, self.merge_accepted, self.merge_accepted_since, self.accepted_slot_invalid_since = True, False, False, 0.0, False, 0.0, 0.0, False, 0.0, 0.0
             self.merge_physical_started_once = False
             self.committed_lead_id, self.committed_host_id, self.committed_manoeuvre_id, self.recovery_triggered_this_merge = None, None, None, False
@@ -892,13 +900,13 @@ class OBUApp:
             
             # Dynamic TTC check for side-by-side or approaching vehicles
             ttc_danger = False
-            if lat <= self.cam_follow_lateral_tolerance * 2.0:
+            if lat <= self.cam_follow_lateral_tolerance * self.final_guard_lateral_mult:
                 if lon < 0 and ns > cspd: # neighbor is behind and faster
                     ttc = -lon / (ns - cspd)
-                    if ttc < 3.0: ttc_danger = True
+                    if ttc < self.final_guard_ttc_s: ttc_danger = True
                 elif lon > 0 and cspd > ns: # neighbor is ahead and slower
                     ttc = lon / (cspd - ns)
-                    if ttc < 3.0: ttc_danger = True
+                    if ttc < self.final_guard_ttc_s: ttc_danger = True
             
             if pg < self.final_merge_clearance_m or (ec and cc) or ttc_danger or (cc and pg < 15.0): log.debug("[%.1f] %s FINAL_GUARD: REJECTED sid=%d gap=%.1f ttc_danger=%s", self._sim_time(), self.vehicle_id, s, pg, ttc_danger); return False
         return True
@@ -1230,7 +1238,7 @@ class OBUApp:
         log.debug("[%.1f] %s MERGE_DECISION: auth=%s phys=%s fgok=%s lgok=%s hgok=%s cok=%s esok=%s cready=%s dtm=%.1f past=%s committed=%s hid=%s ra=%s lclear=%s hyok=%s", curt, self.vehicle_id, self.merge_authorized, physical_zone, fgok, lgok, hgok, cok, esok, cready, dtm, self.past_merge_point, self.merge_committed, hid, ra, lclear, hyok)
         if self.merge_authorized and physical_zone and lgok and hgok and cok and fgok and lclear and cready and hyok:
             if not self.merge_committed and not self.merge_physical_started_once:
-                self.merge_physical_started_once = True
+                self.merge_physical_started_once, self.merge_physical_started_since = True, curt
                 self._log_merge_start_gap_diag("start", lid, hid, le, he, e, dtm, cspd, lidx, eid)
                 self.merge_committed, self.merge_committed_since, self.committed_lead_id, self.committed_host_id = True, curt, lid, hid
                 self._log_timeline_event("PHYSICAL_START")
