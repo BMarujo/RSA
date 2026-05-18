@@ -1,13 +1,13 @@
-Sim, agora parece mesmo pronto para testes intensivos.
+Sim, agora está tudo alinhado para os testes intensivos.
 
-Confirmei no repo:
+Confirmei no `main.py`:
 
-* O bug do `fmt_gap` está corrigido no `MERGE_ACCEPTED_WAIT_SLOT_VALID`. Já não há formatação perigosa com `None`. 
-* `accepted_slot_invalid_since` já é resetado em criação de novo `pending_request`, `ACCEPT_MATCHED`, `MCM_REJECT`, `MCM_TIMEOUT`, `MCM_PENDING_ABANDON`, `maxe <= 0`, `STOPPED_TOO_LONG` e `MERGE_ACCEPTED_SLOT_EXPIRED`.
-* A lógica `ACCEPT_MATCHED` → `merge_accepted` → só depois `MERGE_AUTHORIZED_BY_MCM` se `accepted_ready` estiver válido está no sítio certo. 
-* A telemetria do host/OBUs e a reserva até `CLEAR` continuam no código.
+* O `fmt_gap()` já está correto no bloco `MERGE_ACCEPTED_WAIT_SLOT_VALID`. 
+* `accepted_slot_invalid_since` é resetado quando há novo `pending_request`, `ACCEPT_MATCHED`, `MCM_REJECT`, `MCM_TIMEOUT`, `MCM_PENDING_ABANDON`, `maxe <= 0`, `STOPPED_TOO_LONG` e `MERGE_ACCEPTED_SLOT_EXPIRED`.
+* A lógica `ACCEPT_MATCHED` → `merge_accepted` → `MERGE_AUTHORIZED_BY_MCM` só se `accepted_ready` estiver válido está correta. 
+* A telemetria `status/fsm` e a reserva do host até `CLEAR`/`completed` continuam presentes.
 
-Eu arrancava com **10 runs**, não 5, para stressar melhor:
+Não vejo nada bloqueante antes dos testes. Fazia já a bateria intensiva.
 
 ```bash
 mkdir -p logs
@@ -24,7 +24,7 @@ for i in $(seq 1 10); do
 done
 ```
 
-Resumo automático:
+Resumo:
 
 ```bash
 for f in logs/dense_intensive_*.log; do
@@ -48,18 +48,4 @@ for f in logs/dense_intensive_*.log; do
 done
 ```
 
-Critério para fechar:
-
-```text
-0 Traceback
-0 Warning/collision
-0 LANE_CMD_FAILED
-0 MERGE_ALLOWED_HOSTLESS
-10/10 runs com 6 MERGE_PHYSICAL_START
-10/10 runs com 6 MERGING!
-10/10 runs com 6 MERGE_COMPLETED limpo
-MERGE_FAILED_LOST_AUTH_AFTER_POINT = 0
-speed=0.00 / target=0.18 baixos ou zero
-```
-
-Se alguma run falhar, manda logo o resumo e o log dessa run. Agora os sinais mais importantes são `MERGE_ACCEPTED_SLOT_EXPIRED`, `MERGE_FAILED_LOST_AUTH_AFTER_POINT`, `MCM_ACCEPT_STALE/WRONG_MANOEUVRE` e se os `MERGE_AUTHORIZED_BY_MCM` já não aparecem com slot morto.
+Se der 10/10 com `Start=6`, `Merg=6`, `Comp=6`, `0 Warning/collision`, está praticamente fechado.

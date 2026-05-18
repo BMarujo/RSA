@@ -1,0 +1,20 @@
+#!/bin/bash
+for f in logs/dense_intensive_v3_*.log; do
+  printf "%-32s " "$f"
+  printf "Trc=%s "   "$(grep -c 'Traceback' "$f" || true)"
+  printf "Warn=%s "  "$(grep -c 'Warning' "$f" || true)"
+  printf "Coll=%s "  "$(grep -c 'collision' "$f" || true)"
+  printf "LaneF=%s " "$(grep -c 'LANE_CMD_FAILED' "$f" || true)"
+  printf "Hostl=%s " "$(grep -c 'MERGE_ALLOWED_HOSTLESS' "$f" || true)"
+  printf "Acc=%s "   "$(grep -c 'MCM_ACCEPT_MATCHED' "$f" || true)"
+  printf "Wait=%s "  "$(grep -c 'MERGE_ACCEPTED_WAIT_SLOT_VALID' "$f" || true)"
+  printf "Exp=%s "   "$(grep -c 'MERGE_ACCEPTED_SLOT_EXPIRED' "$f" || true)"
+  printf "Auth=%s "  "$(grep -c 'MERGE_AUTHORIZED_BY_MCM' "$f" || true)"
+  printf "Start=%s " "$(grep -c 'MERGE_PHYSICAL_START' "$f" || true)"
+  printf "Merg=%s "  "$(grep -c 'MERGING!' "$f" || true)"
+  printf "Comp=%s "  "$(grep -c 'MERGE_COMPLETED:' "$f" || true)"
+  printf "After=%s " "$(grep -c 'MERGE_COMPLETED_AFTER_TIMEOUT' "$f" || true)"
+  printf "Lost=%s "  "$(grep -c 'MERGE_FAILED_LOST_AUTH_AFTER_POINT' "$f" || true)"
+  printf "Spd0=%s "  "$(grep -c 'speed=0.00' "$f" || true)"
+  printf "T018=%s\n" "$(grep -c 'target=0.18' "$f" || true)"
+done
