@@ -675,6 +675,26 @@ class OBUApp:
             lcs.get("state", "NONE"), lcs.get("target_lane")
         )
 
+    def _log_host_decision(self, ramp_id, manoeuvre_id, decision, reason):
+        n = self._sim_time()
+        rst = self.remote_vehicle_status.get(ramp_id, {})
+        me, d, oe = self._neighbor_eta(ramp_id), self._self_distance_to_merge(), self._merge_eta()
+        te = (me + self.safe_headway_s + self.merge_occupancy_s) if me else None
+        rqs = (d / max(te, 0.1)) if d is not None and te else None
+        cs = self._current_speed() or self.cruise_speed
+        asid = int(self.active_merge_request["station_id"]) if self.active_merge_request else None
+        arem = self.active_merge_request_until - n if self.active_merge_request else 0.0
+        log.info(
+            "HOST_REQUEST_DECISION: host=%s ramp=%s manoeuvre=%s decision=%s reason=%s "
+            "ramp_eta=%s host_eta=%s required_speed=%s current_speed=%.2f "
+            "active_request_ramp=%s active_request_remaining=%.1f "
+            "ramp_remote_edge=%s ramp_remote_lane=%s ramp_remote_fsm=%s",
+            self.vehicle_id, ramp_id, manoeuvre_id, decision, reason,
+            f"{me:.2f}" if me else "None", f"{oe:.2f}" if oe else "None",
+            f"{rqs:.2f}" if rqs else "None", cs, asid, arem,
+            rst.get("edge_id", ""), rst.get("lane_index", ""), rst.get("fsm_state", "NONE")
+        )
+
     def _ramp_leader(self, sd):
         ls = []
         for s, d in self.neighbors.items():
@@ -834,11 +854,30 @@ class OBUApp:
             if hid in self.neighbors:
                 h = self.neighbors[hid]; dist = self._distance_to_merge(float(h["x"]), float(h["y"])); oe = self._merge_eta()
                 if oe: ht = dist / max(oe + self.safe_headway_s + self.merge_occupancy_s, 0.1)
-            self.pending_request = {"host_id": hid, "host_eta": he, "host_target_speed": ht, "lead_id": lid, "lead_eta": le, "manoeuvre_id": mid, "timestamp": self._sim_time()}
+            self.pending_request = {"host_id": hid, "host_eta": he, "host_target_speed": ht, "lead_id": lid, "lead_eta": le, "manoeuvre_id": mid, "timestamp": self._sim_time(), "retry_count": 0}
             self.accepted_slot_invalid_since = 0.0
             self._log_slot_quality_diag("REQUEST_NEW", lid, hid, le, he, self._merge_eta(), self._self_distance_to_merge(), "new_request", mid)
             self._send_mcm(1, mid, target_station_id=hid); self._set_state(STATE_NEGOTIATING)
         elif not self.pending_request.get("accepted_at") and self._sim_time() - self.last_mcm_sent >= self.request_retry_s:
+            self.pending_request["retry_count"] = self.pending_request.get("retry_count", 0) + 1
+            curt = self._sim_time()
+            e, dtm = self._merge_eta(), self._self_distance_to_merge()
+            hid = self.pending_request.get("host_id")
+            rst = self.remote_vehicle_status.get(hid, {})
+            log.info(
+                "MCM_REQUEST_RETRY_DIAG: vehicle=%s host=%s lead=%s manoeuvre=%s retry_count=%d pending_age=%.1f dtm=%.1f "
+                "own_eta=%.2f host_eta_current=%s host_eta_at_request=%s lead_eta_current=%s lead_eta_at_request=%s "
+                "last_response_action=%s last_response_age=%s host_remote_fsm=%s host_remote_edge=%s host_remote_lane=%s "
+                "host_remote_merge_committed=%s host_remote_merge_completed=%s",
+                self.vehicle_id, hid, self.pending_request.get("lead_id"), self.pending_request["manoeuvre_id"],
+                self.pending_request["retry_count"], curt - float(self.pending_request["timestamp"]), dtm,
+                e if e else 0.0, self._neighbor_eta(hid) or "None", self.pending_request.get("host_eta"),
+                self._neighbor_eta(self.pending_request.get("lead_id")) or "None", self.pending_request.get("lead_eta"),
+                self.mcm_messages.get(hid, {}).get("action", "None"), 
+                curt - self.mcm_messages.get(hid, {}).get("received_at", 0.0) if hid in self.mcm_messages else "None",
+                rst.get("fsm_state", "NONE"), rst.get("edge_id", ""), rst.get("lane_index", ""),
+                rst.get("merge_committed", False), rst.get("merge_completed", False)
+            )
             self._log_slot_quality_diag("REQUEST_RETRY", self.pending_request.get("lead_id"), hid, self.pending_request.get("lead_eta"), self._neighbor_eta(hid) or self.pending_request.get("host_eta"), self._merge_eta(), self._self_distance_to_merge(), "retry_request", self.pending_request["manoeuvre_id"])
             self._send_mcm(1, self.pending_request["manoeuvre_id"], target_station_id=hid)
         resp = self.mcm_messages.get(hid); ra = 2 if self.pending_request.get("accepted_at") else None
@@ -964,6 +1003,36 @@ class OBUApp:
                         return
                 self.pending_host_lost_since = 0.0
                 self._log_timeline_event("TIMEOUT")
+                
+                rst = self.remote_vehicle_status.get(phid, {})
+                mine, maxe, gp = self._merge_slot_window(le, he)
+                lg, llat, lclosing, lg1, lg2, lg3 = None, None, None, None, None, None
+                hg, hlat, hclosing, hg1, hg2, hg3 = None, None, None, None, None, None
+                if self.sensor_state and self._current_heading() is not None:
+                    ox, oy, oh = float(self.sensor_state["x"]), float(self.sensor_state["y"]), self._current_heading()
+                    rad = math.radians(90 - oh); fx, fy = math.cos(rad), math.sin(rad)
+                    lg, llat, lclosing, lg1, lg2, lg3 = self._merge_start_gap_diag_values(lid, ox, oy, fx, fy, self._current_speed() or 0.0)
+                    hg, hlat, hclosing, hg1, hg2, hg3 = self._merge_start_gap_diag_values(phid, ox, oy, fx, fy, self._current_speed() or 0.0)
+
+                log.info(
+                    "MCM_PENDING_ABANDON_DIAG: vehicle=%s host=%s lead=%s manoeuvre=%s reason=%s dtm=%.1f "
+                    "own_eta=%s host_eta=%s lead_eta=%s pending_age=%.1f last_mcm_sent_age=%.1f retry_count=%d "
+                    "host_remote_fsm=%s host_remote_edge=%s host_remote_lane=%s host_remote_merge_committed=%s "
+                    "host_remote_merge_completed=%s host_remote_lane_cmd_state=%s active_merge_request=%s "
+                    "slot_source=%s lead_gap=%s host_gap=%s lead_gap_t1=%s host_gap_t2=%s host_gap_t3=%s host_gap_possible=%s",
+                    self.vehicle_id, phid, lid, self.pending_request.get("manoeuvre_id"), 
+                    "lost" if phe is None else "ahead", dtm,
+                    f"{e:.2f}" if e else "None", f"{he:.2f}" if he else "None", f"{le:.2f}" if le else "None",
+                    curt - float(self.pending_request["timestamp"]), curt - self.last_mcm_sent, 
+                    self.pending_request.get("retry_count", 0),
+                    rst.get("fsm_state", "NONE"), rst.get("edge_id", ""), rst.get("lane_index", ""),
+                    rst.get("merge_committed", False), rst.get("merge_completed", False),
+                    rst.get("lane_command_state", "NONE"), bool(rst.get("active_merge_request")),
+                    sreas, f"{lg:.2f}" if lg else "None", f"{hg:.2f}" if hg else "None",
+                    f"{lg1:.2f}" if lg1 else "None", f"{hg1:.2f}" if hg1 else "None",
+                    f"{hg2:.2f}" if hg2 else "None", gp
+                )
+
                 log.debug("[%.1f] %s MCM_PENDING_ABANDON: host=%d %s", curt, self.vehicle_id, phid, "lost" if phe is None else f"ahead(eta={phe:.2f}<=own={e:.2f})")
                 self.mcm_messages.pop(phid, None); self.pending_request, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = None, False, False, 0.0; lid, hid, le, he, mine, maxe, gp, de, sreas = lc, hc, lec, hec, mic, mxc, gpc, dec, src
             else:
@@ -1234,7 +1303,11 @@ class OBUApp:
                 
                 if r and int(r["station_id"]) != asid:
                     osid, omid = int(r["station_id"]), int(r.get("manoeuvre_id") or 0)
-                    if n - self.last_mcm_response.get(osid, 0) >= self.response_period_s: self._send_mcm(3, omid, target_station_id=osid); self.last_mcm_response[osid] = n
+                    if n - self.last_mcm_response.get(osid, 0) >= self.response_period_s:
+                        self._log_host_decision(osid, omid, "REJECT", "BUSY")
+                        self._send_mcm(3, omid, target_station_id=osid); self.last_mcm_response[osid] = n
+                    else:
+                        self._log_host_decision(osid, omid, "IGNORE", "BUSY_PERIOD")
                 self._set_state(STATE_YIELDING); self._set_target_speed(asp, force=True)
                 if n - self.last_mcm_response.get(asid, 0) >= self.response_period_s: self._send_mcm(2, amid, target_station_id=asid); self.last_mcm_response[asid] = n
                 return
@@ -1242,7 +1315,11 @@ class OBUApp:
         rsid, rmid = int(r["station_id"]), int(r.get("manoeuvre_id") or 0); me, d, oe = self._neighbor_eta(rsid), self._self_distance_to_merge(), self._merge_eta()
         if me is None or d is None or oe is None: self._set_state(STATE_CRUISE); return
         if d <= self.host_reject_distance_m:
-            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s: self._send_mcm(3, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
+                self._log_host_decision(rsid, rmid, "REJECT", "DISTANCE")
+                self._send_mcm(3, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            else:
+                self._log_host_decision(rsid, rmid, "IGNORE", "DISTANCE_PERIOD")
             self._set_state(STATE_CRUISE); return
         te = me + self.safe_headway_s + self.merge_occupancy_s; rqs = d / max(te, 0.1); cs = self._current_speed() or self.cruise_speed
         sf = max(self.cruise_speed * self.host_yield_floor_ratio, self.min_speed); rqs = max(min(rqs, cs), sf)
@@ -1252,7 +1329,11 @@ class OBUApp:
             log.info("HOST_RESERVATION_START: host=%s ramp=%d manoeuvre=%d until=%.1f own_speed=%.2f target_speed=%.2f required_speed=%.2f gap_eta=%.2f", self.vehicle_id, rsid, rmid, self.active_merge_request_until, cs, yt, rqs, oe - me)
             log.debug("[%.1f] %s HOST_RESERVED: merge=%d manoeuvre=%d until=%.1f target_spd=%.2f", n, self.vehicle_id, rsid, rmid, self.active_merge_request_until, yt)
             log.debug("[%.1f] %s HOST_YIELD: for merge=%d req_spd=%.2f", n, self.vehicle_id, rsid, yt)
-            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s: self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
+                self._log_host_decision(rsid, rmid, "ACCEPT", "YIELDING")
+                self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            else:
+                self._log_host_decision(rsid, rmid, "IGNORE", "YIELDING_PERIOD")
             return
         if asafe or (ns and sa):
             self._set_state(STATE_CRUISE if asafe else STATE_YIELDING); hs = min(cs, max(rqs, self.cruise_speed * self.host_yield_floor_ratio))
@@ -1260,10 +1341,18 @@ class OBUApp:
             self.active_merge_request, self.active_merge_request_until = {"station_id": rsid, "manoeuvre_id": rmid, "target_speed": hs, "target_eta": te}, n + self.host_reservation_s; self.active_merge_request_started_at = n
             log.info("HOST_RESERVATION_START: host=%s ramp=%d manoeuvre=%d until=%.1f own_speed=%.2f target_speed=%.2f required_speed=%.2f gap_eta=%.2f", self.vehicle_id, rsid, rmid, self.active_merge_request_until, cs, hs, rqs, oe - me)
             log.debug("[%.1f] %s HOST_RESERVED: merge=%d manoeuvre=%d until=%.1f target_spd=%.2f", n, self.vehicle_id, rsid, rmid, self.active_merge_request_until, hs)
-            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s: self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
+                self._log_host_decision(rsid, rmid, "ACCEPT", "SAFE_OR_NOMINAL")
+                self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            else:
+                self._log_host_decision(rsid, rmid, "IGNORE", "NOMINAL_PERIOD")
             return
         self._set_state(STATE_CRUISE)
-        if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s: self._send_mcm(3, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+        if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
+            self._log_host_decision(rsid, rmid, "REJECT", "UNSAFE_GAP")
+            self._send_mcm(3, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+        else:
+            self._log_host_decision(rsid, rmid, "IGNORE", "UNSAFE_PERIOD")
 
     def _fsm_lead(self):
         if self._has_active_host_reservation(): self._fsm_host(); return
