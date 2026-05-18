@@ -657,6 +657,15 @@ class OBUApp:
         elif not self.pending_request.get("accepted_at") and self._sim_time() - self.last_mcm_sent >= self.request_retry_s:
             self._send_mcm(1, self.pending_request["manoeuvre_id"], target_station_id=hid)
         resp = self.mcm_messages.get(hid); ra = 2 if self.pending_request.get("accepted_at") else None
+        if self.pending_request:
+            for sid, data in list(self.mcm_messages.items()):
+                if int(sid) == hid or data.get("action") != 2: continue
+                fresh = float(data.get("timestamp", -1)) >= float(self.pending_request.get("timestamp", 0)) and self._sim_time() - float(data.get("timestamp", -1)) <= self.neighbor_timeout_s
+                target_match = data.get("target_station_id") is None or int(data.get("target_station_id")) == self.station_id
+                mid_match = int(data.get("manoeuvre_id", -1)) == int(self.pending_request["manoeuvre_id"])
+                if fresh and target_match and mid_match:
+                    log.debug("[%.1f] %s MCM_ACCEPT_WRONG_HOST: got=%d expected=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, int(sid), hid, self.pending_request["manoeuvre_id"])
+                    self.mcm_messages.pop(sid, None)
         if resp and self.pending_request:
             rt, rqt = float(resp.get("timestamp", -1)), float(self.pending_request.get("timestamp", 0))
             fresh = rt >= rqt and self._sim_time() - rt <= self.neighbor_timeout_s
@@ -668,7 +677,10 @@ class OBUApp:
                     if not self.pending_request.get("accepted_at"): log.debug("[%.1f] %s MCM_ACCEPT_MATCHED: host=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, hid, self.pending_request["manoeuvre_id"])
                     self.pending_request["accepted_at"] = self._sim_time()
                 elif ra == 3: log.debug("[%.1f] %s MCM_REJECT: host=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, hid, self.pending_request["manoeuvre_id"]); self.rejected_hosts_until[hid] = self._sim_time() + 1.5; self.pending_request, self.merge_authorized = None, False; self._set_state(STATE_NEGOTIATING); self._set_target_speed(max(self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)); return 3
-            elif fresh:
+            elif not fresh:
+                if resp.get("action") == 2: log.debug("[%.1f] %s MCM_ACCEPT_STALE: host=%d manoeuvre=%s", self._sim_time(), self.vehicle_id, hid, resp.get("manoeuvre_id"))
+                self.mcm_messages.pop(hid, None)
+            else:
                 if not mid_match: log.debug("[%.1f] %s MCM_ACCEPT_WRONG_MANOEUVRE: host=%d got=%s expected=%s", self._sim_time(), self.vehicle_id, hid, resp.get("manoeuvre_id"), self.pending_request["manoeuvre_id"])
                 if not target_match: log.debug("[%.1f] %s MCM_ACCEPT_WRONG_TARGET: host=%d target=%s self=%d", self._sim_time(), self.vehicle_id, hid, resp.get("target_station_id"), self.station_id)
         if self.pending_request:
@@ -739,8 +751,8 @@ class OBUApp:
         elif self.fsm_state == STATE_ABORT: self._set_state(STATE_CRUISE)
         if ra == 3: return
         has_rm = dtm <= self.priority_distance and (len(self._main_candidate_etas()) > 0 or self._has_any_main_neighbor_near_merge())
-        hlma = (self.allow_hostless_merge or self.past_merge_point) and hid is None and self.pending_request is None and not has_rm; amcm = hlma or ra == 2
-        if hid is None and not (self.allow_hostless_merge or self.past_merge_point):
+        hlma = self.allow_hostless_merge and hid is None and self.pending_request is None and not has_rm; amcm = hlma or ra == 2
+        if hid is None and not self.allow_hostless_merge:
             amcm = False
             if self.merge_authorized: log.debug("[%.1f] %s MERGE_AUTH_CLEAR_HOSTLESS_DISABLED", curt, self.vehicle_id); self.merge_authorized = False
         hyok = self._host_yield_effective(hid)
@@ -851,6 +863,7 @@ class OBUApp:
         gd, asafe = oe - me, (oe - me) >= self.merge_commit_headway_s; dy = rqs < cs - 0.15; ns = gd >= (self.merge_commit_headway_s * 0.75); sa = rqs >= cs - 0.30
         if dy:
             yt = max(min(rqs, cs - self.host_min_yield_delta), sf); self._set_state(STATE_YIELDING); self._set_target_speed(yt, force=True); self.active_merge_request, self.active_merge_request_until = {"station_id": rsid, "manoeuvre_id": rmid, "target_speed": yt, "target_eta": te}, n + self.host_reservation_s
+            log.debug("[%.1f] %s HOST_RESERVED: merge=%d manoeuvre=%d until=%.1f target_spd=%.2f", n, self.vehicle_id, rsid, rmid, self.active_merge_request_until, yt)
             log.debug("[%.1f] %s HOST_YIELD: for merge=%d req_spd=%.2f", n, self.vehicle_id, rsid, yt)
             if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s: self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
             return
@@ -858,6 +871,7 @@ class OBUApp:
             self._set_state(STATE_CRUISE if asafe else STATE_YIELDING); hs = min(cs, max(rqs, self.cruise_speed * self.host_yield_floor_ratio))
             if not asafe: hs = max(min(hs, cs - self.host_min_yield_delta), sf); self._set_target_speed(hs, force=True)
             self.active_merge_request, self.active_merge_request_until = {"station_id": rsid, "manoeuvre_id": rmid, "target_speed": hs, "target_eta": te}, n + self.host_reservation_s
+            log.debug("[%.1f] %s HOST_RESERVED: merge=%d manoeuvre=%d until=%.1f target_spd=%.2f", n, self.vehicle_id, rsid, rmid, self.active_merge_request_until, hs)
             if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s: self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
             return
         self._set_state(STATE_CRUISE)

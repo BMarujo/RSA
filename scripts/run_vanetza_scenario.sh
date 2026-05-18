@@ -212,6 +212,17 @@ case "$COMMAND" in
         generate
         compose up --build "$@"
         ;;
+    log)
+        mkdir -p logs
+        LOG_FILE="${LOG_FILE:-logs/${VANETZA_SCENARIO}_$(date +%Y%m%d_%H%M%S).log}"
+        echo "Writing run log to ${LOG_FILE}"
+        generate
+        set +e
+        compose up --build --abort-on-container-exit --exit-code-from traci-bridge "$@" 2>&1 | tee "$LOG_FILE"
+        status=${PIPESTATUS[0]}
+        compose down --remove-orphans >/dev/null 2>&1 || true
+        exit "$status"
+        ;;
     bridge)
         generate
         compose build
@@ -226,7 +237,8 @@ case "$COMMAND" in
         fi
         ;;
     *)
-        echo "Usage: $0 [up|bridge|down|config|generate|scenarios] [docker compose args...]" >&2
+        echo "Usage: $0 [up|log|bridge|down|config|generate|scenarios] [docker compose args...]" >&2
+        echo "Set LOG_FILE=logs/my_run.log to choose the output file for the log command." >&2
         echo "Select a focused scenario with VANETZA_SCENARIO=base|gap|dense|ramp-platoon|blocked|single-lane" >&2
         exit 2
         ;;

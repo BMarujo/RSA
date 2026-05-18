@@ -302,6 +302,7 @@ class TraciBridge:
             lane_id = traci.vehicle.getLaneID(vehicle_id)
             edge_id = lane_id.rsplit("_", 1)[0]
             current_lane = parse_lane_index(lane_id)
+            on_internal_edge = edge_id.startswith(":")
             now = traci.simulation.getTime()
             last = self.lane_command_state.get(vehicle_id)
             
@@ -318,7 +319,7 @@ class TraciBridge:
                 f"recently={recently_requested} speed={traci.vehicle.getSpeed(vehicle_id):.2f}"
             )
             
-            if current_lane is not None and current_lane == target_lane:
+            if current_lane is not None and current_lane == target_lane and not on_internal_edge:
                 # Vehicle has reached the target lane. 
                 # Only clear if it's not a temporary transition lane or if requested to stop.
                 print(f"LANE_CMD_CLEAR veh={vehicle_id} edge={edge_id} target={target_lane}")
@@ -326,6 +327,8 @@ class TraciBridge:
                 self.lane_command_state.pop(vehicle_id, None)
                 if self.initial_lane_change_mode >= 0:
                     traci.vehicle.setLaneChangeMode(vehicle_id, self.initial_lane_change_mode)
+            elif current_lane is not None and current_lane == target_lane:
+                print(f"LANE_CMD_HOLD_INTERNAL veh={vehicle_id} edge={edge_id} target={target_lane}")
             elif (
                 current_lane is not None
                 and current_lane != target_lane
