@@ -188,6 +188,7 @@ class OBUApp:
         self.accepted_slot_invalid_since = 0.0
         self.accepted_slot_invalid_timeout_s = 1.5
         self.last_accepted_wait_log = 0.0
+        self.last_lclear_block_log = 0.0
         self.merge_safety_hold_since = 0.0
         self.merge_safety_hold_timeout_s = float(env("MERGE_SAFETY_HOLD_TIMEOUT_S", "2.5"))
         self.had_merge_timeout_this_attempt = False
@@ -933,7 +934,18 @@ class OBUApp:
         lclear = True
         if lid:
             ldv = self._neighbor_distance(lid)
-            if ldv is not None and abs(ldv - dtm) < self.final_merge_clearance_m: lclear = False
+            if ldv is not None and abs(ldv - dtm) < self.final_merge_clearance_m:
+                lclear = False
+                if curt - self.last_lclear_block_log > 1.0:
+                    fresh_data = self.neighbors.get(lid)
+                    memory_data = self.neighbor_memory.get(lid)
+                    source_data = fresh_data or memory_data or {}
+                    age = curt - float(source_data.get("timestamp", curt))
+                    log.debug(
+                        "[%.1f] %s MERGE_LCLEAR_BLOCK: sid=%s gap=%.1f neighbor_age=%.1f from_memory=%s dtm=%.1f",
+                        curt, self.vehicle_id, lid, abs(ldv - dtm), age, fresh_data is None and memory_data is not None, dtm
+                    )
+                    self.last_lclear_block_log = curt
         if self.fsm_state == STATE_ABORT and curt - self.fsm_state_since < self.abort_cooldown_s: self._set_target_speed(max(self.cruise_speed * 0.4, self.min_speed)); return
         elif self.fsm_state == STATE_ABORT: self._set_state(STATE_CRUISE)
         if ra == 3: return
