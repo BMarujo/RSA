@@ -756,13 +756,45 @@ class OBUApp:
         if maxe is not None and d > maxe: d = maxe
         return d
 
+    def _is_host_busy(self, hid):
+        if hid is None: return False
+        hst = self.remote_vehicle_status.get(hid, {})
+        busy = hst.get("active_merge_request") is True
+        busy_for = hst.get("active_merge_request_station_id")
+        remaining = hst.get("active_merge_request_remaining_s", 0)
+        try:
+            busy_for_id = int(busy_for) if busy_for is not None else None
+        except (ValueError, TypeError):
+            busy_for_id = None
+        return busy and remaining > 0.25 and busy_for_id != self.station_id
+
     def _select_merge_slot(self, e):
         mes = self._main_candidate_etas()
         if not mes: return None, None, None, None, None, None, True, e, "no_main_neighbors"
         hi = next((i for i, (me, _) in enumerate(mes) if me >= e), None)
         if hi is not None:
-            he, hid = mes[hi]; le, lid = mes[hi-1] if hi > 0 else (None, None); mine, maxe, gp = self._merge_slot_window(le, he)
-            return lid, hid, le, he, mine, maxe, gp, self._desired_eta_for_window(e, mine, maxe), "selected"
+            while hi < len(mes):
+                he, hid = mes[hi]
+                if self._is_host_busy(hid):
+                    if self._sim_time() - getattr(self, "last_skip_busy_log", 0) > 1.0:
+                        hst = self.remote_vehicle_status.get(hid, {})
+                        busy_for = hst.get("active_merge_request_station_id")
+                        rem = hst.get("active_merge_request_remaining_s")
+                        next_hid = mes[hi+1][1] if hi + 1 < len(mes) else None
+                        _, lid_temp = mes[hi-1] if hi > 0 else (None, None)
+                        log.info("MERGE_SLOT_SKIP_BUSY_HOST: skipped_host=%s busy_for=%s remaining=%s next_host=%s lead=%s own_eta=%.2f", 
+                                 hid, busy_for, rem, next_hid, lid_temp, e)
+                        self.last_skip_busy_log = self._sim_time()
+                    hi += 1
+                else:
+                    break
+            
+            if hi < len(mes):
+                he, hid = mes[hi]; le, lid = mes[hi-1] if hi > 0 else (None, None); mine, maxe, gp = self._merge_slot_window(le, he)
+                return lid, hid, le, he, mine, maxe, gp, self._desired_eta_for_window(e, mine, maxe), "selected"
+            else:
+                le, lid = mes[-1]; mine, maxe, gp = self._merge_slot_window(le, None); return lid, None, le, None, mine, maxe, gp, self._desired_eta_for_window(e, mine, maxe), "true_after_last_main"
+        
         le, lid = mes[-1]; mine, maxe, gp = self._merge_slot_window(le, None); return lid, None, le, None, mine, maxe, gp, self._desired_eta_for_window(e, mine, maxe), "true_after_last_main"
 
     def _expire_pending_request(self):
@@ -860,18 +892,6 @@ class OBUApp:
         if self.pending_request is None or int(self.pending_request.get("host_id", 0)) != hid:
             if self._sim_time() < self.rejected_hosts_until.get(hid, 0.0): return None
             
-            hst = self.remote_vehicle_status.get(hid, {})
-            busy_for = hst.get("active_merge_request_station_id")
-            busy = hst.get("active_merge_request") is True
-            if busy and busy_for != self.station_id:
-                if self._sim_time() - getattr(self, "last_skip_busy_log", 0) > 1.0:
-                    log.info(
-                        "MCM_SKIP_BUSY_HOST: vehicle=%s host=%s busy_for=%s remaining=%s dtm=%.1f",
-                        self.vehicle_id, hid, busy_for, hst.get("active_merge_request_remaining_s"), self._self_distance_to_merge()
-                    )
-                    self.last_skip_busy_log = self._sim_time()
-                return None
-
             self.mcm_messages.pop(hid, None); mid = self._next_manoeuvre_id(); ht = None
             if hid in self.neighbors:
                 h = self.neighbors[hid]; dist = self._distance_to_merge(float(h["x"]), float(h["y"])); oe = self._merge_eta()
