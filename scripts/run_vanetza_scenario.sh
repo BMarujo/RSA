@@ -51,6 +51,10 @@ case "$VANETZA_SCENARIO" in
         default_env REQUEST_RETRY_S "0.25"
         default_env RESPONSE_PERIOD_S "0.25"
         default_env NEGOTIATION_TIMEOUT_S "3.5"
+        default_env HOST_RESERVATION_S "4.0"
+        default_env HOST_RESERVATION_MAX_S "10.0"
+        default_env MCM_LATE_HOST_LOCK_GRACE_S "1.5"
+        default_env MCM_LATE_HOST_LOCK_DISTANCE_M "70.0"
 
         default_env CRUISE_SPEED "7.5"
         default_env MERGE_SPEED_BONUS "0.0"

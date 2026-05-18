@@ -55,6 +55,7 @@ if [ -n "$START_EMBEDDED_MOSQUITTO" ] && [ "$START_EMBEDDED_MOSQUITTO" = "true" 
             echo "address ${REMOTE_MQTT_HOST}:${REMOTE_MQTT_PORT}"
             echo "topic car/${VEHICLE_ID}/sensors/# in 0"
             echo "topic car/${VEHICLE_ID}/status/lane_command in 0"
+            echo "topic car/+/status/fsm in 0"
             echo "topic car/${VEHICLE_ID}/actuators/# out 0"
             echo "topic car/${VEHICLE_ID}/status/fsm out 0"
             if [ "${MIRROR_VANETZA_TOPICS:-true}" = "true" ]; then
