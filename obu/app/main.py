@@ -354,7 +354,7 @@ class OBUApp:
             if clean_merge: self.count_merge_completed_clean += 1
             if self.had_merge_timeout_this_attempt: log.debug("[%.1f] %s MERGE_COMPLETED_AFTER_TIMEOUT: eid=%s lane=%d", curt, self.vehicle_id, eid, lidx)
             else: log.debug("[%.1f] %s MERGE_COMPLETED: eid=%s lane=%d clean=%s", curt, self.vehicle_id, eid, lidx, clean_merge)
-            self.merge_completed, self.merge_committed, self.merge_authorized, self.merge_authorized_since, self.had_merge_timeout_this_attempt, self.merge_deadlock_since, self.merge_safety_hold_since, self.accepted_slot_invalid_since = True, False, False, 0.0, False, 0.0, 0.0, 0.0
+            self.merge_completed, self.merge_committed, self.merge_authorized, self.merge_authorized_since, self.had_merge_timeout_this_attempt, self.merge_deadlock_since, self.merge_safety_hold_since, self.merge_accepted, self.merge_accepted_since, self.accepted_slot_invalid_since = True, False, False, 0.0, False, 0.0, 0.0, False, 0.0, 0.0
             self.merge_physical_started_once = False
             self.committed_lead_id, self.committed_host_id, self.committed_manoeuvre_id, self.recovery_triggered_this_merge = None, None, None, False
             self._set_state(STATE_CRUISE); self.target_lane_index, self.pending_request = None, None
