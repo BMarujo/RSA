@@ -94,7 +94,7 @@ case "$VANETZA_SCENARIO" in
         default_env MERGE_COMMIT_HEADWAY_S "1.5"
         default_env MIN_MERGE_ENTRY_SPEED "4.5"
         default_env MERGE_ENTRY_SPEED_GUARD_M "35.0"
-        default_env MERGE_COMMIT_TIMEOUT_S "8.0"
+        default_env MERGE_COMMIT_TIMEOUT_S "12.0"
         default_env MERGE_COMMIT_DISTANCE_M "70.0"
 
         default_env RAMP_PLATOON_HEADWAY_S "1.2"

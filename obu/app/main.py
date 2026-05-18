@@ -157,7 +157,7 @@ class OBUApp:
         self.min_distance_to_merge_seen, self.post_merge_lock_s = float("inf"), float(env("POST_MERGE_LOCK_S", "3.0"))
         self.merge_committed, self.merge_committed_since = False, 0.0
         self.merge_physical_started_once = False
-        self.merge_commit_timeout_s = float(env("MERGE_COMMIT_TIMEOUT_S", "8.0"))
+        self.merge_commit_timeout_s = float(env("MERGE_COMMIT_TIMEOUT_S", "12.0"))
         self.merge_accept_timeout_s = float(env("MERGE_ACCEPT_TIMEOUT_S", str(self.merge_commit_timeout_s)))
         self.merge_commit_distance_m, self.merge_lane_prepare_distance_m = float(env("MERGE_COMMIT_DISTANCE_M", "35.0")), float(env("MERGE_LANE_PREPARE_DISTANCE_M", "95.0"))
         self.final_guard_stale_neighbor_s = float(env("FINAL_GUARD_STALE_NEIGHBOR_S", "4.0"))
@@ -359,7 +359,7 @@ class OBUApp:
             self.merge_physical_started_once = False
             self.committed_lead_id, self.committed_host_id, self.committed_manoeuvre_id, self.recovery_triggered_this_merge = None, None, None, False
             self._set_state(STATE_CRUISE); self.target_lane_index, self.pending_request = None, None
-            es = max(self.cruise_speed, self.min_merge_entry_speed); self._set_target_speed(es, force=True); self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, True; return True
+            es = max(self.cruise_speed, self.min_merge_entry_speed); self._set_target_speed(es, force=True); self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, False; return True
         return False
 
     def _update_self_merge_progress(self):
@@ -973,7 +973,7 @@ class OBUApp:
         curt, lid_s = self._sim_time(), str(self.sensor_state.get("lane_id", "")); lidx, eid, cspd = parse_lane_index(lid_s), edge_id_from_lane(lid_s), self._current_speed() or 0.0
         if self._check_merge_finalized(): return
         if self.merge_completed and curt - self.merge_completed_since < self.post_merge_lock_s:
-            es = max(self.cruise_speed, self.min_merge_entry_speed); self._set_target_speed(es, force=True); self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, True; return
+            es = max(self.cruise_speed, self.min_merge_entry_speed); self._set_target_speed(es, force=True); self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, False; return
         if self.merge_committed and not self.merge_completed:
             ca, ceid = curt - self.merge_committed_since, edge_id_from_lane(lid_s); self._set_state(STATE_MERGING); self.target_speed_mode, self.target_lane_index = self.priority_speed_mode, self.merge_lane_index
             if self._lane_command_waiting_edge():
@@ -987,7 +987,7 @@ class OBUApp:
                     self._log_timeline_event("APPLY")
                     self.last_commit_lane_apply_log_key = key
                     log.debug("[%.1f] %s MERGE_COMMIT_LANE_APPLY_ACTIVE: edge=%s lane=%s target_lane=%s lane_count=%s executable=%s speed=%.2f dtm=%.1f", curt, self.vehicle_id, lcs.get("edge_id"), lcs.get("current_lane"), lcs.get("target_lane"), lcs.get("lane_count"), lcs.get("executable"), cspd, dtm)
-            if ceid == "1331698336" and lidx != self.merge_lane_index: self.skip_car_following_this_step = True; rspd = max(self.min_merge_entry_speed, self.cruise_speed * 0.9); self._set_target_speed(rspd, force=True); return
+            if ceid == "1331698336" and lidx != self.merge_lane_index: self.skip_car_following_this_step = False; rspd = max(self.min_merge_entry_speed, self.cruise_speed * 0.9); self._set_target_speed(rspd, force=True); return
             lid, hid = self.committed_lead_id, self.committed_host_id; le, he = self._neighbor_eta(lid) if lid else None, self._neighbor_eta(hid) if hid else None
             lgok, hgok, fgok = (e - le) >= self.safe_headway_s if le else True, (he - e) >= self.merge_commit_headway_s if he else True, self._final_merge_lane_clear(lid, hid, dtm)
             if not lgok or not hgok or not fgok: 
@@ -997,7 +997,7 @@ class OBUApp:
                     self._log_timeline_event("ABORT_SAFETY_HOLD")
                     log.debug("[%.1f] %s MERGE_COMMIT_ABORT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); self.merge_committed, self.merge_authorized, self.pending_request, self.merge_accepted, self.accepted_slot_invalid_since = False, False, None, False, 0.0; self._set_state(STATE_NEGOTIATING); return
                 self._set_target_speed(max(self.min_merge_entry_speed * 0.5, self.min_speed), force=True); log.debug("[%.1f] %s MERGE_COMMIT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); return
-            self.merge_safety_hold_since = 0.0; self._set_target_speed(max(self.min_merge_entry_speed, self.cruise_speed * 0.9)); self.skip_car_following_this_step = True
+            self.merge_safety_hold_since = 0.0; self._set_target_speed(max(self.min_merge_entry_speed, self.cruise_speed * 0.9)); self.skip_car_following_this_step = False
             if ca >= self.merge_commit_timeout_s: self._log_timeline_event("TIMEOUT"); log.debug("[%.1f] %s MERGE_COMMIT_TIMEOUT", curt, self.vehicle_id); self.had_merge_timeout_this_attempt, self.pending_request, self.merge_committed, self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = True, None, False, False, False, 0.0; self._set_state(STATE_NEGOTIATING); return
             return
         if self.merge_authorized and not self.merge_committed:
@@ -1219,7 +1219,7 @@ class OBUApp:
             lp = float(self.sensor_state.get("lane_pos", 0.0)); rem = 63.23 - lp
             if rem < 10.0:
                 if not getattr(self, 'recovery_triggered_this_merge', False): self.count_late_merge_recovery += 1; self.recovery_triggered_this_merge = True
-                self._set_target_speed(max(self.min_speed, rem / 2.0), force=True); self.target_lane_index = self.merge_lane_index; self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, True
+                self._set_target_speed(max(self.min_speed, rem / 2.0), force=True); self.target_lane_index = self.merge_lane_index; self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, False
             elif rem < 2.0: self.count_merge_failed_no_gap += 1; self._set_target_speed(0.0, force=True); self._set_state(STATE_ABORT)
 
     def _latest_request(self):
@@ -1315,6 +1315,16 @@ class OBUApp:
         n = self._sim_time(); r = self._latest_request()
         if self.active_merge_request:
             asid, amid = int(self.active_merge_request["station_id"]), int(self.active_merge_request["manoeuvre_id"]); asp = float(self.active_merge_request.get("target_speed", self.cruise_speed * self.host_yield_floor_ratio))
+            
+            # Sync manoeuvre_id if requester updated it
+            latest_msg = self.mcm_messages.get(asid)
+            if latest_msg and latest_msg.get("action") == 1:
+                latest_mid = int(latest_msg.get("manoeuvre_id", 0))
+                if latest_mid > amid:
+                    log.info("HOST_MANOEUVRE_ID_UPDATE: host=%s ramp=%d old_mid=%d new_mid=%d", self.vehicle_id, asid, amid, latest_mid)
+                    self.active_merge_request["manoeuvre_id"] = latest_mid
+                    amid = latest_mid
+            
             rst = self.remote_vehicle_status.get(asid, {})
             nlcs = rst.get("lane_command_state", "NONE")
             ne = rst.get("edge_id", "")
