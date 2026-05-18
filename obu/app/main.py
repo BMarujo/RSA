@@ -1114,11 +1114,6 @@ class OBUApp:
         if self.fsm_state == STATE_ABORT and curt - self.fsm_state_since < self.abort_cooldown_s: self._set_target_speed(max(self.cruise_speed * 0.4, self.min_speed)); return
         elif self.fsm_state == STATE_ABORT: self._set_state(STATE_CRUISE)
         if ra == 3: return
-        has_rm = dtm <= self.priority_distance and (len(self._main_candidate_etas()) > 0 or self._has_any_main_neighbor_near_merge())
-        hlma = self.allow_hostless_merge and hid is None and self.pending_request is None and not has_rm; amcm = hlma or ra == 2
-        if hid is None and not self.allow_hostless_merge:
-            amcm = False
-            if self.merge_authorized: log.debug("[%.1f] %s MERGE_AUTH_CLEAR_HOSTLESS_DISABLED", curt, self.vehicle_id); self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = False, False, 0.0
         hyok = self._host_yield_effective(hid)
         if not hyok and ra == 2 and self.pending_request:
             aat = self.pending_request.get("accepted_at")
@@ -1140,6 +1135,22 @@ class OBUApp:
 
         lgok_proj = (lg1_v is None or lg1_v > 1.0) and (lg2_v is None or lg2_v > 1.0)
         
+        # Surgical patch: Lead-only or hostless merge after last main vehicle
+        hlma_lead_only = False
+        if hid is None and not self.allow_hostless_merge and not self.merge_committed and not self.merge_completed:
+            # We are after the last main vehicle (true_after_last_main) or there are no main neighbors at all.
+            if sreas in ("true_after_last_main", "no_main_neighbors") and dtm <= self.merge_commit_distance_m:
+                # All safety guards must be satisfied
+                if lgok and lclear and fgok and cok and lgok_proj and esok:
+                    hlma_lead_only = True
+
+        has_rm = dtm <= self.priority_distance and (len(self._main_candidate_etas()) > 0 or self._has_any_main_neighbor_near_merge())
+        hlma = (self.allow_hostless_merge and hid is None and self.pending_request is None and not has_rm) or hlma_lead_only
+        amcm = hlma or ra == 2
+        if hid is None and not self.allow_hostless_merge and not hlma_lead_only:
+            amcm = False
+            if self.merge_authorized: log.debug("[%.1f] %s MERGE_AUTH_CLEAR_HOSTLESS_DISABLED", curt, self.vehicle_id); self.merge_authorized, self.merge_accepted, self.accepted_slot_invalid_since = False, False, 0.0
+
         accepted_ready = (
             ra == 2
             and hyok
@@ -1155,7 +1166,12 @@ class OBUApp:
             if hlma:
                 self.merge_authorized, self.merge_authorized_since = True, curt
                 self._log_timeline_event("AUTHORIZED")
-                log.debug("[%.1f] %s MERGE_AUTHORIZED_HOSTLESS", curt, self.vehicle_id)
+                if hlma_lead_only:
+                    log.info("MERGE_AUTHORIZED_LEAD_ONLY_AFTER_LAST_MAIN: vehicle=%s lead=%s dtm=%.1f lead_gap=%s lead_gap_t1=%s lead_gap_t2=%s source=%s",
+                             self.vehicle_id, lid, dtm, f"{lg_v:.2f}" if lg_v is not None else "None",
+                             f"{lg1_v:.2f}" if lg1_v is not None else "None", f"{lg2_v:.2f}" if lg2_v is not None else "None", sreas)
+                else:
+                    log.debug("[%.1f] %s MERGE_AUTHORIZED_HOSTLESS", curt, self.vehicle_id)
             elif ra == 2:
                 if accepted_ready:
                     self.merge_authorized, self.merge_authorized_since = True, curt
