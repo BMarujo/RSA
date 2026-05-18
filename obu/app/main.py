@@ -859,6 +859,19 @@ class OBUApp:
             if pending_hid != hid: hid = pending_hid
         if self.pending_request is None or int(self.pending_request.get("host_id", 0)) != hid:
             if self._sim_time() < self.rejected_hosts_until.get(hid, 0.0): return None
+            
+            hst = self.remote_vehicle_status.get(hid, {})
+            busy_for = hst.get("active_merge_request_station_id")
+            busy = hst.get("active_merge_request") is True
+            if busy and busy_for != self.station_id:
+                if self._sim_time() - getattr(self, "last_skip_busy_log", 0) > 1.0:
+                    log.info(
+                        "MCM_SKIP_BUSY_HOST: vehicle=%s host=%s busy_for=%s remaining=%s dtm=%.1f",
+                        self.vehicle_id, hid, busy_for, hst.get("active_merge_request_remaining_s"), self._self_distance_to_merge()
+                    )
+                    self.last_skip_busy_log = self._sim_time()
+                return None
+
             self.mcm_messages.pop(hid, None); mid = self._next_manoeuvre_id(); ht = None
             if hid in self.neighbors:
                 h = self.neighbors[hid]; dist = self._distance_to_merge(float(h["x"]), float(h["y"])); oe = self._merge_eta()
