@@ -330,7 +330,7 @@ class OBUApp:
 
     def _has_any_main_neighbor_near_merge(self):
         for s, d in self._final_guard_neighbor_items():
-            if s in self.main_station_ids and self._distance_to_merge(float(d["x"]), float(d["y"])) <= self.role_detection_distance: return True
+            if self._is_main_traffic(s) and self._distance_to_merge(float(d["x"]), float(d["y"])) <= self.role_detection_distance: return True
         return False
 
     def _host_yield_effective(self, hid):
@@ -525,6 +525,11 @@ class OBUApp:
     def _neighbor_is_approaching_merge(self, d):
         v = d.get("distance_delta"); return float(v) <= 0.1 if v is not None else True
 
+    def _is_main_traffic(self, s):
+        if s in self.main_station_ids: return True
+        if s in self.ramp_station_ids and self.remote_vehicle_status.get(s, {}).get("merge_completed", False): return True
+        return False
+
     def _neighbor_is_merge_candidate(self, s):
         d = self.neighbors.get(s)
         if not d: return False
@@ -533,6 +538,7 @@ class OBUApp:
         if d.get("distance_delta") is not None and float(d["distance_delta"]) > 0.5: return False
         app = self._neighbor_is_approaching_merge(d)
         if s in self.ramp_station_ids:
+            if self.remote_vehicle_status.get(s, {}).get("merge_completed", False): return False
             if not app: return False
             if self.ramp_bbox:
                 x1, y1, x2, y2 = self.ramp_bbox
@@ -543,7 +549,7 @@ class OBUApp:
     def _neighbor_is_main_candidate(self, s):
         d = self.neighbors.get(s)
         if not d or self._distance_to_merge(float(d["x"]), float(d["y"])) > self.role_detection_distance: return False
-        return self._neighbor_is_approaching_merge(d) and s in self.main_station_ids
+        return self._neighbor_is_approaching_merge(d) and self._is_main_traffic(s)
 
     def _all_main_clearance_ok(self):
         if not self.sensor_state: return False
@@ -852,12 +858,12 @@ class OBUApp:
         if now - self._last_debug_log >= 1.0: self._last_debug_log = now; log.debug("[%.1f] %s role=%s state=%s->%s speed=%.2f target=%.2f neighbors=%d", now, self.vehicle_id, self.effective_role, ps, self.fsm_state, self._current_speed() or 0, self.target_speed or 0, len(self.neighbors))
 
     def _final_merge_lane_clear(self, lid, hid, dtm):
-        if dtm > 45.0: return True
         if lid is None and hid is None and self._has_any_main_neighbor_near_merge():
-            if self.merge_committed or (self.is_ramp_vehicle and self.past_merge_point): return True
+            if self.merge_committed: return True
             log.debug("[%.1f] %s FINAL_GUARD: REJECTED blind merge with main traffic", self._sim_time(), self.vehicle_id); return False
         if not self.sensor_state: return False
         oe, oh = self._merge_eta(), self._current_heading(); sx, sy = float(self.sensor_state["x"]), float(self.sensor_state["y"])
+        cspd = self._current_speed() or 0.0
         rad = math.radians(90 - oh) if oh else 0; fx, fy = math.cos(rad), math.sin(rad); checked, gids = set(), []
         if lid: gids.append(lid)
         if hid: gids.append(hid)
@@ -870,10 +876,12 @@ class OBUApp:
             ndist = self._distance_to_merge(float(data["x"]), float(data["y"]))
             if ndist > self.role_detection_distance: continue
             is_cand = self._neighbor_is_merge_candidate(s)
-            tlt = s in self.main_station_ids or (s in self.ramp_station_ids and not is_cand)
+            tlt = self._is_main_traffic(s) or (s in self.ramp_station_ids and not is_cand)
             if not tlt: continue
-            if s in self.ramp_station_ids and ndist > dtm + 0.1: continue
+            if s in self.ramp_station_ids and is_cand and ndist > dtm + 0.1: continue
             dx, dy = float(data["x"]) - sx, float(data["y"]) - sy; pg, lat = math.hypot(dx, dy), abs(-dx * fy + dy * fx)
+            lon = dx * fx + dy * fy
+            ns = float(data.get("speed", 0.0))
             if s in (lid, hid):
                 if pg < self.final_merge_clearance_m: log.debug("[%.1f] %s FINAL_GUARD: REJECTED slot-boundary sid=%d gap=%.1f", self._sim_time(), self.vehicle_id, s, pg); return False
                 ne = self._neighbor_eta(s) or self._neighbor_eta_from_data(data)
@@ -881,7 +889,18 @@ class OBUApp:
                 continue
             ne = self._neighbor_eta(s) or self._neighbor_eta_from_data(data); ec = oe and ne and abs(ne - oe) < self.safe_headway_s
             cc = abs(ndist - dtm) < self.final_merge_clearance_m * 1.5 and lat <= self.cam_follow_lateral_tolerance * 2.0
-            if pg < self.final_merge_clearance_m or (ec and cc): log.debug("[%.1f] %s FINAL_GUARD: REJECTED sid=%d gap=%.1f", self._sim_time(), self.vehicle_id, s, pg); return False
+            
+            # Dynamic TTC check for side-by-side or approaching vehicles
+            ttc_danger = False
+            if lat <= self.cam_follow_lateral_tolerance * 2.0:
+                if lon < 0 and ns > cspd: # neighbor is behind and faster
+                    ttc = -lon / (ns - cspd)
+                    if ttc < 3.0: ttc_danger = True
+                elif lon > 0 and cspd > ns: # neighbor is ahead and slower
+                    ttc = lon / (cspd - ns)
+                    if ttc < 3.0: ttc_danger = True
+            
+            if pg < self.final_merge_clearance_m or (ec and cc) or ttc_danger or (cc and pg < 15.0): log.debug("[%.1f] %s FINAL_GUARD: REJECTED sid=%d gap=%.1f ttc_danger=%s", self._sim_time(), self.vehicle_id, s, pg, ttc_danger); return False
         return True
 
     def _negotiate_merge_slot(self, hid, lid=None, le=None, he=None):
