@@ -629,6 +629,52 @@ class OBUApp:
             lcs.get("target_lane"), lcs.get("executable"), dtm, cspd
         )
 
+    def _log_slot_quality_diag(self, event_name, lid, hid, le, he, e, dtm, source="", manoeuvre=None):
+        if e is None or dtm is None: return
+        cspd = self._current_speed() or 0.0
+        lane_id = str(self.sensor_state.get("lane_id", "")) if self.sensor_state else ""
+        lidx, eid = parse_lane_index(lane_id), edge_id_from_lane(lane_id)
+        mine, maxe, gp = self._merge_slot_window(le, he)
+        de = self._desired_eta_for_window(e, mine, maxe)
+        lg, llat, lclosing, lg1, lg2, lg3 = None, None, None, None, None, None
+        hg, hlat, hclosing, hg1, hg2, hg3 = None, None, None, None, None, None
+        if self.sensor_state and self._current_heading() is not None:
+            ox, oy, oh = float(self.sensor_state["x"]), float(self.sensor_state["y"]), self._current_heading()
+            rad = math.radians(90 - oh); fx, fy = math.cos(rad), math.sin(rad)
+            lg, llat, lclosing, lg1, lg2, lg3 = self._merge_start_gap_diag_values(lid, ox, oy, fx, fy, cspd)
+            hg, hlat, hclosing, hg1, hg2, hg3 = self._merge_start_gap_diag_values(hid, ox, oy, fx, fy, cspd)
+        lspd = float((self.neighbors.get(lid) or self.neighbor_memory.get(lid) or {}).get("speed", 0.0)) if lid else None
+        hspd = float((self.neighbors.get(hid) or self.neighbor_memory.get(hid) or {}).get("speed", 0.0)) if hid else None
+        pending_age = None
+        accepted_age = None
+        if self.pending_request:
+            pending_age = self._sim_time() - float(self.pending_request.get("timestamp", self._sim_time()))
+            if self.pending_request.get("accepted_at"):
+                accepted_age = self._sim_time() - float(self.pending_request.get("accepted_at", self._sim_time()))
+        lcs = self.lane_command_status or {}
+        mid = manoeuvre
+        if mid is None and self.pending_request:
+            mid = self.pending_request.get("manoeuvre_id")
+        def fmt(v): return f"{v:.2f}" if isinstance(v, float) else ("None" if v is None else str(v))
+        log.info(
+            "MERGE_SLOT_QUALITY_DIAG: vehicle=%s event=%s t=%.1f manoeuvre=%s source=%s "
+            "lead=%s host=%s own_eta=%s lead_eta=%s host_eta=%s min_eta=%s max_eta=%s desired_eta=%s "
+            "gap_possible=%s dtm=%.1f edge=%s lane=%s speed=%.2f lead_speed=%s host_speed=%s "
+            "lead_gap=%s host_gap=%s lead_gap_t1=%s lead_gap_t2=%s lead_gap_t3=%s "
+            "host_gap_t1=%s host_gap_t2=%s host_gap_t3=%s rel_to_lead=%s rel_to_host=%s "
+            "lead_lat=%s host_lat=%s pending=%s accepted=%s authorized=%s committed=%s "
+            "pending_age=%s accepted_age=%s lane_cmd_state=%s lane_cmd_target=%s",
+            self.vehicle_id, event_name, self._sim_time(), mid, source,
+            lid, hid, fmt(e), fmt(le), fmt(he), fmt(mine), fmt(maxe), fmt(de),
+            gp, dtm, eid, lidx, cspd, fmt(lspd), fmt(hspd),
+            fmt(lg), fmt(hg), fmt(lg1), fmt(lg2), fmt(lg3),
+            fmt(hg1), fmt(hg2), fmt(hg3), fmt(lclosing), fmt(hclosing),
+            fmt(llat), fmt(hlat), self.pending_request is not None,
+            bool(self.pending_request and self.pending_request.get("accepted_at")),
+            self.merge_authorized, self.merge_committed, fmt(pending_age), fmt(accepted_age),
+            lcs.get("state", "NONE"), lcs.get("target_lane")
+        )
+
     def _ramp_leader(self, sd):
         ls = []
         for s, d in self.neighbors.items():
@@ -790,8 +836,10 @@ class OBUApp:
                 if oe: ht = dist / max(oe + self.safe_headway_s + self.merge_occupancy_s, 0.1)
             self.pending_request = {"host_id": hid, "host_eta": he, "host_target_speed": ht, "lead_id": lid, "lead_eta": le, "manoeuvre_id": mid, "timestamp": self._sim_time()}
             self.accepted_slot_invalid_since = 0.0
+            self._log_slot_quality_diag("REQUEST_NEW", lid, hid, le, he, self._merge_eta(), self._self_distance_to_merge(), "new_request", mid)
             self._send_mcm(1, mid, target_station_id=hid); self._set_state(STATE_NEGOTIATING)
         elif not self.pending_request.get("accepted_at") and self._sim_time() - self.last_mcm_sent >= self.request_retry_s:
+            self._log_slot_quality_diag("REQUEST_RETRY", self.pending_request.get("lead_id"), hid, self.pending_request.get("lead_eta"), self._neighbor_eta(hid) or self.pending_request.get("host_eta"), self._merge_eta(), self._self_distance_to_merge(), "retry_request", self.pending_request["manoeuvre_id"])
             self._send_mcm(1, self.pending_request["manoeuvre_id"], target_station_id=hid)
         resp = self.mcm_messages.get(hid); ra = 2 if self.pending_request.get("accepted_at") else None
         if self.pending_request:
@@ -813,6 +861,7 @@ class OBUApp:
                 if ra == 2: 
                     if not self.pending_request.get("accepted_at"):
                         self._log_timeline_event("ACCEPT_MATCHED", host=hid, manoeuvre=self.pending_request["manoeuvre_id"])
+                        self._log_slot_quality_diag("ACCEPT_MATCHED", self.pending_request.get("lead_id"), hid, self.pending_request.get("lead_eta"), self._neighbor_eta(hid) or self.pending_request.get("host_eta"), self._merge_eta(), self._self_distance_to_merge(), "accept_matched", self.pending_request["manoeuvre_id"])
                         log.debug("[%.1f] %s MCM_ACCEPT_MATCHED: host=%d manoeuvre=%d", self._sim_time(), self.vehicle_id, hid, self.pending_request["manoeuvre_id"])
                         self.merge_accepted = True
                         self.merge_accepted_since = self._sim_time()
@@ -995,6 +1044,7 @@ class OBUApp:
                 if accepted_ready:
                     self.merge_authorized, self.merge_authorized_since = True, curt
                     self._log_timeline_event("AUTHORIZED")
+                    self._log_slot_quality_diag("AUTHORIZED", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                     log.debug("[%.1f] %s MERGE_AUTHORIZED_BY_MCM: host=%s manoeuvre=%s", curt, self.vehicle_id, hid, self.pending_request.get("manoeuvre_id") if self.pending_request else 0)
                 else:
                     if curt - self.last_accepted_wait_log > 1.0:
@@ -1007,6 +1057,7 @@ class OBUApp:
                         if not lclear: reason.append("lclear=False")
                         if not cok: reason.append("cok=False")
                         if not lgok_proj: reason.append(f"lgok_proj=False(t1={fmt_gap(lg1_v)}, t2={fmt_gap(lg2_v)})")
+                        self._log_slot_quality_diag("ACCEPTED_WAIT_SLOT_VALID", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                         log.debug("[%.1f] %s MERGE_ACCEPTED_WAIT_SLOT_VALID: reason=%s", curt, self.vehicle_id, ",".join(reason))
                         self.last_accepted_wait_log = curt
 
@@ -1016,6 +1067,7 @@ class OBUApp:
                 inv_age = curt - self.accepted_slot_invalid_since
                 if inv_age > self.accepted_slot_invalid_timeout_s:
                     self._log_timeline_event("SLOT_EXPIRED")
+                    self._log_slot_quality_diag("SLOT_EXPIRED", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                     log.debug("[%.1f] %s MERGE_ACCEPTED_SLOT_EXPIRED: age=%.1f dtm=%.1f", curt, self.vehicle_id, inv_age, dtm)
                     self.pending_request, self.merge_accepted, self.merge_authorized, self.accepted_slot_invalid_since = None, False, False, 0.0
                     if hid: self.mcm_messages.pop(int(hid), None)
@@ -1045,6 +1097,7 @@ class OBUApp:
             self._set_target_speed(slsp, emergency=dtm <= self.merge_stop_margin_m + 8.0); return
         if self.is_ramp_vehicle and self.past_merge_point and not self.merge_completed:
             if not self.merge_committed and not self.merge_authorized:
+                self._log_slot_quality_diag("LOST_AUTH_AFTER_POINT", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                 log.debug("[%.1f] %s MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=%.1f past=True hid=%s auth=False", curt, self.vehicle_id, dtm, hid)
                 self._set_state(STATE_ABORT); self._set_target_speed(0.18, force=True); return
             lp = float(self.sensor_state.get("lane_pos", 0.0)); rem = 63.23 - lp
