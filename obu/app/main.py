@@ -877,7 +877,8 @@ class OBUApp:
                 "MCM_REQUEST_RETRY_DIAG: vehicle=%s host=%s lead=%s manoeuvre=%s retry_count=%d pending_age=%.1f dtm=%.1f "
                 "own_eta=%.2f host_eta_current=%s host_eta_at_request=%s lead_eta_current=%s lead_eta_at_request=%s "
                 "last_response_action=%s last_response_age=%s host_remote_fsm=%s host_remote_edge=%s host_remote_lane=%s "
-                "host_remote_merge_committed=%s host_remote_merge_completed=%s",
+                "host_remote_merge_committed=%s host_remote_merge_completed=%s host_remote_active_merge_request=%s "
+                "host_remote_active_station_id=%s host_remote_active_manoeuvre_id=%s host_remote_active_remaining_s=%s",
                 self.vehicle_id, hid, self.pending_request.get("lead_id"), self.pending_request["manoeuvre_id"],
                 self.pending_request["retry_count"], curt - float(self.pending_request["timestamp"]), dtm,
                 e if e else 0.0, self._neighbor_eta(hid) or "None", self.pending_request.get("host_eta"),
@@ -885,7 +886,9 @@ class OBUApp:
                 self.mcm_messages.get(hid, {}).get("action", "None"), 
                 curt - float(self.mcm_messages.get(hid, {}).get("timestamp", curt)) if hid in self.mcm_messages else "None",
                 rst.get("fsm_state", "NONE"), rst.get("edge_id", ""), rst.get("lane_index", ""),
-                rst.get("merge_committed", False), rst.get("merge_completed", False)
+                rst.get("merge_committed", False), rst.get("merge_completed", False),
+                rst.get("active_merge_request", False), rst.get("active_merge_request_station_id", "None"),
+                rst.get("active_merge_request_manoeuvre_id", "None"), rst.get("active_merge_request_remaining_s", 0.0)
             )
             self._log_slot_quality_diag("REQUEST_RETRY", self.pending_request.get("lead_id"), hid, self.pending_request.get("lead_eta"), self._neighbor_eta(hid) or self.pending_request.get("host_eta"), self._merge_eta(), self._self_distance_to_merge(), "retry_request", self.pending_request["manoeuvre_id"])
             self._send_mcm(1, self.pending_request["manoeuvre_id"], target_station_id=hid)
