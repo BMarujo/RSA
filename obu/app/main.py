@@ -1023,7 +1023,7 @@ class OBUApp:
                     "host_gap_t1=%s host_gap_t2=%s host_gap_t3=%s host_gap_possible=%s",
                     self.vehicle_id, phid, lid, self.pending_request.get("manoeuvre_id"), 
                     "lost" if phe is None else "ahead", dtm,
-                    f"{e:.2f}" if e else "None", f"{he:.2f}" if he else "None", f"{le:.2f}" if le else "None",
+                    f"{e:.2f}" if e is not None else "None", f"{he:.2f}" if he is not None else "None", f"{le:.2f}" if le is not None else "None",
                     curt - float(self.pending_request["timestamp"]), curt - self.last_mcm_sent, 
                     self.pending_request.get("retry_count", 0),
                     rst.get("fsm_state", "NONE"), rst.get("edge_id", ""), rst.get("lane_index", ""),
