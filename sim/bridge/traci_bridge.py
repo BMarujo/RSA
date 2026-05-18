@@ -177,7 +177,7 @@ class TraciBridge:
         if len(parts) < 4:
             return
         vehicle_id = parts[1]
-        if len(parts) >= 3 and parts[2] == "status":
+        if len(parts) >= 4 and parts[2] == "status" and parts[3] == "fsm":
             self.fsm_status[vehicle_id] = payload
         elif parts[-1] == "speed":
             target = payload.get("target_speed")
@@ -278,6 +278,41 @@ class TraciBridge:
         topic = self.sensor_topic_fmt.format(vehicle_id=vehicle_id)
         self.client.publish(topic, json.dumps(payload))
 
+    def _publish_lane_command_status(
+        self,
+        vehicle_id: str,
+        state: str,
+        edge_id: str,
+        lane_id: str,
+        current_lane: Optional[int],
+        target_lane: Optional[int],
+        lane_count: int,
+        on_internal_edge: bool,
+        speed: float,
+    ) -> None:
+        executable = (
+            target_lane is not None
+            and current_lane is not None
+            and target_lane < lane_count
+            and current_lane != target_lane
+            and not on_internal_edge
+        )
+        payload = {
+            "time": traci.simulation.getTime(),
+            "timestamp": time.time(),
+            "vehicle_id": vehicle_id,
+            "edge_id": edge_id,
+            "lane_id": lane_id,
+            "current_lane": current_lane,
+            "target_lane": target_lane,
+            "lane_count": lane_count,
+            "state": state,
+            "executable": executable,
+            "on_internal_edge": on_internal_edge,
+            "speed": speed,
+        }
+        self.client.publish(f"car/{vehicle_id}/status/lane_command", json.dumps(payload))
+
     def _apply_actuators(self, vehicle_id: str) -> None:
         if self.initial_speed_mode >= 0 and vehicle_id not in self.initial_speed_mode_applied:
             traci.vehicle.setSpeedMode(vehicle_id, self.initial_speed_mode)
@@ -303,6 +338,8 @@ class TraciBridge:
             edge_id = lane_id.rsplit("_", 1)[0]
             current_lane = parse_lane_index(lane_id)
             on_internal_edge = edge_id.startswith(":")
+            lane_count = traci.edge.getLaneNumber(edge_id)
+            speed = traci.vehicle.getSpeed(vehicle_id)
             now = traci.simulation.getTime()
             last = self.lane_command_state.get(vehicle_id)
             
@@ -315,30 +352,36 @@ class TraciBridge:
             
             print(
                 f"LANE_CMD_STATE veh={vehicle_id} edge={edge_id} lane={current_lane} "
-                f"target={target_lane} lane_count={traci.edge.getLaneNumber(edge_id)} "
-                f"recently={recently_requested} speed={traci.vehicle.getSpeed(vehicle_id):.2f}"
+                f"target={target_lane} lane_count={lane_count} "
+                f"recently={recently_requested} speed={speed:.2f}"
             )
             
             if current_lane is not None and current_lane == target_lane and not on_internal_edge:
                 # Vehicle has reached the target lane. 
                 # Only clear if it's not a temporary transition lane or if requested to stop.
                 print(f"LANE_CMD_CLEAR veh={vehicle_id} edge={edge_id} target={target_lane}")
+                self._publish_lane_command_status(
+                    vehicle_id, "CLEAR", edge_id, lane_id, current_lane, target_lane, lane_count, on_internal_edge, speed
+                )
                 self.lane_commands.pop(vehicle_id, None)
                 self.lane_command_state.pop(vehicle_id, None)
                 if self.initial_lane_change_mode >= 0:
                     traci.vehicle.setLaneChangeMode(vehicle_id, self.initial_lane_change_mode)
             elif current_lane is not None and current_lane == target_lane:
                 print(f"LANE_CMD_HOLD_INTERNAL veh={vehicle_id} edge={edge_id} target={target_lane}")
+                self._publish_lane_command_status(
+                    vehicle_id, "HOLD_INTERNAL", edge_id, lane_id, current_lane, target_lane, lane_count, on_internal_edge, speed
+                )
             elif (
                 current_lane is not None
                 and current_lane != target_lane
             ):
-                if target_lane < traci.edge.getLaneNumber(edge_id):
+                if target_lane < lane_count:
                     if not recently_requested:
                         print(
                             f"LANE_CMD_APPLY veh={vehicle_id} edge={edge_id} from_lane={current_lane} "
                             f"target={target_lane} duration={self.lane_change_duration_s:.2f} "
-                            f"mode={self.command_lane_change_mode} speed={traci.vehicle.getSpeed(vehicle_id):.2f}"
+                            f"mode={self.command_lane_change_mode} speed={speed:.2f}"
                         )
                         if self.command_lane_change_mode >= 0:
                             traci.vehicle.setLaneChangeMode(vehicle_id, self.command_lane_change_mode)
@@ -349,12 +392,25 @@ class TraciBridge:
                                 "target_lane": float(target_lane),
                                 "timestamp": now,
                             }
+                            self._publish_lane_command_status(
+                                vehicle_id, "APPLY", edge_id, lane_id, current_lane, target_lane, lane_count, on_internal_edge, speed
+                            )
                         except traci.TraCIException as exc:
                             print(f"LANE_CMD_FAILED veh={vehicle_id} edge={edge_id} error={exc}")
+                            self._publish_lane_command_status(
+                                vehicle_id, "FAILED", edge_id, lane_id, current_lane, target_lane, lane_count, on_internal_edge, speed
+                            )
+                    else:
+                        self._publish_lane_command_status(
+                            vehicle_id, "APPLY", edge_id, lane_id, current_lane, target_lane, lane_count, on_internal_edge, speed
+                        )
                 else:
                     print(
                         f"LANE_CMD_WAIT_EDGE veh={vehicle_id} edge={edge_id} lane={current_lane} "
-                        f"target={target_lane} lane_count={traci.edge.getLaneNumber(edge_id)}"
+                        f"target={target_lane} lane_count={lane_count}"
+                    )
+                    self._publish_lane_command_status(
+                        vehicle_id, "WAIT_EDGE", edge_id, lane_id, current_lane, target_lane, lane_count, on_internal_edge, speed
                     )
         if vehicle_id in self.speed_mode_commands:
             traci.vehicle.setSpeedMode(vehicle_id, self.speed_mode_commands[vehicle_id])

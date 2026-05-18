@@ -54,8 +54,9 @@ if [ -n "$START_EMBEDDED_MOSQUITTO" ] && [ "$START_EMBEDDED_MOSQUITTO" = "true" 
             echo "connection bridge_to_remote"
             echo "address ${REMOTE_MQTT_HOST}:${REMOTE_MQTT_PORT}"
             echo "topic car/${VEHICLE_ID}/sensors/# in 0"
+            echo "topic car/${VEHICLE_ID}/status/lane_command in 0"
             echo "topic car/${VEHICLE_ID}/actuators/# out 0"
-            echo "topic car/${VEHICLE_ID}/status/# out 0"
+            echo "topic car/${VEHICLE_ID}/status/fsm out 0"
             if [ "${MIRROR_VANETZA_TOPICS:-true}" = "true" ]; then
                 echo "topic vanetza/# out 0 \"\" \"obu/${VEHICLE_ID}/\""
             fi

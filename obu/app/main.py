@@ -186,6 +186,7 @@ class OBUApp:
         self.count_late_merge_recovery, self.count_merge_failed_no_gap, self.count_merge_completed, self.count_merge_completed_clean, self.recovery_triggered_this_merge = 0, 0, 0, 0, False
         self.enable_mcm, self.enable_denm, self.publish_idle_actuators = env("ENABLE_MCM", "true").lower() == "true", env("ENABLE_DENM", "false").lower() == "true", env("PUBLISH_IDLE_ACTUATORS", "true").lower() == "true"
         self.sensor_topic = f"car/{self.vehicle_id}/sensors/gps"
+        self.lane_command_status_topic = f"car/{self.vehicle_id}/status/lane_command"
         self.actuator_speed_topic, self.actuator_lane_topic, self.actuator_speed_mode_topic = f"car/{self.vehicle_id}/actuators/speed", f"car/{self.vehicle_id}/actuators/lane", f"car/{self.vehicle_id}/actuators/speed_mode"
         self.status_topic, self.cam_in_topic, self.mcm_in_topic, self.denm_in_topic = f"car/{self.vehicle_id}/status/fsm", "vanetza/in/cam", "vanetza/in/mcm", "vanetza/in/denm"
         self.cam_out_topic, self.mcm_out_topic, self.denm_out_topic = "vanetza/out/cam", "vanetza/out/mcm", "vanetza/out/denm"
@@ -195,6 +196,7 @@ class OBUApp:
         self.client = mqtt.Client(client_id=f"obu-{self.vehicle_id}-{os.getpid()}")
         self.client.on_message = self.on_message
         self.sensor_state, self.last_position, self.last_heading = None, None, None
+        self.lane_command_status, self.last_lane_command_status_key = {}, None
         self.last_cam_sent, self.last_mcm_sent, self.last_fsm_step, self.last_actuator_sent, self.last_status_sent = 0.0, 0.0, 0.0, 0.0, 0.0
         self.neighbors, self.neighbor_memory, self.mcm_messages, self.pending_request, self.last_mcm_response = {}, {}, {}, None, {}
         self.mcm_seq, self.denm_seq, self.target_speed, self.target_lane_index, self.target_speed_mode = 0, 0, None, None, 0
@@ -208,7 +210,7 @@ class OBUApp:
         for a in range(40):
             try: self.client.connect(self.local_mqtt_host, self.local_mqtt_port, 60); break
             except: time.sleep(0.25)
-        self.client.subscribe(self.sensor_topic); self.client.subscribe(self.cam_out_topic); self.client.subscribe(self.mcm_out_topic); self.client.subscribe(self.denm_out_topic); self.client.loop_start()
+        self.client.subscribe(self.sensor_topic); self.client.subscribe(self.lane_command_status_topic); self.client.subscribe(self.cam_out_topic); self.client.subscribe(self.mcm_out_topic); self.client.subscribe(self.denm_out_topic); self.client.loop_start()
 
     def on_message(self, _c, _u, msg):
         try: p = json.loads(msg.payload.decode("utf-8"))
@@ -216,6 +218,18 @@ class OBUApp:
         if msg.topic == self.sensor_topic:
             self.sensor_state = p
             if self.first_sensor_time is None: self.first_sensor_time = float(p.get("time", self._sim_time()))
+        elif msg.topic == self.lane_command_status_topic:
+            self.lane_command_status = p
+            state = str(p.get("state", ""))
+            key = (state, p.get("edge_id"), p.get("current_lane"), p.get("target_lane"), p.get("lane_count"))
+            if key != self.last_lane_command_status_key:
+                self.last_lane_command_status_key = key
+                if state == "WAIT_EDGE":
+                    log.debug("[%.1f] %s MERGE_LANE_WAIT_EDGE_CONFIRMED: edge=%s lane=%s target_lane=%s lane_count=%s executable=%s", self._sim_time(), self.vehicle_id, p.get("edge_id"), p.get("current_lane"), p.get("target_lane"), p.get("lane_count"), p.get("executable"))
+                elif state == "APPLY":
+                    log.debug("[%.1f] %s MERGE_LANE_APPLY_CONFIRMED: edge=%s lane=%s target_lane=%s lane_count=%s executable=%s", self._sim_time(), self.vehicle_id, p.get("edge_id"), p.get("current_lane"), p.get("target_lane"), p.get("lane_count"), p.get("executable"))
+                elif state == "CLEAR":
+                    log.debug("[%.1f] %s MERGE_LANE_CLEAR_CONFIRMED: edge=%s lane=%s target_lane=%s lane_count=%s executable=%s", self._sim_time(), self.vehicle_id, p.get("edge_id"), p.get("current_lane"), p.get("target_lane"), p.get("lane_count"), p.get("executable"))
         elif msg.topic == self.cam_out_topic: self._handle_cam(p)
         elif msg.topic == self.mcm_out_topic: self._handle_mcm(p)
 
@@ -707,9 +721,10 @@ class OBUApp:
             lid, hid = self.committed_lead_id, self.committed_host_id; le, he = self._neighbor_eta(lid) if lid else None, self._neighbor_eta(hid) if hid else None
             lgok, hgok, fgok = (e - le) >= self.safe_headway_s if le else True, (he - e) >= self.merge_commit_headway_s if he else True, self._final_merge_lane_clear(lid, hid, dtm)
             if not lgok or not hgok or not fgok: 
+                lcs = self.lane_command_status or {}
                 if self.merge_safety_hold_since <= 0.0: self.merge_safety_hold_since = curt
-                if curt - self.merge_safety_hold_since > self.merge_safety_hold_timeout_s: log.debug("[%.1f] %s MERGE_COMMIT_ABORT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd); self.merge_committed, self.merge_authorized, self.pending_request = False, False, None; self._set_state(STATE_NEGOTIATING); return
-                self._set_target_speed(max(self.min_merge_entry_speed * 0.5, self.min_speed), force=True); log.debug("[%.1f] %s MERGE_COMMIT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd); return
+                if curt - self.merge_safety_hold_since > self.merge_safety_hold_timeout_s: log.debug("[%.1f] %s MERGE_COMMIT_ABORT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); self.merge_committed, self.merge_authorized, self.pending_request = False, False, None; self._set_state(STATE_NEGOTIATING); return
+                self._set_target_speed(max(self.min_merge_entry_speed * 0.5, self.min_speed), force=True); log.debug("[%.1f] %s MERGE_COMMIT_SAFETY_HOLD: lgok=%s hgok=%s fgok=%s edge=%s lane=%s target_lane=%s speed=%.2f lane_cmd_state=%s lane_cmd_executable=%s lane_cmd_edge=%s lane_cmd_lane_count=%s", curt, self.vehicle_id, lgok, hgok, fgok, ceid, lidx, self.target_lane_index, cspd, lcs.get("state"), lcs.get("executable"), lcs.get("edge_id"), lcs.get("lane_count")); return
             self.merge_safety_hold_since = 0.0; self._set_target_speed(max(self.min_merge_entry_speed, self.cruise_speed * 0.9)); self.skip_car_following_this_step = True
             if ca >= self.merge_commit_timeout_s: log.debug("[%.1f] %s MERGE_COMMIT_TIMEOUT", curt, self.vehicle_id); self.had_merge_timeout_this_attempt, self.pending_request, self.merge_committed, self.merge_authorized = True, None, False, False; self._set_state(STATE_NEGOTIATING); return
             return
