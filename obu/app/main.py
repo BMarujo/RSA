@@ -482,10 +482,19 @@ class OBUApp:
 
     def _publish_status(self):
         d, e = self._self_distance_to_merge(), self._merge_eta()
-        lcs = self.lane_command_status or {}; lid_s = str(self.sensor_state.get("lane_id", "")) if self.sensor_state else ""; p = {"vehicle_id": self.vehicle_id, "station_id": self.station_id, "role": self.role, "merge_completed": getattr(self, "merge_completed", False), "merge_committed": getattr(self, "merge_committed", False), "lane_command_state": lcs.get("state", "NONE"), "edge_id": edge_id_from_lane(lid_s), "lane_index": parse_lane_index(lid_s), "role_mode": self.role_mode, "effective_role": self.effective_role, "fsm_state": self.fsm_state, "fsm_state_age_s": self._sim_time() - self.fsm_state_since, "distance_to_merge_m": d, "merge_eta_s": e, "neighbor_count": len(self.neighbors), "target_speed": self.target_speed, "target_lane_index": self.target_lane_index, "target_speed_mode": self.target_speed_mode, "following_active": self.following_active, "following_station_id": self.following_station_id, "following_gap_m": self.following_gap_m, "following_reason": self.following_reason, "pending_request": self.pending_request is not None, "count_late_merge_recovery": self.count_late_merge_recovery, "count_merge_failed_no_gap": self.count_merge_failed_no_gap, "count_merge_completed": self.count_merge_completed, "count_merge_completed_clean": self.count_merge_completed_clean, "timestamp": self._sim_time()}
+        lcs = self.lane_command_status or {}; lid_s = str(self.sensor_state.get("lane_id", "")) if self.sensor_state else ""
+        p = {"vehicle_id": self.vehicle_id, "station_id": self.station_id, "role": self.role, "merge_completed": getattr(self, "merge_completed", False), "merge_committed": getattr(self, "merge_committed", False), "lane_command_state": lcs.get("state", "NONE"), "edge_id": edge_id_from_lane(lid_s), "lane_index": parse_lane_index(lid_s), "role_mode": self.role_mode, "effective_role": self.effective_role, "fsm_state": self.fsm_state, "fsm_state_age_s": self._sim_time() - self.fsm_state_since, "distance_to_merge_m": d, "merge_eta_s": e, "neighbor_count": len(self.neighbors), "target_speed": self.target_speed, "target_lane_index": self.target_lane_index, "target_speed_mode": self.target_speed_mode, "following_active": self.following_active, "following_station_id": self.following_station_id, "following_gap_m": self.following_gap_m, "following_reason": self.following_reason, "pending_request": self.pending_request is not None, "count_late_merge_recovery": self.count_late_merge_recovery, "count_merge_failed_no_gap": self.count_merge_failed_no_gap, "count_merge_completed": self.count_merge_completed, "count_merge_completed_clean": self.count_merge_completed_clean, "timestamp": self._sim_time()}
+
+        active_req = self.active_merge_request if self.active_merge_request else {}
+        active_remaining = max(0.0, self.active_merge_request_until - self._sim_time()) if self.active_merge_request else 0.0
+        p["active_merge_request"] = self.active_merge_request is not None and active_remaining > 0.0
+        p["active_merge_request_station_id"] = active_req.get("station_id")
+        p["active_merge_request_manoeuvre_id"] = active_req.get("manoeuvre_id")
+        p["active_merge_request_remaining_s"] = active_remaining
+        p["active_merge_request_target_speed"] = active_req.get("target_speed")
+
         if self.sensor_state: p["lane_id"], p["speed"] = self.sensor_state.get("lane_id"), self.sensor_state.get("speed")
         self._publish_json(self.status_topic, p)
-
     def _next_manoeuvre_id(self):
         self.mcm_seq = (self.mcm_seq + 1) % (MAX_MANOEUVRE_ID + 1)
         return ((self.station_id * 31 + self.mcm_seq) % MAX_MANOEUVRE_ID) or 1
