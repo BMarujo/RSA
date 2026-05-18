@@ -874,7 +874,7 @@ class OBUApp:
                 e if e else 0.0, self._neighbor_eta(hid) or "None", self.pending_request.get("host_eta"),
                 self._neighbor_eta(self.pending_request.get("lead_id")) or "None", self.pending_request.get("lead_eta"),
                 self.mcm_messages.get(hid, {}).get("action", "None"), 
-                curt - self.mcm_messages.get(hid, {}).get("received_at", 0.0) if hid in self.mcm_messages else "None",
+                curt - float(self.mcm_messages.get(hid, {}).get("timestamp", curt)) if hid in self.mcm_messages else "None",
                 rst.get("fsm_state", "NONE"), rst.get("edge_id", ""), rst.get("lane_index", ""),
                 rst.get("merge_committed", False), rst.get("merge_completed", False)
             )
@@ -1019,7 +1019,8 @@ class OBUApp:
                     "own_eta=%s host_eta=%s lead_eta=%s pending_age=%.1f last_mcm_sent_age=%.1f retry_count=%d "
                     "host_remote_fsm=%s host_remote_edge=%s host_remote_lane=%s host_remote_merge_committed=%s "
                     "host_remote_merge_completed=%s host_remote_lane_cmd_state=%s active_merge_request=%s "
-                    "slot_source=%s lead_gap=%s host_gap=%s lead_gap_t1=%s host_gap_t2=%s host_gap_t3=%s host_gap_possible=%s",
+                    "slot_source=%s lead_gap=%s host_gap=%s lead_gap_t1=%s lead_gap_t2=%s lead_gap_t3=%s "
+                    "host_gap_t1=%s host_gap_t2=%s host_gap_t3=%s host_gap_possible=%s",
                     self.vehicle_id, phid, lid, self.pending_request.get("manoeuvre_id"), 
                     "lost" if phe is None else "ahead", dtm,
                     f"{e:.2f}" if e else "None", f"{he:.2f}" if he else "None", f"{le:.2f}" if le else "None",
@@ -1028,9 +1029,10 @@ class OBUApp:
                     rst.get("fsm_state", "NONE"), rst.get("edge_id", ""), rst.get("lane_index", ""),
                     rst.get("merge_committed", False), rst.get("merge_completed", False),
                     rst.get("lane_command_state", "NONE"), bool(rst.get("active_merge_request")),
-                    sreas, f"{lg:.2f}" if lg else "None", f"{hg:.2f}" if hg else "None",
-                    f"{lg1:.2f}" if lg1 else "None", f"{hg1:.2f}" if hg1 else "None",
-                    f"{hg2:.2f}" if hg2 else "None", gp
+                    sreas, f"{lg:.2f}" if lg is not None else "None", f"{hg:.2f}" if hg is not None else "None",
+                    f"{lg1:.2f}" if lg1 is not None else "None", f"{lg2:.2f}" if lg2 is not None else "None", f"{lg3:.2f}" if lg3 is not None else "None",
+                    f"{hg1:.2f}" if hg1 is not None else "None", f"{hg2:.2f}" if hg2 is not None else "None", f"{hg3:.2f}" if hg3 is not None else "None",
+                    gp
                 )
 
                 log.debug("[%.1f] %s MCM_PENDING_ABANDON: host=%d %s", curt, self.vehicle_id, phid, "lost" if phe is None else f"ahead(eta={phe:.2f}<=own={e:.2f})")
