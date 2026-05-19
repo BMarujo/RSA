@@ -362,7 +362,10 @@ class OBUApp:
             if self.had_merge_timeout_this_attempt:
                 dur = curt - getattr(self, 'merge_physical_started_since', -1.0)
                 lcs = self.lane_command_status.get("state", "NONE") if self.lane_command_status else "NONE"
-                log.info("MERGE_COMPLETION_LATENCY_DIAG: vehicle=%s start_time=%.1f merging_time=%.1f clear_time=%.1f completed_time=%.1f duration_start_to_complete=%.1f lane_cmd_state=%s edge=%s lane=%s", self.vehicle_id, getattr(self, 'merge_physical_started_since', -1.0), getattr(self, 'merge_merging_started_since', -1.0), getattr(self, 'last_lane_clear_time', -1.0), curt, dur, lcs, eid, lidx)
+                tl = self.lane_command_status.get("target_lane", "None") if self.lane_command_status else "None"
+                tspd = self.target_speed if getattr(self, 'target_speed', None) is not None else 0.0
+                cspd = self._current_speed() or 0.0
+                log.info("MERGE_COMPLETION_LATENCY_DIAG: vehicle=%s duration_start_to_complete=%.1f start_time=%.1f merging_time=%.1f clear_time=%.1f completed_time=%.1f lane_cmd_state=%s edge=%s lane=%s target_lane=%s speed=%.2f target_speed=%.2f", self.vehicle_id, dur, getattr(self, 'merge_physical_started_since', -1.0), getattr(self, 'merge_merging_started_since', -1.0), getattr(self, 'last_lane_clear_time', -1.0), curt, lcs, eid, lidx, tl, cspd, tspd)
             self.merge_completed, self.merge_committed, self.merge_authorized, self.merge_authorized_since, self.had_merge_timeout_this_attempt, self.merge_deadlock_since, self.merge_safety_hold_since, self.merge_accepted, self.merge_accepted_since, self.accepted_slot_invalid_since = True, False, False, 0.0, False, 0.0, 0.0, False, 0.0, 0.0
             self.merge_physical_started_once = False
             self.committed_lead_id, self.committed_host_id, self.committed_manoeuvre_id, self.recovery_triggered_this_merge = None, None, None, False
