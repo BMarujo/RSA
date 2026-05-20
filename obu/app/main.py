@@ -1261,7 +1261,7 @@ class OBUApp:
             if not self.merge_committed and not self.merge_authorized:
                 self._log_slot_quality_diag("LOST_AUTH_AFTER_POINT", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                 log.debug("[%.1f] %s MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=%.1f past=True hid=%s auth=False", curt, self.vehicle_id, dtm, hid)
-                self._set_state(STATE_ABORT); self._set_target_speed(0.18, force=True); return
+                self._set_state(STATE_ABORT); self._set_target_speed(self.min_speed, force=True); return
             lp = float(self.sensor_state.get("lane_pos", 0.0)); rem = 63.23 - lp
             if rem < 10.0:
                 if not getattr(self, 'recovery_triggered_this_merge', False): self.count_late_merge_recovery += 1; self.recovery_triggered_this_merge = True
@@ -1295,7 +1295,7 @@ class OBUApp:
                     if gap < 4.0:
                         sf = max(self.cruise_speed * 0.4, self.min_speed)
                         if osp < 1.0: mfsp = max(mfsp or 0, sf)
-                if self.effective_role in ("lead", "host", "cruise") and gap > self.cam_follow_critical_gap: continue
+                if not (self._self_is_on_ramp() or ir) and self.effective_role in ("lead", "host", "cruise") and gap > self.cam_follow_critical_gap: continue
             elif self.effective_role == "merge" and od <= self.merge_conflict_follow_distance_m:
                 if not self._neighbor_is_main_candidate(sid): continue
                 ne, oe = self._neighbor_eta(sid), self._merge_eta()
@@ -1329,6 +1329,14 @@ class OBUApp:
             target_before = self.target_speed
             self.following_active, self.following_station_id, self.following_gap_m, self.following_reason = True, fsid, fgap, freas
             if self.fsm_state == STATE_CRUISE: self._set_state(STATE_YIELDING)
+            
+            if pmw and freas == "same_lane_cam":
+                lock_min_speed = self.cruise_speed * 0.8
+                if mfsp < lock_min_speed:
+                    log.info("POST_MERGE_LOCK_ACTIVE: vehicle=%s protected speed from %.2f to %.2f (flow)", self.vehicle_id, mfsp, lock_min_speed)
+                    mfsp = lock_min_speed
+                    is_em = False
+
             self._set_target_speed(mfsp, emergency=is_em)
             log.debug(
                 "[%.1f] %s CAR_FOLLOW: sid=%d edge=%s lane=%s leader_edge=%s leader_lane=%s leader_role_hint=%s "
