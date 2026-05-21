@@ -752,49 +752,111 @@ class OBUApp:
         return True
 
     def _post_clear_rear_guard_hold(self, curt, lid, hid, eid, lidx):
-        if not self.post_clear_rear_guard_enabled or hid is None:
+        if not self.post_clear_rear_guard_enabled:
             return False
-        hv = self._post_clear_gap_values(hid)
-        if not hv or not hv["rear"]:
-            return False
-        hazard = (
-            hv["t1"] <= self.post_clear_min_rear_gap_m
-            or hv["t2"] <= self.post_clear_min_rear_gap_m
-            or hv["ttc"] < self.post_clear_rear_ttc_s
-        )
-        if not hazard:
+        
+        # Comprehensive scan for any rear hazard in the target lane (not just the host)
+        lcs = self.lane_command_status or {}
+        target_lane = lcs.get("target_lane")
+        if target_lane is None:
+            target_lane = self.target_lane_index if self.target_lane_index is not None else self.merge_lane_index
+        try:
+            target_lane = int(target_lane)
+        except (TypeError, ValueError):
+            target_lane = self.merge_lane_index
+            
+        lid_s = str(self.sensor_state.get("lane_id", ""))
+        self_edge = edge_id_from_lane(lid_s)
+        cmd_edge = lcs.get("edge_id") or self_edge
+        
+        ox, oy, oh = float(self.sensor_state.get("x", 0.0)), float(self.sensor_state.get("y", 0.0)), self._current_heading()
+        rad = math.radians(90 - oh)
+        fx, fy = math.cos(rad), math.sin(rad)
+        own_speed = self._current_speed() or 0.0
+        
+        worst = None
+        for sid, d in self.neighbors.items():
+            rst = self.remote_vehicle_status.get(sid, {})
+            # Check if neighbor is in the target lane
+            lane_ok = sid == hid
+            if not lane_ok:
+                try:
+                    lane_ok = int(rst.get("lane_index")) == target_lane
+                except (TypeError, ValueError):
+                    lane_ok = False
+            if not lane_ok:
+                continue
+            
+            # Check if neighbor is on a relevant edge
+            redge = rst.get("edge_id")
+            if sid != hid and redge and redge not in (self_edge, cmd_edge, "1331698336"):
+                continue
+                
+            dx, dy = float(d.get("x", 0.0)) - ox, float(d.get("y", 0.0)) - oy
+            lon, lat = dx * fx + dy * fy, abs(-dx * fy + dy * fx)
+            
+            # Must be behind and within lateral tolerance
+            if lon >= 0 or lat > self.cam_follow_lateral_tolerance * 1.8:
+                continue
+                
+            ns = float(d.get("speed", 0.0))
+            gap = max(0.0, abs(lon) - self.vehicle_length)
+            closing = ns - own_speed
+            closing_pos = max(closing, 0.0)
+            
+            ttc = gap / closing_pos if closing_pos > 0.01 else float("inf")
+            t1, t2 = max(0.0, gap - closing_pos), max(0.0, gap - closing_pos * 2.0)
+            t3 = max(0.0, gap - closing_pos * 3.0)
+            
+            hazard = (
+                t1 <= self.post_clear_min_rear_gap_m
+                or t2 <= self.post_clear_min_rear_gap_m
+                or ttc < self.post_clear_rear_ttc_s
+            )
+            
+            if not hazard:
+                continue
+                
+            cand = {"sid": sid, "gap": gap, "t1": t1, "t2": t2, "t3": t3, "ttc": ttc, "speed": ns}
+            if worst is None or cand["ttc"] < worst["ttc"] or cand["t2"] < worst["t2"]:
+                worst = cand
+
+        if not worst:
             if self.post_clear_rear_guard_started_at > 0.0:
+                # Need some dummy values for the release log if we don't have a specific neighbor anymore
                 log.info(
-                    "MERGE_COMPLETION_REAR_GUARD_RELEASE: vehicle=%s reason=safe_gap host=%s lead=%s "
-                    "host_gap=%.2f host_gap_t1=%.2f host_gap_t2=%.2f host_gap_t3=%.2f closing_ttc=%.2f edge=%s lane=%s",
-                    self.vehicle_id, hid, lid, hv["gap"], hv["t1"], hv["t2"], hv["t3"], hv["ttc"], eid, lidx
+                    "MERGE_COMPLETION_REAR_GUARD_RELEASE: vehicle=%s reason=safe_gap host=%s lead=%s edge=%s lane=%s",
+                    self.vehicle_id, hid, lid, eid, lidx
                 )
                 self.post_clear_rear_guard_started_at = 0.0
             return False
+            
         if self.post_clear_rear_guard_started_at <= 0.0:
             self.post_clear_rear_guard_started_at = curt
+            
         held_s = curt - self.post_clear_rear_guard_started_at
         if held_s >= self.post_clear_rear_guard_max_s:
             log.info(
                 "MERGE_COMPLETION_REAR_GUARD_RELEASE: vehicle=%s reason=max_time host=%s lead=%s held_s=%.1f "
-                "host_gap=%.2f host_gap_t1=%.2f host_gap_t2=%.2f host_gap_t3=%.2f closing_ttc=%.2f edge=%s lane=%s",
-                self.vehicle_id, hid, lid, held_s, hv["gap"], hv["t1"], hv["t2"], hv["t3"], hv["ttc"], eid, lidx
+                "hazard_sid=%s gap=%.2f ttc=%.2f edge=%s lane=%s",
+                self.vehicle_id, hid, lid, held_s, worst["sid"], worst["gap"], worst["ttc"], eid, lidx
             )
             self.post_clear_rear_guard_started_at = 0.0
             return False
+            
         lv = self._post_clear_gap_values(lid)
         lead_gap = lv["gap"] if lv else None
         if curt - self.post_clear_rear_guard_last_log >= 0.5:
-            lcs = self.lane_command_status or {}
             log.info(
                 "MERGE_COMPLETION_REAR_GUARD_HOLD: vehicle=%s host=%s lead=%s held_s=%.1f speed=%.2f target=%.2f "
-                "lead_gap=%s host_gap=%.2f host_gap_t1=%.2f host_gap_t2=%.2f host_gap_t3=%.2f closing_ttc=%.2f "
-                "lane_cmd_state=%s edge=%s lane=%s",
-                self.vehicle_id, hid, lid, held_s, self._current_speed() or 0.0, self.target_speed or 0.0,
+                "lead_gap=%s hazard_sid=%s gap=%.2f t1=%.2f t2=%.2f t3=%.2f ttc=%.2f lane_cmd_state=%s edge=%s lane=%s",
+                self.vehicle_id, hid, lid, held_s, own_speed, self.target_speed or 0.0,
                 f"{lead_gap:.2f}" if lead_gap is not None else "None",
-                hv["gap"], hv["t1"], hv["t2"], hv["t3"], hv["ttc"], lcs.get("state", "NONE"), eid, lidx
+                worst["sid"], worst["gap"], worst["t1"], worst["t2"], worst["t3"], worst["ttc"], 
+                lcs.get("state", "NONE"), eid, lidx
             )
             self.post_clear_rear_guard_last_log = curt
+            
         self.merge_committed = True
         self.merge_completed = False
         self.target_lane_index = self.merge_lane_index
@@ -1266,16 +1328,6 @@ class OBUApp:
         e, dtm = self._merge_eta(), self._self_distance_to_merge()
         if e is None or dtm is None: return
         curt, lid_s = self._sim_time(), str(self.sensor_state.get("lane_id", "")); lidx, eid, cspd = parse_lane_index(lid_s), edge_id_from_lane(lid_s), self._current_speed() or 0.0
-        if self.is_ramp_vehicle and not self.merge_completed and not self.merge_physical_started_once and self._lane_change_executable_now():
-            lid = self.committed_lead_id or (int(self.pending_request["lead_id"]) if self.pending_request and self.pending_request.get("lead_id") else None)
-            hid = self.committed_host_id or (int(self.pending_request["host_id"]) if self.pending_request and self.pending_request.get("host_id") else None)
-            le, he = self._neighbor_eta(lid) if lid else None, self._neighbor_eta(hid) if hid else None
-            if not self.merge_committed:
-                self.merge_committed, self.merge_committed_since = True, curt
-                self.committed_lead_id, self.committed_host_id = lid, hid
-                self.committed_manoeuvre_id = self.pending_request.get("manoeuvre_id") if self.pending_request else None
-            self.target_lane_index, self.target_speed_mode = self.merge_lane_index, self.priority_speed_mode
-            self._start_physical_merge(curt, lid, hid, le, he, e, dtm, cspd, lidx, eid)
         if self._check_merge_finalized(): return
         if self.merge_completed and curt - self.merge_completed_since < self.post_merge_lock_s:
             es = max(self.cruise_speed, self.min_merge_entry_speed); self._set_target_speed(es, force=True); self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, False; return
@@ -1581,7 +1633,8 @@ class OBUApp:
                     and (eid == "1331698336" or eid in self.main_edge_ids)
                     and lidx != self.merge_lane_index
                     and hid is None
-                    and sreas in ("true_after_last_main", "no_main_neighbors")
+                    and lid is not None
+                    and sreas == "true_after_last_main"
                     and fgok
                     and cok
                     and lclear
