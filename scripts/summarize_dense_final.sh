@@ -2,7 +2,9 @@
 
 echo "Run Trace Warn Coll LaneF Hostless Start Merging Clean After Total LeadOnly LostAuth PMLock TtcReject Spd0 T018"
 
-for i in $(seq 1 10); do
+RUN_COUNT=${RUNS:-10}
+
+for i in $(seq 1 $RUN_COUNT); do
   f="logs/dense_final_${i}.log"
   if [ ! -f "$f" ]; then continue; fi
   

@@ -1141,8 +1141,13 @@ class OBUApp:
                         curt, self.vehicle_id, lid, abs(ldv - dtm), age, fresh_data is None and memory_data is not None, dtm
                     )
                     self.last_lclear_block_log = curt
-        if self.fsm_state == STATE_ABORT and curt - self.fsm_state_since < self.abort_cooldown_s: self._set_target_speed(max(self.cruise_speed * 0.4, self.min_speed)); return
-        elif self.fsm_state == STATE_ABORT: self._set_state(STATE_CRUISE)
+        if self.fsm_state == STATE_ABORT and curt - self.fsm_state_since < self.abort_cooldown_s:
+            self._set_target_speed(max(self.cruise_speed * 0.4, self.min_speed))
+            self.target_lane_index = None
+            return
+        elif self.fsm_state == STATE_ABORT:
+            self._set_state(STATE_CRUISE)
+            self.target_lane_index = None
         if ra == 3: return
         hyok = self._host_yield_effective(hid)
         if not hyok and ra == 2 and self.pending_request:
@@ -1261,12 +1266,12 @@ class OBUApp:
             if not self.merge_committed and not self.merge_authorized:
                 self._log_slot_quality_diag("LOST_AUTH_AFTER_POINT", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                 log.debug("[%.1f] %s MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=%.1f past=True hid=%s auth=False", curt, self.vehicle_id, dtm, hid)
-                self._set_state(STATE_ABORT); self._set_target_speed(self.min_speed, force=True); return
+                self._set_state(STATE_ABORT); self._set_target_speed(self.min_speed, force=True); self.target_lane_index = None; return
             lp = float(self.sensor_state.get("lane_pos", 0.0)); rem = 63.23 - lp
             if rem < 10.0:
                 if not getattr(self, 'recovery_triggered_this_merge', False): self.count_late_merge_recovery += 1; self.recovery_triggered_this_merge = True
                 self._set_target_speed(max(self.min_speed, rem / 2.0), force=True); self.target_lane_index = self.merge_lane_index; self.target_speed_mode, self.skip_car_following_this_step = self.priority_speed_mode, False
-            elif rem < 2.0: self.count_merge_failed_no_gap += 1; self._set_target_speed(0.0, force=True); self._set_state(STATE_ABORT)
+            elif rem < 2.0: self.count_merge_failed_no_gap += 1; self._set_target_speed(0.0, force=True); self._set_state(STATE_ABORT); self.target_lane_index = None
 
     def _latest_request(self):
         now, reqs = self._sim_time(), []
@@ -1288,6 +1293,7 @@ class OBUApp:
         for sid, d in self.neighbors.items():
             nx, ny, ns = float(d.get("x", 0.0)), float(d.get("y", 0.0)), float(d.get("speed", 0.0)); dx, dy = nx - ox, ny - oy; lon, lat = dx * fx + dy * fy, abs(-dx * fy + dy * fx)
             gap, reason = None, ""
+
             if 0.0 < lon <= self.cam_follow_lookahead and lat <= self.cam_follow_lateral_tolerance:
                 gap, reason = max(0.0, lon - self.vehicle_length), "same_lane_cam"; ir = (sid in self.ramp_station_ids or self._neighbor_is_merge_candidate(sid)) and not self.merge_completed
                 if ir:
@@ -1296,7 +1302,7 @@ class OBUApp:
                         sf = max(self.cruise_speed * 0.4, self.min_speed)
                         if osp < 1.0: mfsp = max(mfsp or 0, sf)
                 if not (self._self_is_on_ramp() or ir) and self.effective_role in ("lead", "host", "cruise") and gap > self.cam_follow_critical_gap: continue
-            elif self.effective_role == "merge" and od <= self.merge_conflict_follow_distance_m:
+            elif (self.effective_role == "merge" or (self.is_ramp_vehicle and not self.merge_completed)) and od <= self.merge_conflict_follow_distance_m:
                 if not self._neighbor_is_main_candidate(sid): continue
                 ne, oe = self._neighbor_eta(sid), self._merge_eta()
                 if ne and oe and abs(ne - oe) <= self.safe_headway_s * 1.2:
@@ -1325,11 +1331,17 @@ class OBUApp:
             elif fsid is None: leader_role_hint = "unknown"
             else: leader_role_hint = "merge_candidate" if self._neighbor_is_merge_candidate(fsid) else "unknown"
             merge_completed_age = now - self.merge_completed_since if self.merge_completed else -1.0
-            lcs = self.lane_command_status or {}
+            # Final target determination
             target_before = self.target_speed
             self.following_active, self.following_station_id, self.following_gap_m, self.following_reason = True, fsid, fgap, freas
             if self.fsm_state == STATE_CRUISE: self._set_state(STATE_YIELDING)
-            
+
+            # Decisive step-up for stopped vehicles to avoid target reflection at 0.18
+            if osp < 1.0:
+                mfsp = max(mfsp or 0.0, osp + 0.3)
+
+            mfsp_raw = mfsp
+
             if pmw and freas == "same_lane_cam":
                 lock_min_speed = self.cruise_speed * 0.8
                 if mfsp < lock_min_speed:
@@ -1342,11 +1354,11 @@ class OBUApp:
                 "[%.1f] %s CAR_FOLLOW: sid=%d edge=%s lane=%s leader_edge=%s leader_lane=%s leader_role_hint=%s "
                 "self_merge_completed=%s self_merge_completed_age=%.1f self_merge_committed=%s lane_cmd_state=%s "
                 "lane_cmd_edge=%s lane_cmd_target=%s lane_cmd_executable=%s same_lane=%s reason=%s gap=%.1f "
-                "follow_spd=%.2f emergency=%s target_before=%s target_after=%s",
+                "follow_spd=%.2f emergency=%s target_before=%s target_after=%s target_after_raw=%.2f",
                 now, self.vehicle_id, fsid or 0, self_edge, self_lane, leader_edge, leader_lane, leader_role_hint,
                 self.merge_completed, merge_completed_age, self.merge_committed, lcs.get("state"),
                 lcs.get("edge_id"), lcs.get("target_lane"), lcs.get("executable"), freas == "same_lane_cam",
-                freas, fgap or 0, mfsp, is_em, target_before, self.target_speed
+                freas, fgap or 0, mfsp, is_em, target_before, self.target_speed, mfsp_raw or 0.0
             )
             if self.merge_completed:
                 self._log_timeline_event("POST_MERGE_CAR_FOLLOW")

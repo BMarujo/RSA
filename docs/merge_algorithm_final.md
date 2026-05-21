@@ -31,13 +31,23 @@ The algorithm was validated against 10 continuous runs of the `dense` scenario. 
 - **Exactly 60 MERGING!**
 - **Exactly 60 total completions** (MERGE_COMPLETED + MERGE_COMPLETED_AFTER_TIMEOUT)
 
+## Final Post-Merge Safety Fixes
+The dense scenario revealed a critical failure mode where vehicles would drop their speed to near-zero (0.18 m/s) immediately after merging or when failing a merge attempt, leading to rear-end collisions. The following fixes were implemented:
+
+- **Post-Merge Lock (`POST_MERGE_LOCK_S`):** Protects the vehicle for the first 3 seconds after completing a merge. During this window, CAM following logic is prevented from dropping the target speed below 80% of the cruise speed, ensuring safe flow.
+- **Ramp-to-Main Car Following Hardening:** All ramp vehicles approaching the merge point now actively check for conflicts with main road vehicles, regardless of their current state. This prevents vehicles in `CRUISE` state on the ramp from colliding with slow-moving traffic in the target lane during the merge transition.
+- **Ramp Car-Following Restoration:** Fixed a bug where ramp vehicles would skip following leaders further than 6 meters away. Vehicles on the ramp now correctly follow their leaders regardless of gap, ensuring safe queuing in dense traffic.
+- **Dynamic Abort Speed:** Replaced the hardcoded `0.18` target speed in `STATE_ABORT` (used when a vehicle is past the merge point without authorization) with the vehicle's dynamic `min_speed`, preventing abrupt and dangerous stops.
+- **Abort State Lane Cancellation:** Entering `STATE_ABORT` now explicitly clears the target lane index. This ensures that if a merge attempt fails, the vehicle immediately stops trying to change lanes, preventing unauthorized and dangerous entries into the main flow.
+- **Speed Recovery Hardening:** Vehicles that are virtually stopped (speed < 1.0 m/s) are now guaranteed a minimum target speed step-up of 0.3 m/s. This prevents a "speed reflection" deadlock where vehicles would get stuck at dangerously low speeds (like 0.18 m/s), ensuring they can decisively accelerate away from the merge zone.
+
 ## Reproduction Commands
-To validate the current state and run the 10 dense simulations:
+To validate the current state and run the 30 dense simulations:
 
 ```bash
-# Run the 10 dense scenarios and automatically check for regressions
-./scripts/validate_dense_final.sh
+# Run the 30 dense scenarios and automatically check for regressions
+RUNS=30 ./scripts/validate_dense_final.sh
 
-# Summarize the output of the 10 runs
+# Summarize the output of the 30 runs
 ./scripts/summarize_dense_final.sh
 ```
