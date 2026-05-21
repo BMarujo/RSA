@@ -25,21 +25,29 @@ if grep -q "collision" logs/dense_final_*.log; then echo "FAILED: collision foun
 if grep -q "LANE_CMD_FAILED" logs/dense_final_*.log; then echo "FAILED: LANE_CMD_FAILED found"; FAIL=1; fi
 if grep -q "MERGE_ALLOWED_HOSTLESS" logs/dense_final_*.log; then echo "FAILED: MERGE_ALLOWED_HOSTLESS found"; FAIL=1; fi
 
-START_COUNT=$(grep -c 'MERGE_PHYSICAL_START:' logs/dense_final_*.log | awk -F: '{s+=$2} END {print s}')
-if [ -z "$START_COUNT" ]; then START_COUNT=$(grep 'MERGE_PHYSICAL_START:' logs/dense_final_*.log | wc -l); fi
-if [ "$START_COUNT" -ne $EXPECTED_TOTAL ]; then echo "FAILED: MERGE_PHYSICAL_START count is $START_COUNT, expected $EXPECTED_TOTAL"; FAIL=1; fi
+START_COUNT=$( (grep -h 'MERGE_PHYSICAL_START:' logs/dense_final_*.log || true) | wc -l )
 
-MERGING_COUNT=$(grep -c 'MERGING!' logs/dense_final_*.log | awk -F: '{s+=$2} END {print s}')
-if [ -z "$MERGING_COUNT" ]; then MERGING_COUNT=$(grep 'MERGING!' logs/dense_final_*.log | wc -l); fi
-if [ "$MERGING_COUNT" -ne $EXPECTED_TOTAL ]; then echo "FAILED: MERGING! count is $MERGING_COUNT, expected $EXPECTED_TOTAL"; FAIL=1; fi
+MERGING_COUNT=$( (grep -h 'MERGING!' logs/dense_final_*.log || true) | wc -l )
 
-COMP_CLEAN=$(grep -c 'MERGE_COMPLETED:' logs/dense_final_*.log | awk -F: '{s+=$2} END {print s}')
-if [ -z "$COMP_CLEAN" ]; then COMP_CLEAN=$(grep 'MERGE_COMPLETED:' logs/dense_final_*.log | wc -l); fi
+COMP_CLEAN=$( (grep -h 'MERGE_COMPLETED:' logs/dense_final_*.log || true) | wc -l )
 
-COMP_TO=$(grep -c 'MERGE_COMPLETED_AFTER_TIMEOUT' logs/dense_final_*.log | awk -F: '{s+=$2} END {print s}')
-if [ -z "$COMP_TO" ]; then COMP_TO=$(grep 'MERGE_COMPLETED_AFTER_TIMEOUT' logs/dense_final_*.log | wc -l); fi
+COMP_TO=$( (grep -h 'MERGE_COMPLETED_AFTER_TIMEOUT' logs/dense_final_*.log || true) | wc -l )
 
 TOTAL_COMP=$((COMP_CLEAN + COMP_TO))
+
+if [ "$START_COUNT" -ne "$TOTAL_COMP" ]; then echo "FAILED: MERGE_PHYSICAL_START count is $START_COUNT, expected completed total $TOTAL_COMP"; FAIL=1; fi
+if [ "$MERGING_COUNT" -ne "$TOTAL_COMP" ]; then echo "FAILED: MERGING! count is $MERGING_COUNT, expected completed total $TOTAL_COMP"; FAIL=1; fi
+
+for f in logs/dense_final_*.log; do
+  START=$(grep -c 'MERGE_PHYSICAL_START:' "$f" || true)
+  MERGING=$(grep -c 'MERGING!' "$f" || true)
+  CLEAN=$(grep -c 'MERGE_COMPLETED:' "$f" || true)
+  AFTER=$(grep -c 'MERGE_COMPLETED_AFTER_TIMEOUT' "$f" || true)
+  TOTAL=$((CLEAN + AFTER))
+  RUN_NAME=$(basename "$f")
+  if [ "$START" -ne "$TOTAL" ]; then echo "FAILED: $RUN_NAME START=$START TOTAL=$TOTAL"; FAIL=1; fi
+  if [ "$MERGING" -ne "$TOTAL" ]; then echo "FAILED: $RUN_NAME MERGING=$MERGING TOTAL=$TOTAL"; FAIL=1; fi
+done
 
 STRICT_COMPLETION=${STRICT_COMPLETION:-false}
 MIN_COMPLETION_RATIO=${MIN_COMPLETION_RATIO:-0.98}
@@ -57,8 +65,8 @@ fi
 # Warnings for performance indicators
 MAX_SPD0=${MAX_SPD0:-120}
 MAX_T018=${MAX_T018:-80}
-SPD0_TOTAL=$(grep -c 'speed=0.00' logs/dense_final_*.log | awk -F: '{s+=$2} END {print s}')
-T018_TOTAL=$(grep -c 'target=0.18' logs/dense_final_*.log | awk -F: '{s+=$2} END {print s}')
+SPD0_TOTAL=$( (grep -h 'speed=0.00' logs/dense_final_*.log || true) | wc -l )
+T018_TOTAL=$( (grep -h 'target=0.18' logs/dense_final_*.log || true) | wc -l )
 
 if [ "$SPD0_TOTAL" -gt "$MAX_SPD0" ]; then echo "WARNING: High SPD0 count ($SPD0_TOTAL > $MAX_SPD0)"; fi
 if [ "$T018_TOTAL" -gt "$MAX_T018" ]; then echo "WARNING: High T018 count ($T018_TOTAL > $MAX_T018)"; fi

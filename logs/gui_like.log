@@ -1,0 +1,925 @@
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-traci-bridge:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 5.71kB done
+#1 DONE 0.0s
+
+#2 [traci-bridge internal] load build definition from Dockerfile
+#2 transferring dockerfile: 997B done
+#2 DONE 0.0s
+
+#3 [obu-ramp-back internal] load build definition from Dockerfile
+#3 transferring dockerfile: 499B done
+#3 DONE 0.0s
+
+#4 [traci-bridge internal] load metadata for ghcr.io/eclipse-sumo/sumo:latest
+#4 DONE 0.0s
+
+#5 [obu-ramp-back internal] load metadata for ghcr.io/nap-it/vanetza-nap:latest
+#5 DONE 0.0s
+
+#6 [obu-ramp-merge-2 internal] load .dockerignore
+#6 transferring context: 2B 0.0s done
+#6 DONE 0.0s
+
+#7 [obu-main-back-right 1/9] FROM ghcr.io/nap-it/vanetza-nap:latest
+#7 DONE 0.0s
+
+#8 [traci-bridge 1/6] FROM ghcr.io/eclipse-sumo/sumo:latest
+#8 DONE 0.0s
+
+#9 [obu-main-back-right internal] load build context
+#9 transferring context: 681B 0.0s done
+#9 DONE 0.0s
+
+#7 [obu-ramp-merge-3 1/9] FROM ghcr.io/nap-it/vanetza-nap:latest
+#7 DONE 0.0s
+
+#10 [traci-bridge internal] load build context
+#10 transferring context: 148B done
+#10 DONE 0.0s
+
+#11 [traci-bridge 4/6] COPY sim/bridge/requirements.txt /app/requirements.txt
+#11 CACHED
+
+#12 [traci-bridge 2/6] RUN apt-get update     && apt-get install -y --no-install-recommends         ca-certificates         curl         gnupg         python3         python3-pip     && curl -fsSL https://downloads.apache.org/arrow/KEYS         | gpg --dearmor -o /usr/share/keyrings/apache-arrow-apt-source.gpg     && echo "deb [signed-by=/usr/share/keyrings/apache-arrow-apt-source.gpg] https://apache.jfrog.io/artifactory/arrow/ubuntu jammy main"         > /etc/apt/sources.list.d/apache-arrow.list     && apt-get update     && apt-get install -y --no-install-recommends         libarrow2300         libparquet2300     && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [traci-bridge 3/6] WORKDIR /app
+#13 CACHED
+
+#14 [traci-bridge 5/6] RUN pip3 install --no-cache-dir -r /app/requirements.txt
+#14 CACHED
+
+#15 [traci-bridge 6/6] COPY sim/bridge/traci_bridge.py /app/traci_bridge.py
+#15 CACHED
+
+#16 [obu-lead-car 8/9] COPY obu/config/vanetza-obu.ini /config.ini
+#16 CACHED
+
+#17 [obu-lead-car 2/9] RUN apt-get update     && apt-get install -y --no-install-recommends python3 python3-pip     && rm -rf /var/lib/apt/lists/*
+#17 CACHED
+
+#18 [obu-lead-car 7/9] COPY obu/entrypoint.sh /entrypoint-obu.sh
+#18 CACHED
+
+#19 [obu-lead-car 4/9] COPY obu/requirements.txt /app/requirements.txt
+#19 CACHED
+
+#20 [obu-lead-car 6/9] COPY obu/app /app
+#20 CACHED
+
+#21 [obu-lead-car 5/9] RUN pip3 install --no-cache-dir -r /app/requirements.txt
+#21 CACHED
+
+#22 [obu-lead-car 3/9] WORKDIR /app
+#22 CACHED
+
+#23 [obu-merge-car 9/9] RUN chmod +x /entrypoint-obu.sh
+#23 CACHED
+
+#24 [obu-main-mid-right] exporting to image
+#24 exporting layers done
+#24 writing image sha256:cdccbfbf091098f4faf302818e8d94f326271704dd2501f3aabe5d76e2bed98d
+#24 writing image sha256:cdccbfbf091098f4faf302818e8d94f326271704dd2501f3aabe5d76e2bed98d 0.3s done
+#24 naming to docker.io/library/rsa-obu:latest 0.0s done
+#24 DONE 0.4s
+
+#25 [traci-bridge] exporting to image
+#25 exporting layers done
+#25 writing image sha256:ec189de1fdf1a841024ba630f2bab815935eee1cb5501501177aeafb8aa6d178 0.3s done
+#25 naming to docker.io/library/rsa-traci-bridge:latest 0.0s done
+#25 DONE 0.4s
+
+#26 [obu-merge-car] exporting to image
+#26 exporting layers done
+#26 writing image sha256:d5e10abb2fd558c7ea5db1336df11f00e3f88c7649bb099bdb0993bf60538f0b 0.3s done
+#26 naming to docker.io/library/rsa-obu:latest 0.0s done
+#26 DONE 0.4s
+
+#27 [obu-main-back-right] exporting to image
+#27 exporting layers done
+#27 writing image sha256:d7d01dbf4ac360ee8c9251d1ef71dfcc0916e3670eed576f0030c2863d31f90a 0.3s done
+#27 naming to docker.io/library/rsa-obu:latest 0.0s done
+#27 DONE 0.4s
+
+#28 [obu-main-front-left] exporting to image
+#28 exporting layers done
+#28 writing image sha256:064f6ab6caefb564146b2cf1f1c9f2ef06e667eb036ee114ed3fc81cfe5394af 0.3s done
+#28 naming to docker.io/library/rsa-obu:latest 0.0s done
+#28 DONE 0.4s
+
+#29 [obu-host-car] exporting to image
+#29 exporting layers done
+#29 writing image sha256:80d94570a9808e24bc849d79d3fecdacdd5c69990126244d2f0bc76235ce16e2 0.3s done
+#29 naming to docker.io/library/rsa-obu:latest 0.0s done
+#29 DONE 0.4s
+
+#30 [obu-ramp-merge-2] exporting to image
+#30 exporting layers done
+#30 writing image sha256:a52eaa201bbf553fd91453f97f513b6700eeb53bdf2f1474d0b7e727dec3617f 0.3s done
+#30 naming to docker.io/library/rsa-obu:latest 0.0s done
+#30 DONE 0.4s
+
+#31 [obu-lead-car] exporting to image
+#31 exporting layers done
+#31 writing image sha256:c81a5240152f56c90c1130aa22e1288606e86e8244ee7561410c8ee18f1c63bf 0.3s done
+#31 naming to docker.io/library/rsa-obu:latest 0.0s done
+#31 DONE 0.4s
+
+#32 [obu-ramp-merge-3] exporting to image
+#32 exporting layers done
+#32 writing image sha256:c22233bab231bbb9b88a4608edd98d53047ddf80e1eaae2a96e665f82d41296a 0.3s done
+#32 naming to docker.io/library/rsa-obu:latest 0.0s done
+#32 DONE 0.4s
+
+#33 [obu-main-back-left] exporting to image
+#33 exporting layers done
+#33 writing image sha256:6cb84f146645137b8c7d47b89a8e6bfeeee9d32502e0064c93dcc05832359d50 0.3s done
+#33 naming to docker.io/library/rsa-obu:latest 0.1s done
+#33 DONE 0.4s
+
+#34 [obu-ramp-back] exporting to image
+#34 exporting layers done
+#34 writing image sha256:4e848e06cd4d5e2dd3661fdd9d8ecf605b453bdfceb570afef65e18bfd361430 0.3s done
+#34 naming to docker.io/library/rsa-obu:latest 0.0s done
+#34 DONE 0.4s
+
+#35 [obu-ramp-merge-5] exporting to image
+#35 exporting layers done
+#35 writing image sha256:317f30d784446af5572f32e0f29c6c4a9f66beb978bad538d533ebda35b5f3d8 0.3s done
+#35 naming to docker.io/library/rsa-obu:latest 0.1s done
+#35 DONE 0.4s
+
+#36 [obu-ramp-merge-4] exporting to image
+#36 exporting layers done
+#36 writing image sha256:74f430dde9cf9d906e5936b03e1968de30dffff2cf61da3306cab53fc5ac4ae1 0.3s done
+#36 naming to docker.io/library/rsa-obu:latest 0.1s done
+#36 DONE 0.4s
+
+#37 [traci-bridge] resolving provenance for metadata file
+#37 DONE 0.0s
+
+#38 [obu-ramp-merge-5] resolving provenance for metadata file
+#38 DONE 0.0s
+
+#39 [obu-ramp-merge-2] resolving provenance for metadata file
+#39 DONE 0.0s
+
+#40 [obu-ramp-merge-3] resolving provenance for metadata file
+#40 DONE 0.0s
+
+#41 [obu-main-front-left] resolving provenance for metadata file
+#41 DONE 0.0s
+
+#42 [obu-lead-car] resolving provenance for metadata file
+#42 DONE 0.0s
+
+#43 [obu-main-back-right] resolving provenance for metadata file
+#43 DONE 0.1s
+
+#44 [obu-merge-car] resolving provenance for metadata file
+#44 DONE 0.1s
+
+#45 [obu-ramp-merge-4] resolving provenance for metadata file
+#45 DONE 0.1s
+
+#46 [obu-host-car] resolving provenance for metadata file
+#46 DONE 0.1s
+
+#47 [obu-main-back-left] resolving provenance for metadata file
+#47 DONE 0.1s
+
+#48 [obu-ramp-back] resolving provenance for metadata file
+#48 DONE 0.0s
+
+#49 [obu-main-mid-right] resolving provenance for metadata file
+#49 DONE 0.1s
+ Image rsa-obu:latest Built 
+ Image rsa-traci-bridge:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Network rsa_v2x_net Creating 
+ Network rsa_v2x_net Created 
+ Container rsa-mqtt-broker-1 Creating 
+ Container rsa-mqtt-broker-1 Created 
+ Container rsa-obu-main-back-left-1 Creating 
+ Container rsa-obu-main-mid-right-1 Creating 
+ Container rsa-traci-bridge-1 Creating 
+ Container rsa-obu-ramp-merge-2-1 Creating 
+ Container rsa-obu-ramp-merge-3-1 Creating 
+ Container rsa-obu-ramp-merge-4-1 Creating 
+ Container rsa-obu-lead-car-1 Creating 
+ Container rsa-obu-ramp-merge-5-1 Creating 
+ Container rsa-obu-ramp-back-1 Creating 
+ Container rsa-obu-main-front-left-1 Creating 
+ Container rsa-obu-main-back-right-1 Creating 
+ Container rsa-obu-merge-car-1 Creating 
+ Container rsa-obu-host-car-1 Creating 
+ Container rsa-obu-ramp-merge-4-1 Created 
+ Container rsa-obu-ramp-back-1 Created 
+ Container rsa-obu-host-car-1 Created 
+ Container rsa-obu-ramp-merge-2-1 Created 
+ Container rsa-traci-bridge-1 Created 
+ Container rsa-obu-main-back-left-1 Created 
+ Container rsa-obu-main-back-right-1 Created 
+ Container rsa-obu-ramp-merge-5-1 Created 
+ Container rsa-obu-main-front-left-1 Created 
+ Container rsa-obu-lead-car-1 Created 
+ Container rsa-obu-main-mid-right-1 Created 
+ Container rsa-obu-merge-car-1 Created 
+ Container rsa-obu-ramp-merge-3-1 Created 
+Attaching to mqtt-broker-1, obu-host-car-1, obu-lead-car-1, obu-main-back-left-1, obu-main-back-right-1, obu-main-front-left-1, obu-main-mid-right-1, obu-merge-car-1, obu-ramp-back-1, obu-ramp-merge-2-1, obu-ramp-merge-3-1, obu-ramp-merge-4-1, obu-ramp-merge-5-1, traci-bridge-1
+ Container rsa-mqtt-broker-1 Starting 
+ Container rsa-mqtt-broker-1 Started 
+ Container rsa-obu-main-back-left-1 Starting 
+ Container rsa-obu-ramp-back-1 Starting 
+ Container rsa-obu-ramp-merge-2-1 Starting 
+ Container rsa-obu-main-front-left-1 Starting 
+ Container rsa-obu-ramp-merge-3-1 Starting 
+ Container rsa-traci-bridge-1 Starting 
+ Container rsa-obu-main-back-right-1 Starting 
+ Container rsa-obu-ramp-merge-5-1 Starting 
+ Container rsa-obu-main-mid-right-1 Starting 
+ Container rsa-obu-lead-car-1 Starting 
+ Container rsa-obu-merge-car-1 Starting 
+ Container rsa-obu-host-car-1 Starting 
+ Container rsa-obu-ramp-merge-4-1 Starting 
+mqtt-broker-1  | 1779400482: Info: running mosquitto as user: mosquitto.
+mqtt-broker-1  | 1779400482: mosquitto version 2.1.2 starting
+mqtt-broker-1  | 1779400482: Config loaded from /mosquitto/config/mosquitto.conf.
+mqtt-broker-1  | 1779400482: Bridge support available.
+mqtt-broker-1  | 1779400482: Persistence support available.
+mqtt-broker-1  | 1779400482: TLS support available.
+mqtt-broker-1  | 1779400482: TLS-PSK support available.
+mqtt-broker-1  | 1779400482: Websockets support available.
+mqtt-broker-1  | 1779400482: Opening ipv4 listen socket on port 1883.
+mqtt-broker-1  | 1779400482: mosquitto version 2.1.2 running
+ Container rsa-obu-ramp-merge-3-1 Started 
+obu-ramp-merge-3-1  | No global board config file found. Skipping config update process
+obu-ramp-merge-4-1  | No global board config file found. Skipping config update process
+ Container rsa-obu-ramp-merge-4-1 Started 
+obu-main-front-left-1  | No global board config file found. Skipping config update process
+ Container rsa-obu-main-front-left-1 Started 
+obu-ramp-merge-3-1     | 1779400483: mosquitto version 2.0.11 starting
+obu-ramp-merge-3-1     | 1779400483: Config loaded from /mosquitto.conf.
+obu-ramp-merge-3-1     | 1779400483: Opening ipv4 listen socket on port 1883.
+obu-ramp-merge-3-1     | 1779400483: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-ramp-merge-3-1     | 1779400483: mosquitto version 2.0.11 running
+obu-main-mid-right-1   | No global board config file found. Skipping config update process
+ Container rsa-obu-main-mid-right-1 Started 
+obu-ramp-merge-4-1     | 1779400483: mosquitto version 2.0.11 starting
+obu-ramp-merge-4-1     | 1779400483: Config loaded from /mosquitto.conf.
+obu-ramp-merge-4-1     | 1779400483: Opening ipv4 listen socket on port 1883.
+obu-ramp-merge-4-1     | 1779400483: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-ramp-merge-4-1     | 1779400483: mosquitto version 2.0.11 running
+obu-ramp-merge-3-1     | 1779400483: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400483: New connection from 172.18.0.3:59950 on port 1883.
+mqtt-broker-1          | 1779400483: New bridge connected from 172.18.0.3:59950 as 73ac76d14cfd.bridge_to_remote (p4, c0, k60).
+ Container rsa-obu-ramp-back-1 Started 
+obu-ramp-back-1        | No global board config file found. Skipping config update process
+ Container rsa-traci-bridge-1 Started 
+obu-ramp-merge-4-1     | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.4:39652 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.4:39652 as 77d8597854c3.bridge_to_remote (p4, c0, k60).
+obu-main-front-left-1  | 1779400484: mosquitto version 2.0.11 starting
+obu-main-front-left-1  | 1779400484: Config loaded from /mosquitto.conf.
+obu-main-front-left-1  | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-main-front-left-1  | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-front-left-1  | 1779400484: mosquitto version 2.0.11 running
+obu-main-mid-right-1   | 1779400484: mosquitto version 2.0.11 starting
+obu-main-mid-right-1   | 1779400484: Config loaded from /mosquitto.conf.
+obu-main-mid-right-1   | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-main-mid-right-1   | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-mid-right-1   | 1779400484: mosquitto version 2.0.11 running
+obu-main-front-left-1  | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.5:51304 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.5:51304 as 6c39c39867da.bridge_to_remote (p4, c0, k60).
+obu-main-back-left-1   | No global board config file found. Skipping config update process
+ Container rsa-obu-main-back-left-1 Started 
+obu-ramp-back-1        | 1779400484: mosquitto version 2.0.11 starting
+obu-ramp-back-1        | 1779400484: Config loaded from /mosquitto.conf.
+obu-ramp-back-1        | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-ramp-back-1        | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-ramp-back-1        | 1779400484: mosquitto version 2.0.11 running
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.6:35744 on port 1883.
+obu-main-mid-right-1   | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.6:35744 as 4c7c65f4e5a0.bridge_to_remote (p4, c0, k60).
+obu-merge-car-1        | No global board config file found. Skipping config update process
+ Container rsa-obu-merge-car-1 Started 
+obu-ramp-back-1        | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.7:44364 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.7:44364 as 00cb4ade4962.bridge_to_remote (p4, c0, k60).
+obu-main-back-right-1  | No global board config file found. Skipping config update process
+ Container rsa-obu-main-back-right-1 Started 
+obu-main-back-left-1   | 1779400484: mosquitto version 2.0.11 starting
+obu-main-back-left-1   | 1779400484: Config loaded from /mosquitto.conf.
+obu-main-back-left-1   | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-main-back-left-1   | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-back-left-1   | 1779400484: mosquitto version 2.0.11 running
+obu-ramp-merge-5-1     | No global board config file found. Skipping config update process
+ Container rsa-obu-ramp-merge-5-1 Started 
+obu-main-back-left-1   | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.9:51920 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.9:51920 as 7547cfcbce98.bridge_to_remote (p4, c0, k60).
+obu-merge-car-1        | 1779400484: mosquitto version 2.0.11 starting
+obu-merge-car-1        | 1779400484: Config loaded from /mosquitto.conf.
+obu-merge-car-1        | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-merge-car-1        | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-merge-car-1        | 1779400484: mosquitto version 2.0.11 running
+obu-main-back-right-1  | 1779400484: mosquitto version 2.0.11 starting
+obu-main-back-right-1  | 1779400484: Config loaded from /mosquitto.conf.
+obu-main-back-right-1  | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-main-back-right-1  | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-back-right-1  | 1779400484: mosquitto version 2.0.11 running
+ Container rsa-obu-host-car-1 Started 
+obu-host-car-1         | No global board config file found. Skipping config update process
+obu-ramp-merge-2-1     | No global board config file found. Skipping config update process
+ Container rsa-obu-ramp-merge-2-1 Started 
+obu-ramp-merge-5-1     | 1779400484: mosquitto version 2.0.11 starting
+obu-ramp-merge-5-1     | 1779400484: Config loaded from /mosquitto.conf.
+obu-ramp-merge-5-1     | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-merge-car-1        | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+obu-ramp-merge-5-1     | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-ramp-merge-5-1     | 1779400484: mosquitto version 2.0.11 running
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.10:52644 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.10:52644 as ca5e104f3f28.bridge_to_remote (p4, c0, k60).
+obu-main-back-right-1  | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.11:37838 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.11:37838 as d82987f785a6.bridge_to_remote (p4, c0, k60).
+obu-host-car-1         | 1779400484: mosquitto version 2.0.11 starting
+obu-host-car-1         | 1779400484: Config loaded from /mosquitto.conf.
+obu-host-car-1         | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-host-car-1         | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-host-car-1         | 1779400484: mosquitto version 2.0.11 running
+obu-lead-car-1         | No global board config file found. Skipping config update process
+ Container rsa-obu-lead-car-1 Started 
+obu-ramp-merge-5-1     | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.12:36584 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.12:36584 as cea70715c867.bridge_to_remote (p4, c0, k60).
+obu-ramp-merge-2-1     | 1779400484: mosquitto version 2.0.11 starting
+obu-ramp-merge-2-1     | 1779400484: Config loaded from /mosquitto.conf.
+obu-ramp-merge-2-1     | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-ramp-merge-2-1     | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-ramp-merge-2-1     | 1779400484: mosquitto version 2.0.11 running
+obu-host-car-1         | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.13:38712 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.13:38712 as e4b0046036c7.bridge_to_remote (p4, c0, k60).
+obu-lead-car-1         | 1779400484: mosquitto version 2.0.11 starting
+obu-lead-car-1         | 1779400484: Config loaded from /mosquitto.conf.
+obu-lead-car-1         | 1779400484: Opening ipv4 listen socket on port 1883.
+obu-lead-car-1         | 1779400484: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-lead-car-1         | 1779400484: mosquitto version 2.0.11 running
+obu-ramp-merge-2-1     | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.14:56790 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.14:56790 as 90c43d788571.bridge_to_remote (p4, c0, k60).
+obu-ramp-merge-3-1     | Using MAC address: 6e:06:e0:03:00:19.
+obu-ramp-merge-3-1     | 1779400484: New connection from 127.0.0.1:60534 on port 1883.
+obu-ramp-merge-3-1     | 1779400484: New client connected from 127.0.0.1:60534 as 73ac76d14cfd_204 (p2, c1, k60).
+obu-ramp-merge-3-1     | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.3:59954 on port 1883.
+obu-lead-car-1         | 1779400484: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1          | 1779400484: New client connected from 172.18.0.3:59954 as auto-4A9509DA-39A1-8550-81F9-67A6794314F0 (p4, c1, k60, u'""').
+mqtt-broker-1          | 1779400484: New connection from 172.18.0.15:46540 on port 1883.
+mqtt-broker-1          | 1779400484: New bridge connected from 172.18.0.15:46540 as ffb547646e73.bridge_to_remote (p4, c0, k60).
+obu-ramp-merge-3-1     | mqtt.cpp: connected with server
+obu-ramp-merge-4-1     | Using MAC address: 6e:06:e0:03:00:1a.
+obu-ramp-merge-4-1     | 1779400485: New connection from 127.0.0.1:60550 on port 1883.
+obu-ramp-merge-4-1     | 1779400485: New client connected from 127.0.0.1:60550 as 77d8597854c3_49 (p2, c1, k60).
+obu-ramp-merge-4-1     | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.4:39664 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.4:39664 as auto-5686C17B-571B-58D9-EDC5-4B240AC36135 (p4, c1, k60, u'""').
+obu-ramp-merge-4-1     | mqtt.cpp: connected with server
+obu-main-front-left-1  | Using MAC address: 6e:06:e0:03:00:12.
+obu-main-front-left-1  | 1779400485: New connection from 127.0.0.1:60554 on port 1883.
+obu-main-front-left-1  | 1779400485: New client connected from 127.0.0.1:60554 as 6c39c39867da_256 (p2, c1, k60).
+obu-main-front-left-1  | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.5:51312 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.5:51312 as auto-7AE076E6-8E5E-2586-0F5D-0A2B94929220 (p4, c1, k60, u'""').
+obu-main-front-left-1  | mqtt.cpp: connected with server
+obu-main-mid-right-1   | Using MAC address: 6e:06:e0:03:00:13.
+obu-ramp-back-1        | Using MAC address: 6e:06:e0:03:00:1c.
+obu-main-mid-right-1   | 1779400485: New connection from 127.0.0.1:60558 on port 1883.
+obu-main-mid-right-1   | 1779400485: New client connected from 127.0.0.1:60558 as 4c7c65f4e5a0_720 (p2, c1, k60).
+obu-main-mid-right-1   | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.6:35758 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.6:35758 as auto-98A18C8F-FB57-FA27-47C9-250021EB20F0 (p4, c1, k60, u'""').
+obu-main-mid-right-1   | mqtt.cpp: connected with server
+obu-ramp-back-1        | 1779400485: New connection from 127.0.0.1:60564 on port 1883.
+obu-ramp-back-1        | 1779400485: New client connected from 127.0.0.1:60564 as 00cb4ade4962_921 (p2, c1, k60).
+obu-ramp-back-1        | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.7:44374 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.7:44374 as auto-1320A5AC-D9C9-4510-4CB0-75DBB3BCFE48 (p4, c1, k60, u'""').
+obu-ramp-back-1        | mqtt.cpp: connected with server
+obu-ramp-merge-3-1     | 1779400485: New connection from 127.0.0.1:34659 on port 1883.
+obu-ramp-merge-3-1     | 1779400485: New client connected from 127.0.0.1:34659 as obu-Ramp_Merge_3-1 (p2, c1, k60).
+obu-ramp-merge-4-1     | 1779400485: New connection from 127.0.0.1:59897 on port 1883.
+obu-ramp-merge-4-1     | 1779400485: New client connected from 127.0.0.1:59897 as obu-Ramp_Merge_4-1 (p2, c1, k60).
+obu-main-front-left-1  | 1779400485: New connection from 127.0.0.1:39287 on port 1883.
+obu-main-front-left-1  | 1779400485: New client connected from 127.0.0.1:39287 as obu-Main_Front_Left-1 (p2, c1, k60).
+obu-ramp-merge-3-1     | Zenoh session established locally
+obu-main-back-left-1   | Using MAC address: 6e:06:e0:03:00:15.
+obu-main-back-left-1   | 1779400485: New connection from 127.0.0.1:60576 on port 1883.
+obu-main-back-left-1   | 1779400485: New client connected from 127.0.0.1:60576 as 7547cfcbce98_686 (p2, c1, k60).
+obu-main-back-left-1   | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.9:51928 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.9:51928 as auto-E66BDA19-9C84-57E5-3C6A-EB1DECAD4832 (p4, c1, k60, u'""').
+obu-main-back-left-1   | mqtt.cpp: connected with server
+obu-main-mid-right-1   | 1779400485: New connection from 127.0.0.1:59649 on port 1883.
+obu-main-mid-right-1   | 1779400485: New client connected from 127.0.0.1:59649 as obu-Main_Mid_Right-1 (p2, c1, k60).
+obu-ramp-merge-4-1     | Zenoh session established locally
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.8:48295 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.8:48295 as traci-bridge (p4, c1, k60).
+obu-merge-car-1        | Using MAC address: 6e:06:e0:03:00:17.
+obu-main-back-right-1  | Using MAC address: 6e:06:e0:03:00:16.
+obu-ramp-back-1        | 1779400485: New connection from 127.0.0.1:56243 on port 1883.
+obu-ramp-back-1        | 1779400485: New client connected from 127.0.0.1:56243 as obu-Ramp_Back-1 (p2, c1, k60).
+obu-merge-car-1        | 1779400485: New connection from 127.0.0.1:60582 on port 1883.
+obu-merge-car-1        | 1779400485: New client connected from 127.0.0.1:60582 as ca5e104f3f28_372 (p2, c1, k60).
+obu-merge-car-1        | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.10:52658 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.10:52658 as auto-D508EB90-01FA-28BF-8476-D820D2426D3B (p4, c1, k60, u'""').
+obu-merge-car-1        | mqtt.cpp: connected with server
+obu-main-back-right-1  | 1779400485: New connection from 127.0.0.1:60586 on port 1883.
+obu-main-back-right-1  | 1779400485: New client connected from 127.0.0.1:60586 as d82987f785a6_193 (p2, c1, k60).
+obu-main-back-right-1  | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.11:37852 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.11:37852 as auto-21F24BA1-3D7E-825C-BAF0-666092D7C641 (p4, c1, k60, u'""').
+obu-main-back-right-1  | mqtt.cpp: connected with server
+obu-main-front-left-1  | Zenoh session established locally
+obu-ramp-merge-5-1     | Using MAC address: 6e:06:e0:03:00:1b.
+obu-ramp-merge-5-1     | 1779400485: New connection from 127.0.0.1:60590 on port 1883.
+obu-ramp-merge-5-1     | 1779400485: New client connected from 127.0.0.1:60590 as cea70715c867_464 (p2, c1, k60).
+obu-ramp-merge-5-1     | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.12:36600 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.12:36600 as auto-4C63ADBA-F75C-9424-12A4-A302C4478844 (p4, c1, k60, u'""').
+obu-ramp-merge-5-1     | mqtt.cpp: connected with server
+obu-host-car-1         | Using MAC address: 6e:06:e0:03:00:14.
+obu-main-mid-right-1   | Zenoh session established locally
+obu-host-car-1         | 1779400485: New connection from 127.0.0.1:60594 on port 1883.
+obu-host-car-1         | 1779400485: New client connected from 127.0.0.1:60594 as e4b0046036c7_727 (p2, c1, k60).
+obu-host-car-1         | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.13:38716 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.13:38716 as auto-4186097C-55B2-A92B-859C-43F1AB24F02D (p4, c1, k60, u'""').
+obu-host-car-1         | mqtt.cpp: connected with server
+obu-ramp-back-1        | Zenoh session established locally
+obu-ramp-merge-2-1     | Using MAC address: 6e:06:e0:03:00:18.
+obu-ramp-merge-2-1     | 1779400485: New connection from 127.0.0.1:60604 on port 1883.
+obu-ramp-merge-2-1     | 1779400485: New client connected from 127.0.0.1:60604 as 90c43d788571_733 (p2, c1, k60).
+obu-ramp-merge-2-1     | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.14:56806 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.14:56806 as auto-BB981053-3CD9-CB34-31CD-2D7BA9261150 (p4, c1, k60, u'""').
+obu-ramp-merge-2-1     | mqtt.cpp: connected with server
+obu-lead-car-1         | Using MAC address: 6e:06:e0:03:00:11.
+obu-main-back-left-1   | 1779400485: New connection from 127.0.0.1:52253 on port 1883.
+obu-main-back-left-1   | 1779400485: New client connected from 127.0.0.1:52253 as obu-Main_Back_Left-1 (p2, c1, k60).
+obu-lead-car-1         | 1779400485: New connection from 127.0.0.1:60614 on port 1883.
+obu-lead-car-1         | 1779400485: New client connected from 127.0.0.1:60614 as ffb547646e73_811 (p2, c1, k60).
+obu-lead-car-1         | mqtt.cpp: connected with server
+mqtt-broker-1          | 1779400485: New connection from 172.18.0.15:46552 on port 1883.
+mqtt-broker-1          | 1779400485: New client connected from 172.18.0.15:46552 as auto-00FFACA6-456E-F07E-1664-2788C2F13161 (p4, c1, k60, u'""').
+obu-lead-car-1         | mqtt.cpp: connected with server
+obu-merge-car-1        | 1779400485: New connection from 127.0.0.1:58605 on port 1883.
+obu-merge-car-1        | 1779400485: New client connected from 127.0.0.1:58605 as obu-Merge_Car-1 (p2, c1, k60).
+obu-main-back-right-1  | 1779400486: New connection from 127.0.0.1:43091 on port 1883.
+obu-main-back-right-1  | 1779400486: New client connected from 127.0.0.1:43091 as obu-Main_Back_Right-1 (p2, c1, k60).
+obu-main-back-left-1   | Zenoh session established locally
+obu-ramp-merge-5-1     | 1779400486: New connection from 127.0.0.1:53881 on port 1883.
+obu-ramp-merge-5-1     | 1779400486: New client connected from 127.0.0.1:53881 as obu-Ramp_Merge_5-1 (p2, c1, k60).
+obu-host-car-1         | 1779400486: New connection from 127.0.0.1:42855 on port 1883.
+obu-host-car-1         | 1779400486: New client connected from 127.0.0.1:42855 as obu-Host_Car-1 (p2, c1, k60).
+obu-merge-car-1        | Zenoh session established locally
+obu-ramp-merge-2-1     | 1779400486: New connection from 127.0.0.1:50573 on port 1883.
+obu-ramp-merge-2-1     | 1779400486: New client connected from 127.0.0.1:50573 as obu-Ramp_Merge_2-1 (p2, c1, k60).
+obu-main-back-right-1  | Zenoh session established locally
+obu-lead-car-1         | 1779400486: New connection from 127.0.0.1:32865 on port 1883.
+obu-lead-car-1         | 1779400486: New client connected from 127.0.0.1:32865 as obu-Lead_Car-1 (p2, c1, k60).
+obu-ramp-merge-5-1     | Zenoh session established locally
+obu-host-car-1         | Zenoh session established locally
+obu-ramp-merge-2-1     | Zenoh session established locally
+obu-lead-car-1         | Zenoh session established locally
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 38385 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40317 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 32865 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 43437 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 41643 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 36825 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40137 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 41033 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 41645 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 35873 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 38465 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 42625 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 45985 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 44725 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 33571 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37299 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 44181 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 43019 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 35173 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 42437 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 36077 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40893 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 45139 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37267 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 43045 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 44627 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 43571 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 34799 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 45089 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40473 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 43789 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 34519 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 33775 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 39977 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 41471 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 42539 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 42345 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 33553 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 39337 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37199 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 42275 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40183 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 33723 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40015 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37699 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 32883 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37519 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 33059 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 36635 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 41451 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 32859 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37255 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 46845 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 37507 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 46795 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 42251 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 43411 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 41575 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 40419 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Authorization required, but no authorization protocol specified
+traci-bridge-1         | FXApp::openDisplay: unable to open display :0
+traci-bridge-1         | /usr/share/sumo/tools/traci/main.py:156: UserWarning: Could not connect to TraCI server using port 35397 (TraCI server already finished). Retrying with different port.
+traci-bridge-1         |   warnings.warn(("Could not connect to TraCI server using port %s (%s)." +
+traci-bridge-1         | Traceback (most recent call last):
+traci-bridge-1         |   File "/app/traci_bridge.py", line 880, in run
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |  Retrying in 1 seconds
+traci-bridge-1         |     self.start_sumo()
+traci-bridge-1         |   File "/app/traci_bridge.py", line 202, in start_sumo
+traci-bridge-1         |     traci.start(cmd)
+traci-bridge-1         |   File "/usr/share/sumo/tools/traci/main.py", line 147, in start
+traci-bridge-1         |     result = init(sumoPort, numRetries, "localhost", label, sumoProcess, doSwitch, traceFile, traceGetters)
+traci-bridge-1         |   File "/usr/share/sumo/tools/traci/main.py", line 116, in init
+traci-bridge-1         |     con = connect(port, numRetries, host, proc, 1, traceFile, traceGetters, label)
+traci-bridge-1         |   File "/usr/share/sumo/tools/traci/main.py", line 106, in connect
+traci-bridge-1         |     raise FatalTraCIError("Could not connect in %s tries" % (numRetries + 1))
+traci-bridge-1         | traci.exceptions.FatalTraCIError: Could not connect in 1 tries
+traci-bridge-1         | 
+traci-bridge-1         | During handling of the above exception, another exception occurred:
+traci-bridge-1         | 
+traci-bridge-1         | Traceback (most recent call last):
+traci-bridge-1         |   File "/app/traci_bridge.py", line 924, in <module>
+traci-bridge-1         |     main()
+traci-bridge-1         |   File "/app/traci_bridge.py", line 920, in main
+traci-bridge-1         |     bridge.run()
+traci-bridge-1         |   File "/app/traci_bridge.py", line 914, in run
+traci-bridge-1         |     traci.close()
+traci-bridge-1         |   File "/usr/share/sumo/tools/traci/main.py", line 264, in close
+traci-bridge-1         |     connection.check().close(wait)
+traci-bridge-1         |   File "/usr/share/sumo/tools/traci/connection.py", line 45, in check
+traci-bridge-1         |     raise FatalTraCIError("Not connected.")
+traci-bridge-1         | traci.exceptions.FatalTraCIError: Not connected.
+mqtt-broker-1          | 1779400546: Client traci-bridge [172.18.0.8:48295] disconnected: connection closed by client.
+[Ktraci-bridge-1 exited with code 1
+ Compose Stopping Aborting on container exit...
+ Container rsa-obu-main-mid-right-1 Stopping 
+ Container rsa-obu-main-front-left-1 Stopping 
+ Container rsa-obu-ramp-merge-5-1 Stopping 
+ Container rsa-obu-lead-car-1 Stopping 
+ Container rsa-obu-main-back-left-1 Stopping 
+ Container rsa-obu-main-back-right-1 Stopping 
+ Container rsa-obu-ramp-merge-4-1 Stopping 
+ Container rsa-obu-merge-car-1 Stopping 
+ Container rsa-obu-ramp-merge-2-1 Stopping 
+ Container rsa-obu-ramp-back-1 Stopping 
+ Container rsa-obu-host-car-1 Stopping 
+ Container rsa-traci-bridge-1 Stopping 
+ Container rsa-obu-ramp-merge-3-1 Stopping 
+ Container rsa-traci-bridge-1 Stopped 
+mqtt-broker-1          | 1779400556: Client 6c39c39867da.bridge_to_remote [172.18.0.5:51304] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client 90c43d788571.bridge_to_remote [172.18.0.14:56790] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client ffb547646e73.bridge_to_remote [172.18.0.15:46540] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-7AE076E6-8E5E-2586-0F5D-0A2B94929220 [172.18.0.5:51312] disconnected: connection closed by client.
+obu-main-mid-right-1   | 1779400556: Client obu-Main_Mid_Right-1 closed its connection.
+obu-main-back-left-1   | 1779400556: Client obu-Main_Back_Left-1 closed its connection.
+mqtt-broker-1          | 1779400556: Client 7547cfcbce98.bridge_to_remote [172.18.0.9:51920] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client 4c7c65f4e5a0.bridge_to_remote [172.18.0.6:35744] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client 77d8597854c3.bridge_to_remote [172.18.0.4:39652] disconnected: connection closed by client.
+obu-ramp-merge-3-1     | 1779400556: Client obu-Ramp_Merge_3-1 closed its connection.
+obu-ramp-merge-5-1     | 1779400556: Client obu-Ramp_Merge_5-1 closed its connection.
+obu-ramp-back-1        | 1779400556: Client obu-Ramp_Back-1 closed its connection.
+mqtt-broker-1          | 1779400556: Client 73ac76d14cfd.bridge_to_remote [172.18.0.3:59950] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client cea70715c867.bridge_to_remote [172.18.0.12:36584] disconnected: connection closed by client.
+obu-merge-car-1        | 1779400556: Client obu-Merge_Car-1 closed its connection.
+mqtt-broker-1          | 1779400556: Client 00cb4ade4962.bridge_to_remote [172.18.0.7:44364] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-00FFACA6-456E-F07E-1664-2788C2F13161 [172.18.0.15:46552] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client d82987f785a6.bridge_to_remote [172.18.0.11:37838] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-BB981053-3CD9-CB34-31CD-2D7BA9261150 [172.18.0.14:56806] disconnected: connection closed by client.
+obu-main-back-right-1  | 1779400556: Client obu-Main_Back_Right-1 closed its connection.
+mqtt-broker-1          | 1779400556: Client ca5e104f3f28.bridge_to_remote [172.18.0.10:52644] disconnected: connection closed by client.
+obu-host-car-1         | 1779400556: Client obu-Host_Car-1 closed its connection.
+mqtt-broker-1          | 1779400556: Client auto-98A18C8F-FB57-FA27-47C9-250021EB20F0 [172.18.0.6:35758] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-5686C17B-571B-58D9-EDC5-4B240AC36135 [172.18.0.4:39664] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-1320A5AC-D9C9-4510-4CB0-75DBB3BCFE48 [172.18.0.7:44374] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-E66BDA19-9C84-57E5-3C6A-EB1DECAD4832 [172.18.0.9:51928] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client e4b0046036c7.bridge_to_remote [172.18.0.13:38712] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-4A9509DA-39A1-8550-81F9-67A6794314F0 [172.18.0.3:59954] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-4C63ADBA-F75C-9424-12A4-A302C4478844 [172.18.0.12:36600] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-21F24BA1-3D7E-825C-BAF0-666092D7C641 [172.18.0.11:37852] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-D508EB90-01FA-28BF-8476-D820D2426D3B [172.18.0.10:52658] disconnected: connection closed by client.
+mqtt-broker-1          | 1779400556: Client auto-4186097C-55B2-A92B-859C-43F1AB24F02D [172.18.0.13:38716] disconnected: connection closed by client.
+ Container rsa-obu-main-mid-right-1 Stopped 
+[Kobu-main-mid-right-1 exited with code 137
+ Container rsa-obu-ramp-merge-2-1 Stopped 
+[Kobu-ramp-merge-2-1 exited with code 137
+ Container rsa-obu-lead-car-1 Stopped 
+[Kobu-lead-car-1 exited with code 137
+ Container rsa-obu-ramp-merge-3-1 Stopped 
+[Kobu-ramp-merge-3-1 exited with code 137
+ Container rsa-obu-main-back-right-1 Stopped 
+[Kobu-main-back-right-1 exited with code 137
+ Container rsa-obu-ramp-merge-5-1 Stopped 
+[Kobu-ramp-merge-5-1 exited with code 137
+ Container rsa-obu-merge-car-1 Stopped 
+[Kobu-merge-car-1 exited with code 137
+ Container rsa-obu-ramp-merge-4-1 Stopped 
+[Kobu-ramp-merge-4-1 exited with code 137
+ Container rsa-obu-main-front-left-1 Stopped 
+[Kobu-main-front-left-1 exited with code 137
+ Container rsa-obu-main-back-left-1 Stopped 
+[Kobu-main-back-left-1 exited with code 137
+ Container rsa-obu-ramp-back-1 Stopped 
+[Kobu-ramp-back-1 exited with code 137
+ Container rsa-obu-host-car-1 Stopped 
+ Container rsa-mqtt-broker-1 Stopping 
+[Kobu-host-car-1 exited with code 137
+mqtt-broker-1          | 1779400558: mosquitto version 2.1.2 terminating
+ Container rsa-mqtt-broker-1 Stopped 
+[Kmqtt-broker-1 exited with code 0
+
