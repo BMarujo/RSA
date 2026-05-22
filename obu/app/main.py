@@ -1537,16 +1537,16 @@ class OBUApp:
                 # All safety guards must be satisfied
                 if lgok and lclear and fgok and cok and lgok_proj and esok:
                     hlma_lead_only = True
-	                elif (
-	                    self.merge_stalled_recovery_enabled
-	                    and lgok
-	                    and lclear
-	                    and fgok
-	                    and cok
-	                    and lgok_proj
-	                    and (not esok or self.past_merge_point)
-	                    and cspd < self.min_merge_entry_speed
-	                ):
+                elif (
+                    self.merge_stalled_recovery_enabled
+                    and lgok
+                    and lclear
+                    and fgok
+                    and cok
+                    and lgok_proj
+                    and (not esok or self.past_merge_point)
+                    and cspd < self.min_merge_entry_speed
+                ):
                     hlma_lead_only = True
                     hlma_stalled_recovery = True
 
@@ -1650,18 +1650,18 @@ class OBUApp:
             self._set_target_speed(slsp, emergency=dtm <= self.merge_stop_margin_m + 8.0); return
         if self.is_ramp_vehicle and self.past_merge_point and not self.merge_completed:
             if not self.merge_committed and not self.merge_authorized:
-	                late_lane_recovery = (
-	                    self.merge_stalled_recovery_enabled
-	                    and (eid == "1331698336" or eid in self.main_edge_ids)
-	                    and lidx != self.merge_lane_index
-	                    and hid is None
-	                    and (lid is not None or sreas == "no_main_neighbors")
-	                    and sreas in ("true_after_last_main", "no_main_neighbors")
-	                    and fgok
-	                    and cok
-	                    and lclear
-	                    and lgok_proj
-	                )
+                late_lane_recovery = (
+                    self.merge_stalled_recovery_enabled
+                    and (eid == "1331698336" or eid in self.main_edge_ids)
+                    and lidx != self.merge_lane_index
+                    and hid is None
+                    and (lid is not None or sreas == "no_main_neighbors")
+                    and sreas in ("true_after_last_main", "no_main_neighbors")
+                    and fgok
+                    and cok
+                    and lclear
+                    and lgok_proj
+                )
                 if late_lane_recovery:
                     if not getattr(self, 'recovery_triggered_this_merge', False):
                         self.count_late_merge_recovery += 1
@@ -1679,41 +1679,41 @@ class OBUApp:
                     )
                     if self._lane_change_executable_now():
                         self._start_physical_merge(curt, lid, None, le, None, e, dtm, cspd, lidx, eid)
-	                    else:
-	                        self._set_state(STATE_NEGOTIATING)
-	                        self._log_merge_prepare_wait_lane_available(curt, dtm, cspd, None, lid)
-	                    return
-	                lost_auth_roll = (
-	                    self.merge_lost_auth_after_point_floor_enabled
-	                    and hid is None
-	                    and sreas == "no_main_neighbors"
-	                    and (eid == "1331698336" or eid in self.main_edge_ids)
-	                    and lidx != self.merge_lane_index
-	                    and not fgok
-	                    and lgok
-	                    and cok
-	                    and lclear
-	                    and lgok_proj
-	                )
-	                if lost_auth_roll:
-	                    floor = max(self.cruise_speed * self.merge_lost_auth_after_point_floor_ratio, self.min_speed)
-	                    rolling_target = max(floor, min(cspd, self.cruise_speed * 0.9))
-	                    self._set_state(STATE_NEGOTIATING)
-	                    self.target_lane_index = None
-	                    self.target_speed_mode = self.default_speed_mode
-	                    self._set_target_speed(rolling_target, emergency=False)
-	                    if curt - self.last_lost_auth_after_point_floor_log >= 1.0:
-	                        log.info(
-	                            "MERGE_LOST_AUTH_AFTER_POINT_ROLLING_FLOOR: vehicle=%s edge=%s lane=%s target_lane=%s "
-	                            "dtm=%.1f speed=%.2f target=%.2f floor=%.2f fgok=%s source=%s neighbors=%d",
-	                            self.vehicle_id, eid, lidx, self.merge_lane_index, dtm, cspd, self.target_speed or 0.0,
-	                            floor, fgok, sreas, len(self.neighbors)
-	                        )
-	                        self.last_lost_auth_after_point_floor_log = curt
-	                    return
-	                self._log_slot_quality_diag("LOST_AUTH_AFTER_POINT", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
-	                log.debug("[%.1f] %s MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=%.1f past=True hid=%s auth=False", curt, self.vehicle_id, dtm, hid)
-	                self._set_state(STATE_ABORT); self._set_target_speed(self.min_speed, force=True); self.target_lane_index = None; return
+                    else:
+                        self._set_state(STATE_NEGOTIATING)
+                        self._log_merge_prepare_wait_lane_available(curt, dtm, cspd, None, lid)
+                    return
+                lost_auth_roll = (
+                    self.merge_lost_auth_after_point_floor_enabled
+                    and hid is None
+                    and sreas == "no_main_neighbors"
+                    and (eid == "1331698336" or eid in self.main_edge_ids)
+                    and lidx != self.merge_lane_index
+                    and not fgok
+                    and lgok
+                    and cok
+                    and lclear
+                    and lgok_proj
+                )
+                if lost_auth_roll:
+                    floor = max(self.cruise_speed * self.merge_lost_auth_after_point_floor_ratio, self.min_speed)
+                    rolling_target = max(floor, min(cspd, self.cruise_speed * 0.9))
+                    self._set_state(STATE_NEGOTIATING)
+                    self.target_lane_index = None
+                    self.target_speed_mode = self.default_speed_mode
+                    self._set_target_speed(rolling_target, emergency=False)
+                    if curt - self.last_lost_auth_after_point_floor_log >= 1.0:
+                        log.info(
+                            "MERGE_LOST_AUTH_AFTER_POINT_ROLLING_FLOOR: vehicle=%s edge=%s lane=%s target_lane=%s "
+                            "dtm=%.1f speed=%.2f target=%.2f floor=%.2f fgok=%s source=%s neighbors=%d",
+                            self.vehicle_id, eid, lidx, self.merge_lane_index, dtm, cspd, self.target_speed or 0.0,
+                            floor, fgok, sreas, len(self.neighbors)
+                        )
+                        self.last_lost_auth_after_point_floor_log = curt
+                    return
+                self._log_slot_quality_diag("LOST_AUTH_AFTER_POINT", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
+                log.debug("[%.1f] %s MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=%.1f past=True hid=%s auth=False", curt, self.vehicle_id, dtm, hid)
+                self._set_state(STATE_ABORT); self._set_target_speed(self.min_speed, force=True); self.target_lane_index = None; return
             lp = float(self.sensor_state.get("lane_pos", 0.0)); rem = 63.23 - lp
             if rem < 10.0:
                 if not getattr(self, 'recovery_triggered_this_merge', False): self.count_late_merge_recovery += 1; self.recovery_triggered_this_merge = True
