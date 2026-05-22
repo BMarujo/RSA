@@ -157,8 +157,8 @@ sequenceDiagram
     Note over HV: _handle_mcm():<br/>Verifica se é o target<br/>Verifica distância ao merge
 
     alt Distância > HOST_REJECT_DISTANCE (20m)
-        Note over HV: Estado: CRUISE → YIELDING<br/>Reduz velocidade para abrir gap
         HV->>V2X: MCM ACCEPT<br/>(action=2, manoeuvreId=N,<br/>target=merge_station_id)
+        Note over HV: Após aceitar:<br/>Estado: CRUISE → YIELDING<br/>Reduz velocidade para manter/abrir gap
         V2X->>MV: MCM ACCEPT recebido
         
         Note over MV: MCM_ACCEPT_MATCHED!<br/>MERGE_AUTHORIZED_BY_MCM<br/>Estado: NEGOTIATING → PREPARE
@@ -224,7 +224,7 @@ stateDiagram-v2
 
     CRUISE --> NEGOTIATING: Merge vehicle detecta host<br/>& DTM < 95m<br/>Envia MCM REQUEST
     
-    CRUISE --> YIELDING: Host recebe MCM REQUEST<br/>& distância segura<br/>Envia MCM ACCEPT
+    CRUISE --> YIELDING: Host recebe MCM REQUEST<br/>& distância segura<br/>Envia MCM ACCEPT<br/>depois reduz velocidade
 
     NEGOTIATING --> PREPARE: MCM ACCEPT recebido<br/>& gap seguro<br/>MERGE_AUTHORIZED_BY_MCM
 

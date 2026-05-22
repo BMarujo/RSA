@@ -274,7 +274,20 @@ class OBUApp:
             state = str(p.get("state", ""))
             key = (state, p.get("edge_id"), p.get("current_lane"), p.get("target_lane"), p.get("lane_count"))
             if key != self.last_lane_command_status_key:
-                if state == "CLEAR": getattr(self, "_log_timeline_event", lambda *x,**y: None)("CLEAR")
+                if state == "CLEAR":
+                    try:
+                        target_lane = int(p.get("target_lane"))
+                    except (TypeError, ValueError):
+                        target_lane = None
+                    cspd = self._current_speed() or 0.0
+                    if (
+                        self.is_ramp_vehicle
+                        and not self.merge_completed
+                        and target_lane == self.merge_lane_index
+                        and cspd < self.min_merge_entry_speed
+                    ):
+                        self._set_target_speed(max(self.merge_stalled_recovery_speed, self.min_merge_entry_speed), force=True)
+                    getattr(self, "_log_timeline_event", lambda *x,**y: None)("CLEAR")
                 self.last_lane_command_status_key = key
                 if state == "WAIT_EDGE":
                     log.debug("[%.1f] %s MERGE_LANE_WAIT_EDGE_CONFIRMED: edge=%s lane=%s target_lane=%s lane_count=%s executable=%s", self._sim_time(), self.vehicle_id, p.get("edge_id"), p.get("current_lane"), p.get("target_lane"), p.get("lane_count"), p.get("executable"))
@@ -969,6 +982,8 @@ class OBUApp:
             self.committed_lead_id, self.committed_host_id = lid, hid
             self.committed_manoeuvre_id = self.pending_request.get("manoeuvre_id") if self.pending_request else None
         waited_s = max(0.0, curt - self.merge_committed_since) if self.merge_committed_since else 0.0
+        if cspd < self.min_merge_entry_speed and (self.target_speed is None or self.target_speed < self.min_merge_entry_speed):
+            self._set_target_speed(max(self.merge_stalled_recovery_speed, self.min_merge_entry_speed), force=True)
         if not resume and (waited_s > 0.0 or start_reason in ("delayed", "implicit_before_completed", "already_clear", "apply_seen")):
             log.debug(
                 "[%.1f] %s MERGE_PHYSICAL_START_DELAYED_UNTIL_LANE_APPLY: waited_s=%.1f edge=%s lane=%s "
@@ -1500,7 +1515,21 @@ class OBUApp:
                     )
                     self.last_lclear_block_log = curt
         if self.fsm_state == STATE_ABORT and curt - self.fsm_state_since < self.abort_cooldown_s:
-            self._set_target_speed(max(self.cruise_speed * 0.4, self.min_speed))
+            abort_floor = max(self.cruise_speed * 0.4, self.min_speed)
+            force_abort_floor = (
+                self.merge_lost_auth_after_point_floor_enabled
+                and self.is_ramp_vehicle
+                and self.past_merge_point
+                and (eid == "1331698336" or eid in self.main_edge_ids)
+                and lidx != self.merge_lane_index
+                and cspd < 1.0
+                and lgok
+                and hgok
+                and cok
+            )
+            if force_abort_floor:
+                abort_floor = max(abort_floor, self.cruise_speed * self.merge_lost_auth_after_point_floor_ratio)
+            self._set_target_speed(abort_floor, force=force_abort_floor)
             self.target_lane_index = None
             return
         elif self.fsm_state == STATE_ABORT:
@@ -1571,23 +1600,30 @@ class OBUApp:
         if amcm and not self.merge_authorized:
             if hlma:
                 self.merge_authorized, self.merge_authorized_since = True, curt
-                self._log_timeline_event("AUTHORIZED")
                 if hlma_lead_only:
-                    if hlma_stalled_recovery:
+                    if cspd < self.min_merge_entry_speed:
                         if not getattr(self, 'recovery_triggered_this_merge', False):
                             self.count_late_merge_recovery += 1
                             self.recovery_triggered_this_merge = True
-                        log.info(
-                            "MERGE_STALLED_LEAD_ONLY_RECOVERY: vehicle=%s lead=%s dtm=%.1f speed=%.2f target=%.2f "
-                            "fgok=%s lgok=%s lclear=%s source=%s",
-                            self.vehicle_id, lid, dtm, cspd, max(self.merge_stalled_recovery_speed, self.min_merge_entry_speed),
-                            fgok, lgok, lclear, sreas
-                        )
                         self._set_target_speed(max(self.merge_stalled_recovery_speed, self.min_merge_entry_speed), force=True)
+                        if hlma_stalled_recovery:
+                            log.info(
+                                "MERGE_STALLED_LEAD_ONLY_RECOVERY: vehicle=%s lead=%s dtm=%.1f speed=%.2f target=%.2f "
+                                "fgok=%s lgok=%s lclear=%s source=%s",
+                                self.vehicle_id, lid, dtm, cspd, self.target_speed or 0.0,
+                                fgok, lgok, lclear, sreas
+                            )
+                        else:
+                            log.info(
+                                "MERGE_LEAD_ONLY_START_SPEED_FLOOR: vehicle=%s lead=%s dtm=%.1f speed=%.2f target=%.2f source=%s",
+                                self.vehicle_id, lid, dtm, cspd, self.target_speed or 0.0, sreas
+                            )
+                    self._log_timeline_event("AUTHORIZED")
                     log.info("MERGE_AUTHORIZED_LEAD_ONLY_AFTER_LAST_MAIN: vehicle=%s lead=%s dtm=%.1f lead_gap=%s lead_gap_t1=%s lead_gap_t2=%s source=%s",
                              self.vehicle_id, lid, dtm, f"{lg_v:.2f}" if lg_v is not None else "None",
                              f"{lg1_v:.2f}" if lg1_v is not None else "None", f"{lg2_v:.2f}" if lg2_v is not None else "None", sreas)
                 else:
+                    self._log_timeline_event("AUTHORIZED")
                     log.debug("[%.1f] %s MERGE_AUTHORIZED_HOSTLESS", curt, self.vehicle_id)
             elif ra == 2:
                 if accepted_ready:
@@ -1632,7 +1668,9 @@ class OBUApp:
                 self.committed_lead_id, self.committed_host_id = lid, hid
                 self.committed_manoeuvre_id = self.pending_request.get("manoeuvre_id") if self.pending_request else None
                 self.last_commit_lane_apply_log_key = None
-            self._set_target_speed(max(self.min_merge_entry_speed, self.cruise_speed * 0.9)); self.target_lane_index, self.target_speed_mode = self.merge_lane_index, self.priority_speed_mode
+            merge_start_target = max(self.min_merge_entry_speed, self.cruise_speed * 0.9)
+            force_merge_start_target = cspd < self.min_merge_entry_speed or (self.target_speed is not None and self.target_speed < self.min_merge_entry_speed)
+            self._set_target_speed(merge_start_target, force=force_merge_start_target); self.target_lane_index, self.target_speed_mode = self.merge_lane_index, self.priority_speed_mode
             if self._lane_change_executable_now():
                 if not self.merge_physical_started_once:
                     self._start_physical_merge(curt, lid, hid, le, he, e, dtm, cspd, lidx, eid)
@@ -1643,6 +1681,21 @@ class OBUApp:
                 self._log_merge_prepare_wait_lane_available(curt, dtm, cspd, hid, lid)
         elif self.merge_authorized and not self.merge_committed: self._set_state(STATE_NEGOTIATING); self.target_lane_index = None; log.debug("[%.1f] %s MERGE_PREPARE_WAIT_PHYSICAL: dtm=%.1f", curt, self.vehicle_id, dtm)
         elif not self.merge_committed: self._set_state(STATE_NEGOTIATING if hid else STATE_CRUISE); self.target_lane_index = None
+        stalled_after_point_floor = (
+            self.merge_lost_auth_after_point_floor_enabled
+            and self.is_ramp_vehicle
+            and self.past_merge_point
+            and (eid == "1331698336" or eid in self.main_edge_ids)
+            and lidx != self.merge_lane_index
+            and cspd < 1.0
+        )
+        if stalled_after_point_floor and not self.merge_committed and not self.merge_completed:
+            floor = max(self.cruise_speed * self.merge_lost_auth_after_point_floor_ratio, self.min_speed)
+            self._set_state(STATE_NEGOTIATING)
+            self.target_lane_index = None
+            self.target_speed_mode = self.default_speed_mode
+            self._set_target_speed(floor, emergency=False, force=True)
+            return
         if not self.merge_committed and dtm <= self.cruise_speed * self.safe_headway_s and not (self.merge_authorized and physical_zone):
             self._set_state(STATE_YIELDING); stopd = max(dtm - self.merge_stop_margin_m, 0.0); slsp = stopd / max(self.merge_blocked_approach_s, 0.1)
             if dtm > self.merge_stop_margin_m + 6.0: slsp = max(slsp, self.cruise_speed * self.merge_yield_floor_ratio, self.min_speed)
@@ -1698,22 +1751,39 @@ class OBUApp:
                 if lost_auth_roll:
                     floor = max(self.cruise_speed * self.merge_lost_auth_after_point_floor_ratio, self.min_speed)
                     rolling_target = max(floor, min(cspd, self.cruise_speed * 0.9))
+                    force_floor = cspd < 1.0 or (self.target_speed is not None and self.target_speed < floor)
                     self._set_state(STATE_NEGOTIATING)
                     self.target_lane_index = None
                     self.target_speed_mode = self.default_speed_mode
-                    self._set_target_speed(rolling_target, emergency=False)
+                    self._set_target_speed(rolling_target, emergency=False, force=force_floor)
                     if curt - self.last_lost_auth_after_point_floor_log >= 1.0:
                         log.info(
                             "MERGE_LOST_AUTH_AFTER_POINT_ROLLING_FLOOR: vehicle=%s edge=%s lane=%s target_lane=%s "
-                            "dtm=%.1f speed=%.2f target=%.2f floor=%.2f fgok=%s source=%s neighbors=%d",
+                            "dtm=%.1f speed=%.2f target=%.2f floor=%.2f forced=%s fgok=%s source=%s neighbors=%d",
                             self.vehicle_id, eid, lidx, self.merge_lane_index, dtm, cspd, self.target_speed or 0.0,
-                            floor, fgok, sreas, len(self.neighbors)
+                            floor, force_floor, fgok, sreas, len(self.neighbors)
                         )
                         self.last_lost_auth_after_point_floor_log = curt
                     return
                 self._log_slot_quality_diag("LOST_AUTH_AFTER_POINT", lid, hid, le, he, e, dtm, sreas, self.pending_request.get("manoeuvre_id") if self.pending_request else None)
                 log.debug("[%.1f] %s MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=%.1f past=True hid=%s auth=False", curt, self.vehicle_id, dtm, hid)
-                self._set_state(STATE_ABORT); self._set_target_speed(self.min_speed, force=True); self.target_lane_index = None; return
+                abort_target = self.min_speed
+                abort_floor = max(self.cruise_speed * self.merge_lost_auth_after_point_floor_ratio, self.min_speed)
+                force_abort_floor = (
+                    self.merge_lost_auth_after_point_floor_enabled
+                    and hid is None
+                    and (eid == "1331698336" or eid in self.main_edge_ids)
+                    and lidx != self.merge_lane_index
+                    and (cspd < 1.0 or (self.target_speed is not None and self.target_speed < abort_floor))
+                )
+                if force_abort_floor:
+                    abort_target = abort_floor
+                    log.info(
+                        "MERGE_LOST_AUTH_AFTER_POINT_ABORT_FLOOR: vehicle=%s edge=%s lane=%s target_lane=%s "
+                        "dtm=%.1f speed=%.2f target=%.2f floor=%.2f source=%s",
+                        self.vehicle_id, eid, lidx, self.merge_lane_index, dtm, cspd, abort_target, abort_floor, sreas
+                    )
+                self._set_state(STATE_ABORT); self._set_target_speed(abort_target, force=True); self.target_lane_index = None; return
             lp = float(self.sensor_state.get("lane_pos", 0.0)); rem = 63.23 - lp
             if rem < 10.0:
                 if not getattr(self, 'recovery_triggered_this_merge', False): self.count_late_merge_recovery += 1; self.recovery_triggered_this_merge = True
@@ -1925,27 +1995,33 @@ class OBUApp:
         sf = max(self.cruise_speed * self.host_yield_floor_ratio, self.min_speed); rqs = max(min(rqs, cs), sf)
         gd, asafe = oe - me, (oe - me) >= self.merge_commit_headway_s; dy = rqs < cs - 0.15; ns = gd >= (self.merge_commit_headway_s * 0.75); sa = rqs >= cs - 0.30
         if dy:
-            yt = max(min(rqs, cs - self.host_min_yield_delta), sf); self._set_state(STATE_YIELDING); self._set_target_speed(yt, force=True); self.active_merge_request, self.active_merge_request_until = {"station_id": rsid, "manoeuvre_id": rmid, "target_speed": yt, "target_eta": te}, n + self.host_reservation_s; self.active_merge_request_started_at = n
+            yt = max(min(rqs, cs - self.host_min_yield_delta), sf)
+            if n - self.last_mcm_response.get(rsid, 0) < self.response_period_s:
+                self._log_host_decision(rsid, rmid, "IGNORE", "YIELDING_PERIOD")
+                self._set_state(STATE_CRUISE)
+                return
+            self._log_host_decision(rsid, rmid, "ACCEPT", "YIELDING")
+            self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+            self.active_merge_request, self.active_merge_request_until = {"station_id": rsid, "manoeuvre_id": rmid, "target_speed": yt, "target_eta": te}, n + self.host_reservation_s; self.active_merge_request_started_at = n
+            self._set_state(STATE_YIELDING); self._set_target_speed(yt, force=True)
             log.info("HOST_RESERVATION_START: host=%s ramp=%d manoeuvre=%d until=%.1f own_speed=%.2f target_speed=%.2f required_speed=%.2f gap_eta=%.2f", self.vehicle_id, rsid, rmid, self.active_merge_request_until, cs, yt, rqs, oe - me)
             log.debug("[%.1f] %s HOST_RESERVED: merge=%d manoeuvre=%d until=%.1f target_spd=%.2f", n, self.vehicle_id, rsid, rmid, self.active_merge_request_until, yt)
             log.debug("[%.1f] %s HOST_YIELD: for merge=%d req_spd=%.2f", n, self.vehicle_id, rsid, yt)
-            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
-                self._log_host_decision(rsid, rmid, "ACCEPT", "YIELDING")
-                self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
-            else:
-                self._log_host_decision(rsid, rmid, "IGNORE", "YIELDING_PERIOD")
             return
         if asafe or (ns and sa):
-            self._set_state(STATE_CRUISE if asafe else STATE_YIELDING); hs = min(cs, max(rqs, self.cruise_speed * self.host_yield_floor_ratio))
-            if not asafe: hs = max(min(hs, cs - self.host_min_yield_delta), sf); self._set_target_speed(hs, force=True)
+            hs = min(cs, max(rqs, self.cruise_speed * self.host_yield_floor_ratio))
+            if not asafe: hs = max(min(hs, cs - self.host_min_yield_delta), sf)
+            if n - self.last_mcm_response.get(rsid, 0) < self.response_period_s:
+                self._log_host_decision(rsid, rmid, "IGNORE", "NOMINAL_PERIOD")
+                self._set_state(STATE_CRUISE)
+                return
+            self._log_host_decision(rsid, rmid, "ACCEPT", "SAFE_OR_NOMINAL")
+            self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
             self.active_merge_request, self.active_merge_request_until = {"station_id": rsid, "manoeuvre_id": rmid, "target_speed": hs, "target_eta": te}, n + self.host_reservation_s; self.active_merge_request_started_at = n
+            self._set_state(STATE_CRUISE if asafe else STATE_YIELDING)
+            if not asafe: self._set_target_speed(hs, force=True)
             log.info("HOST_RESERVATION_START: host=%s ramp=%d manoeuvre=%d until=%.1f own_speed=%.2f target_speed=%.2f required_speed=%.2f gap_eta=%.2f", self.vehicle_id, rsid, rmid, self.active_merge_request_until, cs, hs, rqs, oe - me)
             log.debug("[%.1f] %s HOST_RESERVED: merge=%d manoeuvre=%d until=%.1f target_spd=%.2f", n, self.vehicle_id, rsid, rmid, self.active_merge_request_until, hs)
-            if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
-                self._log_host_decision(rsid, rmid, "ACCEPT", "SAFE_OR_NOMINAL")
-                self._send_mcm(2, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
-            else:
-                self._log_host_decision(rsid, rmid, "IGNORE", "NOMINAL_PERIOD")
             return
         self._set_state(STATE_CRUISE)
         if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
