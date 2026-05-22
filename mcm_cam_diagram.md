@@ -161,9 +161,16 @@ sequenceDiagram
         HV->>V2X: MCM ACCEPT<br/>(action=2, manoeuvreId=N,<br/>target=merge_station_id)
         V2X->>MV: MCM ACCEPT recebido
         
-        Note over MV: MCM_ACCEPT_MATCHED!<br/>MERGE_AUTHORIZED_BY_MCM<br/>Estado: NEGOTIATING → MERGING
+        Note over MV: MCM_ACCEPT_MATCHED!<br/>MERGE_AUTHORIZED_BY_MCM<br/>Estado: NEGOTIATING → PREPARE
         
-        MV->>MV: Executa mudança de faixa<br/>target_lane = merge_lane_index
+        MV->>MV: Publica intenção de faixa<br/>target_lane = merge_lane_index
+
+        alt Lane alvo ainda não existe / não é executável
+            Note over MV: MERGE_PREPARE_WAIT_LANE_AVAILABLE<br/>lane_cmd_state = WAIT_EDGE<br/>Estado mantém PREPARE/NEGOTIATING
+        else Bridge confirma APPLY/CLEAR ou lane executável
+            Note over MV: MERGE_PHYSICAL_START<br/>MERGING!<br/>Estado: PREPARE → MERGING
+            MV->>MV: Executa mudança física de faixa<br/>target_lane = merge_lane_index
+        end
         
         Note over MV: Após completar:<br/>MERGE_COMPLETED<br/>Estado → CRUISE
     else Distância ≤ HOST_REJECT_DISTANCE (20m)
@@ -219,9 +226,14 @@ stateDiagram-v2
     
     CRUISE --> YIELDING: Host recebe MCM REQUEST<br/>& distância segura<br/>Envia MCM ACCEPT
 
-    NEGOTIATING --> MERGING: MCM ACCEPT recebido<br/>& gap seguro<br/>MERGE_AUTHORIZED_BY_MCM
+    NEGOTIATING --> PREPARE: MCM ACCEPT recebido<br/>& gap seguro<br/>MERGE_AUTHORIZED_BY_MCM
+
+    PREPARE --> PREPARE: lane_cmd_state = WAIT_EDGE<br/>lane alvo ainda não existe<br/>MERGE_PREPARE_WAIT_LANE_AVAILABLE
+
+    PREPARE --> MERGING: lane_cmd_state = APPLY/CLEAR<br/>ou lane executável<br/>MERGE_PHYSICAL_START / MERGING!
     
     NEGOTIATING --> ABORT: MCM REJECT recebido<br/>ou timeout (2s)
+    PREPARE --> ABORT: timeout / safety hold crítico
     
     YIELDING --> CRUISE: Merge concluído<br/>ou timeout
     
