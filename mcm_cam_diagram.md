@@ -7,9 +7,9 @@ Visão geral de como as mensagens CAM e MCM fluem entre os OBUs através do Vane
 ```mermaid
 graph TB
     subgraph "Veículo A — OBU Container"
-        APP_A["🧠 OBU Brain<br/>(Python main.py)"]
-        VAT_A["📡 Vanetza Socktap<br/>(UPER Encode/Decode)"]
-        MQTT_A["🔌 MQTT Broker Local"]
+        APP_A["OBU Brain<br/>(Python main.py)"]
+        VAT_A["Vanetza Socktap<br/>(UPER Encode/Decode)"]
+        MQTT_A["MQTT Broker Local"]
         
         APP_A -->|"Publica JSON"| MQTT_A
         MQTT_A -->|"vanetza/in/cam<br/>vanetza/in/mcm"| VAT_A
@@ -18,13 +18,13 @@ graph TB
     end
 
     subgraph "Rede V2X (GeoNetworking)"
-        V2X["📶 Rede V2X<br/>(BTP / GeoNet)"]
+        V2X["Rede V2X<br/>(BTP / GeoNet)"]
     end
 
     subgraph "Veículo B — OBU Container"
-        APP_B["🧠 OBU Brain<br/>(Python main.py)"]
-        VAT_B["📡 Vanetza Socktap<br/>(UPER Encode/Decode)"]
-        MQTT_B["🔌 MQTT Broker Local"]
+        APP_B["OBU Brain<br/>(Python main.py)"]
+        VAT_B["Vanetza Socktap<br/>(UPER Encode/Decode)"]
+        MQTT_B["MQTT Broker Local"]
         
         APP_B -->|"Publica JSON"| MQTT_B
         MQTT_B -->|"vanetza/in/cam<br/>vanetza/in/mcm"| VAT_B
@@ -145,9 +145,9 @@ A MCM é uma mensagem de **coordenação de manobra** utilizada para negociar a 
 
 ```mermaid
 sequenceDiagram
-    participant MV as 🚗 Merge Vehicle<br/>(Rampa)
-    participant V2X as 📶 Rede V2X
-    participant HV as 🚙 Host Vehicle<br/>(Via Principal)
+    participant MV as Merge Vehicle<br/>(Rampa)
+    participant V2X as Rede V2X
+    participant HV as Host Vehicle<br/>(Via Principal)
 
     Note over MV: Estado: CRUISE → NEGOTIATING<br/>Detecta host via CAMs<br/>DTM < MCM_REQUEST_DISTANCE (95m)
 
@@ -289,4 +289,4 @@ graph LR
 | **Standard ETSI** | EN 302 637-2 | ETSI TS 103 561 |
 | **Envelope Vanetza** | `fields.cam` | `fields.payload` |
 | **Função no Sistema** | Mapa de tráfego, ETA, car-following | Negociação de merge (REQ/ACC/REJ) |
-| **Todos os estados?** | ✅ Sempre enviada | ❌ Só em NEGOTIATING/YIELDING |
+| **Todos os estados?** | Sim — Sempre enviada | Não — Só em NEGOTIATING/YIELDING |
