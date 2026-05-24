@@ -166,6 +166,7 @@ def common_obu_env(vehicle: Vehicle, index: int, ramp_station_ids: str, main_sta
         "HOST_RESERVATION_MAX_S": env("HOST_RESERVATION_MAX_S", "10.0"),
         "MCM_LATE_HOST_LOCK_GRACE_S": env("MCM_LATE_HOST_LOCK_GRACE_S", "1.5"),
         "MCM_LATE_HOST_LOCK_DISTANCE_M": env("MCM_LATE_HOST_LOCK_DISTANCE_M", "70.0"),
+        "MCM_REQUEST_DISTANCE_M": env("MCM_REQUEST_DISTANCE_M", "95.0"),
         "REQUEST_RETRY_S": env("REQUEST_RETRY_S", "0.5"),
         "RESPONSE_PERIOD_S": env("RESPONSE_PERIOD_S", "0.5"),
         "YIELD_SPEED_DELTA": env("YIELD_SPEED_DELTA", "6.0"),

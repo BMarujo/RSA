@@ -1,5 +1,7 @@
 # Docs Index
 
-- [docs/quickstart.md](docs/quickstart.md)
-- [docs/architecture.md](docs/architecture.md)
-- [docs/mqtt-topic-contract.md](docs/mqtt-topic-contract.md)
+- [quickstart.md](quickstart.md)
+- [architecture.md](architecture.md)
+- [merge_algorithm_final.md](merge_algorithm_final.md)
+- [mqtt-topic-contract.md](mqtt-topic-contract.md)
+- [project-handoff.md](project-handoff.md)

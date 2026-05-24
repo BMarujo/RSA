@@ -20,21 +20,34 @@ To resolve rear-end collisions during the acceleration lane phase, `FINAL_GUARD`
 - If an approaching vehicle from behind has a TTC of less than `FINAL_GUARD_TTC_S` (default: 3.0s), the merge is rejected.
 - The lateral tolerance for this check is configured via `FINAL_GUARD_LATERAL_MULT` (default: 2.0).
 
+### Delayed Physical Start
+The FSM now separates logical authorization from the physical lane-change start:
+
+- `MERGE_AUTHORIZED_BY_MCM` / `merge_committed` can exist while the ramp vehicle is still on an edge where the target lane does not exist.
+- While the bridge reports `LANE_CMD_WAIT_EDGE`, the OBU logs `MERGE_PREPARE_WAIT_LANE_AVAILABLE` instead of treating the vehicle as physically merging.
+- `MERGE_PHYSICAL_START` and `MERGING!` are only emitted when the lane command is executable, `APPLY`/`CLEAR` is observed, or completion requires an idempotent implicit start first.
+- The invariant is now: every `MERGE_COMPLETED` or `MERGE_COMPLETED_AFTER_TIMEOUT` must have a prior `MERGE_PHYSICAL_START` and `MERGING!`.
+
+### Post-Clear Rear Gap Guard
+After a lane command clears, completion can still be delayed briefly if the rear projected gap is collapsing. `POST_CLEAR_REAR_GUARD` keeps the host reservation and merge state alive until the rear gap/closing TTC is safe or `POST_CLEAR_REAR_GUARD_MAX_S` is reached. During this hold, post-merge flow protection prevents the merged vehicle from being released into very low speed while a following main-lane vehicle is closing.
+
 ## Validation Criteria
-The algorithm was validated against 10 continuous runs of the `dense` scenario. The passing criteria for "perfect safety" are:
+The dense validator checks the following hard safety criteria:
 - **0 Tracebacks**
 - **0 Warnings**
 - **0 Collisions**
 - **0 LANE_CMD_FAILED**
 - **0 MERGE_ALLOWED_HOSTLESS** (Global hostless bypass flag disabled)
-- **Exactly 60 MERGE_PHYSICAL_START**
-- **Exactly 60 MERGING!**
-- **Exactly 60 total completions** (MERGE_COMPLETED + MERGE_COMPLETED_AFTER_TIMEOUT)
+- Per run: `MERGE_PHYSICAL_START == MERGING! == total completions`
+- Across the whole batch: `MERGE_PHYSICAL_START == MERGING! == total completions`
+
+For a fully completed 10-run dense batch this is normally 60 total completions; for 30 runs it is normally 180. The validator can be made strict with `STRICT_COMPLETION=true`, otherwise it enforces the configured minimum completion ratio.
 
 ## Final Post-Merge Safety Fixes
 The dense scenario revealed a critical failure mode where vehicles would drop their speed to near-zero (0.18 m/s) immediately after merging or when failing a merge attempt, leading to rear-end collisions. The following fixes were implemented:
 
 - **Post-Merge Lock (`POST_MERGE_LOCK_S`):** Protects the vehicle for the first 3 seconds after completing a merge. During this window, CAM following logic is prevented from dropping the target speed below 80% of the cruise speed, ensuring safe flow.
+- **Post-Clear Rear Guard (`POST_CLEAR_REAR_GUARD`):** Prevents semantic completion/release while a rear vehicle is projected to close the gap too aggressively.
 - **Ramp-to-Main Car Following Hardening:** All ramp vehicles approaching the merge point now actively check for conflicts with main road vehicles, regardless of their current state. This prevents vehicles in `CRUISE` state on the ramp from colliding with slow-moving traffic in the target lane during the merge transition.
 - **Ramp Car-Following Restoration:** Fixed a bug where ramp vehicles would skip following leaders further than 6 meters away. Vehicles on the ramp now correctly follow their leaders regardless of gap, ensuring safe queuing in dense traffic.
 - **Dynamic Abort Speed:** Replaced the hardcoded `0.18` target speed in `STATE_ABORT` (used when a vehicle is past the merge point without authorization) with the vehicle's dynamic `min_speed`, preventing abrupt and dangerous stops.

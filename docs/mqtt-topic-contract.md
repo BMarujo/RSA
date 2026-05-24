@@ -1,6 +1,6 @@
 # MQTT Topic Contract
 
-This document defines the MQTT topics used across the SITL stack, including the local OBU broker and the shared remote broker. It aligns with the default Vanetza socktap configuration in [vanetza-nap/tools/socktap/config.ini](vanetza-nap/tools/socktap/config.ini) and the remote MQTT prefixing logic in [vanetza-nap/tools/socktap/config.cpp](vanetza-nap/tools/socktap/config.cpp).
+This document defines the MQTT topics used across the SITL stack, including the local OBU broker and the shared remote broker. It aligns with the default Vanetza socktap configuration in [vanetza-nap/tools/socktap/config.ini](../vanetza-nap/tools/socktap/config.ini) and the remote MQTT prefixing logic in [vanetza-nap/tools/socktap/config.cpp](../vanetza-nap/tools/socktap/config.cpp).
 
 ## Brokers
 
@@ -27,8 +27,9 @@ This document defines the MQTT topics used across the SITL stack, including the 
 ### Status egress (to SUMO bridge and observers)
 
 - `car/<vehicle_id>/status/fsm`
-  - JSON includes `vehicle_id`, `station_id`, `role`, `effective_role`, `fsm_state`, `distance_to_merge_m`, `merge_eta_s`, `neighbor_count`, target actuator values, and `timestamp`.
+  - JSON includes `vehicle_id`, `station_id`, `role`, `effective_role`, `fsm_state`, `distance_to_merge_m`, `merge_eta_s`, `neighbor_count`, `merge_committed`, `merge_completed`, `lane_command_state`, target actuator values, and `timestamp`.
   - The TraCI bridge uses this topic to color the SUMO-GUI overlays for role and FSM state.
+  - Host vehicles also use this status to keep or release reservations while a ramp vehicle is committed but still waiting for the lane command to become executable.
 
 ### Vanetza ingress (OBU -> Vanetza)
 
@@ -90,6 +91,6 @@ This keeps the Vanetza and OBU internal topics isolated per vehicle while still 
 
 ## Notes
 
-- JSON payloads for CAM/MCM/DENM must follow ETSI specifications. See [vanetza-nap/README.md](vanetza-nap/README.md) for examples and required fields.
+- JSON payloads for CAM/MCM/DENM must follow ETSI specifications. See [vanetza-nap/README.md](../vanetza-nap/README.md) for examples and required fields.
 - The ITS PDU header is not included when publishing to `vanetza/in/*`; Vanetza fills it automatically.
 - The station ID can be included in message fields; it overrides the header value if present.

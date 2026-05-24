@@ -10,7 +10,7 @@ The launcher reads the SUMO route file referenced by `SUMO_CFG` and generates on
 OBU container per explicit SUMO `<vehicle>`.
 The default Aveiro Vanetza scenario is `dense`: 12 vehicles at `t=0`, all focused
 on the same merge area. Other focused scenarios are available with
-`VANETZA_SCENARIO=base|gap|dense|ramp-platoon|blocked|single-lane`.
+`VANETZA_SCENARIO=base|gap|dense|ramp-platoon|blocked|single-lane|host-acceptance`.
 
 List scenarios:
 
@@ -22,6 +22,12 @@ Run a specific scenario:
 
 ```
 VANETZA_SCENARIO=gap scripts/run_vanetza_scenario.sh up
+```
+
+Run the clean GUI acceptance demo:
+
+```
+VANETZA_SCENARIO=host-acceptance SUMO_GUI=true LOOP_SIM=false scripts/run_vanetza_scenario.sh up
 ```
 
 The generator refuses more than 40 OBUs by default; override with
@@ -44,9 +50,9 @@ Notes:
 - The OBU app publishes CAMs via the local broker to Vanetza.
 - The SUMO bridge publishes sensors to the remote broker.
 - The embedded mosquitto bridges only the per-vehicle sensor/actuator topics.
-- SUMO-GUI follows `Merge_Car` by default to keep the presentation focused on
-  the merge area. Set `GUI_FIT_NETWORK=true GUI_TRACK_VEHICLE=` to see the whole
-  map.
+- SUMO-GUI uses a fixed merge-area view for the dense scenarios; the
+  `host-acceptance` demo tracks `Merge_Car` to keep the presentation focused.
+  Set `GUI_FIT_NETWORK=true GUI_TRACK_VEHICLE=` to see the whole map.
 - SUMO-GUI draws custom top-down vehicle skins by default. Set
   `GUI_VEHICLE_SKINS=false GUI_ROLE_MARKERS=true GUI_STATE_BADGES=true` to go
   back to the older overlay-heavy view.
