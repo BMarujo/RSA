@@ -29,7 +29,7 @@ default_env() {
 }
 
 case "$VANETZA_SCENARIO" in
-    dense|host-acceptance)
+    dense|blocked|single-lane)
         default_env MERGE_POINT_X "194.89"
         default_env MERGE_POINT_Y "2212.42"
         default_env RAMP_EDGE_IDS "34126779"
@@ -125,75 +125,13 @@ case "$VANETZA_SCENARIO" in
         default_env GUI_ZOOM "1200"
         default_env GUI_BOUNDARY_PADDING "70"
         default_env GUI_MERGE_ZONE_LENGTH "13"
-        if [ "$VANETZA_SCENARIO" = "host-acceptance" ]; then
-            default_env MCM_REQUEST_DISTANCE_M "75.0"
+        if [ "$VANETZA_SCENARIO" = "single-lane" ]; then
+            default_env MCM_REQUEST_DISTANCE_M "80.0"
             default_env HOST_RESERVATION_S "5.0"
             default_env HOST_RESERVATION_MAX_S "14.0"
             default_env GUI_TRACK_VEHICLE "Merge_Car"
             default_env GUI_MERGE_VIEW_RADIUS "95"
         fi
-        ;;
-    single-lane)
-        default_env MERGE_POINT_X "1647.94"
-        default_env MERGE_POINT_Y "758.48"
-        default_env RAMP_EDGE_IDS "1042215851"
-        default_env MAIN_EDGE_IDS "-251663459#1,111762619#0"
-        default_env RAMP_BBOX "0,0,0,0"
-        default_env MERGE_STATION_ID "0"
-        default_env MERGE_LANE_INDEX "0"
-        default_env HOST_CLEAR_LANE_INDEX "0"
-        default_env MERGE_ZONE_CLEARANCE_M "260.0"
-        default_env MERGE_STOP_MARGIN_M "24.0"
-        default_env MERGE_BLOCKED_APPROACH_S "6.0"
-        default_env PRIORITY_DISTANCE "220.0"
-        default_env ROLE_DETECTION_DISTANCE "340.0"
-        default_env ETA_THRESHOLD_S "20.0"
-        default_env NEIGHBOR_TIMEOUT_S "2.5"
-        default_env REQUEST_RETRY_S "0.25"
-        default_env RESPONSE_PERIOD_S "0.25"
-        default_env CRUISE_SPEED "8.5"
-        default_env MERGE_SPEED_BONUS "0.0"
-        default_env LEAD_SPEED_BONUS "0.0"
-        default_env SUMO_EXTRA_ARGS "--collision.action warn --collision.check-junctions true --emergencydecel.warning-threshold 100.0"
-        default_env DEFAULT_SPEED_MODE "0"
-        default_env PRIORITY_SPEED_MODE "0"
-        default_env TRACI_DEFAULT_SPEED_MODE "0"
-        default_env TRACI_DEFAULT_LANE_CHANGE_MODE "0"
-        default_env TRACI_VEHICLE_DECEL "50.0"
-        default_env TRACI_VEHICLE_EMERGENCY_DECEL "50.0"
-        default_env COLLISION_GUARD "false"
-        default_env COLLISION_GUARD_LOOKAHEAD "60.0"
-        default_env COLLISION_GUARD_MIN_GAP "9.0"
-        default_env COLLISION_GUARD_HEADWAY_S "1.0"
-        default_env COLLISION_GUARD_MIN_SPEED "1.8"
-        default_env COLLISION_GUARD_DURATION_S "1.6"
-        default_env COLLISION_GUARD_MAX_DECEL "3.5"
-        default_env HOST_YIELD_FLOOR_RATIO "0.0"
-        default_env MERGE_YIELD_FLOOR_RATIO "0.0"
-        default_env MIN_CLEARANCE_M "22.0"
-        default_env HOST_REJECT_DISTANCE_M "35.0"
-        default_env ABORT_SPEED "0.0"
-        default_env MIN_SPEED "0.0"
-        default_env EMERGENCY_MIN_SPEED "0.0"
-        default_env RAMP_PLATOON_HEADWAY_S "3.0"
-        default_env RAMP_PLATOON_MIN_GAP "45.0"
-        default_env MERGE_QUEUE_RELEASE_GAP "70.0"
-        default_env CAM_FOLLOW_HEADWAY_S "3.0"
-        default_env CAM_FOLLOW_MIN_GAP "24.0"
-        default_env CAM_FOLLOW_LOOKAHEAD "160.0"
-        default_env CAM_FOLLOW_LATERAL_TOLERANCE_M "5.0"
-        default_env CAM_FOLLOW_SPEED_DELTA "2.0"
-        default_env CAM_FOLLOW_CRITICAL_GAP_M "14.0"
-        default_env CAM_FOLLOW_BRAKE_DECEL "4.5"
-        default_env CAM_FOLLOW_EMERGENCY_DECEL "9.0"
-        default_env MAX_SPEED_STEP_UP "0.15"
-        default_env MAX_SPEED_STEP_EMERGENCY "0.9"
-        default_env GUI_TRACK_VEHICLE "none"
-        default_env GUI_FIXED_MERGE_VIEW "true"
-        default_env GUI_MERGE_VIEW_RADIUS "115"
-        default_env GUI_ZOOM "1200"
-        default_env GUI_BOUNDARY_PADDING "70"
-        default_env GUI_MERGE_ZONE_LENGTH "12"
         ;;
 esac
 
@@ -251,7 +189,7 @@ case "$COMMAND" in
     *)
         echo "Usage: $0 [up|log|bridge|down|config|generate|scenarios] [docker compose args...]" >&2
         echo "Set LOG_FILE=logs/my_run.log to choose the output file for the log command." >&2
-        echo "Select a focused scenario with VANETZA_SCENARIO=base|gap|dense|ramp-platoon|blocked|single-lane|host-acceptance" >&2
+        echo "Select a focused scenario with VANETZA_SCENARIO=dense|blocked|single-lane" >&2
         exit 2
         ;;
 esac

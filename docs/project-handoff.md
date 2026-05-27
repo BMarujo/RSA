@@ -53,8 +53,9 @@ Important paths:
   - Aveiro SUMO map.
   - `vanetza_scenarios/dense.sumocfg` is the default Docker/Vanetza scenario.
   - `vanetza_scenarios/` contains focused variants for the same merge area:
-    `base`, `gap`, `dense`, `ramp-platoon`, `blocked`, `host-acceptance`,
-    and a separate `single-lane` one-lane merge.
+    `dense`, `blocked`, and `single-lane`.
+  - `single-lane` keeps one acceleration-lane vehicle and a small main-lane
+    queue, making the accepting host easier to inspect in SUMO-GUI.
 - `sumo-lane-merge/scripts/run_traci.py`
   - Standalone TraCI demo with scenario logic, useful as a reference/demo path.
 
@@ -301,8 +302,7 @@ docker compose -f docker-compose.yml -f .generated/vanetza-obus.compose.yml logs
 
 The TraCI bridge can visualize vehicle state in SUMO-GUI:
 
-- Uses a fixed merge-area view for dense scenarios; `host-acceptance` tracks
-  `Merge_Car` to keep the presentation focused on the merge action.
+- Uses a fixed merge-area view for the dense scenario.
 - Set `GUI_FIT_NETWORK=true GUI_TRACK_VEHICLE=` to see the full map.
 - Draws custom top-down vehicle skins over the native SUMO vehicles.
 - The default custom skins are lightweight: body, glass, and a clean
@@ -352,16 +352,6 @@ For GUI runs, Docker needs X11 authorization:
 xhost +local:docker
 SUMO_GUI=true scripts/run_vanetza_scenario.sh up
 ```
-
-The clean professor/demo scenario is:
-
-```bash
-VANETZA_SCENARIO=host-acceptance SUMO_GUI=true LOOP_SIM=false \
-scripts/run_vanetza_scenario.sh up
-```
-
-It uses the Aveiro acceleration-lane geometry with only `Merge_Car`,
-`Main_Lead`, and the named accepting host `Main_Acceptor`.
 
 For reliable tests, prefer headless:
 
@@ -435,8 +425,7 @@ Choose a focused scenario:
 
 ```bash
 scripts/run_vanetza_scenario.sh scenarios
-VANETZA_SCENARIO=gap scripts/run_vanetza_scenario.sh up
-VANETZA_SCENARIO=host-acceptance SUMO_GUI=true LOOP_SIM=false scripts/run_vanetza_scenario.sh up
+VANETZA_SCENARIO=blocked scripts/run_vanetza_scenario.sh up
 ```
 
 Generate only the dynamic OBU override:
@@ -501,17 +490,12 @@ MQTT logs are also useful for presentation:
 
 The standalone `sumo-lane-merge/scripts/run_traci.py` has mature demo scenarios:
 
-- `base`
-- `gap`
 - `adaptive`
 - `loss`
 
 The current Vanetza/Aveiro scenario files live in:
 
 - `sumo-lane-merge/aveiro_map/vanetza_scenarios/`
-
-Use `host-acceptance` for a clean visual explanation of which main-lane vehicle
-accepts the MCM request and yields for the ramp vehicle.
 
 ## Known Current Caveats
 
@@ -550,24 +534,16 @@ Smoke/demo checks:
 ```bash
 SUMO_GUI=false LOOP_SIM=false SUMO_END=80 STEP_DELAY_S=0 \
 scripts/run_vanetza_scenario.sh bridge
-
-VANETZA_SCENARIO=host-acceptance LOG_FILE=logs/host_acceptance_dense_clean_v3_check1.log \
-LOOP_SIM=false ./scripts/run_vanetza_scenario.sh log
 ```
 
 Observed:
 
 - SUMO ran headless.
-- Host-acceptance ran cleanly in three repeated checks.
-- `Main_Acceptor` was the only host making `HOST_REQUEST_DECISION`.
-- Each host-acceptance run had one authorization, one physical start, one
-  `MERGING!`, and one completion.
 - No Traceback, Warning, collision, or `LANE_CMD_FAILED` in those checks.
 
 ## Recommended Next Steps
 
 1. Commit or stash the current clean fix:
-   - `host-acceptance` scenario files.
    - `scripts/run_vanetza_scenario.sh` scenario defaults.
    - `scripts/generate_obu_compose.py` forwarding `MCM_REQUEST_DISTANCE_M`.
    - Documentation updates.
@@ -599,5 +575,4 @@ docker compose -f docker-compose.yml -f .generated/vanetza-obus.compose.yml logs
    - Include ETA/headway/gap data in a structured application-level field if possible.
    - Keep ETSI fields valid and bounded.
 
-6. Keep `host-acceptance` as the small GUI proof scenario and use `dense` for
-   regression testing.
+6. Use `dense` for regression testing.
