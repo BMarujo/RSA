@@ -29,7 +29,7 @@ default_env() {
 }
 
 case "$VANETZA_SCENARIO" in
-    dense|blocked|single-lane)
+    dense|blocked|single-lane|mcm-main)
         default_env MERGE_POINT_X "194.89"
         default_env MERGE_POINT_Y "2212.42"
         default_env RAMP_EDGE_IDS "34126779"
@@ -88,7 +88,7 @@ case "$VANETZA_SCENARIO" in
 
         default_env MERGE_NEIGHBOR_WARMUP_S "1.2"
         default_env MERGE_MIN_NEIGHBORS_BEFORE_MERGE "0"
-        
+
         default_env FINAL_MERGE_GUARD_M "28.0"
         default_env FINAL_MERGE_CLEARANCE_M "10.0"
         default_env MERGE_OCCUPANCY_S "3.2"
@@ -130,6 +130,14 @@ case "$VANETZA_SCENARIO" in
             default_env MCM_REQUEST_DISTANCE_M "80.0"
             default_env HOST_RESERVATION_S "5.0"
             default_env HOST_RESERVATION_MAX_S "14.0"
+            default_env GUI_TRACK_VEHICLE "Merge_Car"
+            default_env GUI_MERGE_VIEW_RADIUS "95"
+        fi
+        if [ "$VANETZA_SCENARIO" = "mcm-main" ]; then
+            default_env MCM_REQUEST_DISTANCE_M "68.0"
+            default_env NEGOTIATION_TIMEOUT_S "4.5"
+            default_env HOST_RESERVATION_S "5.0"
+            default_env HOST_RESERVATION_MAX_S "12.0"
             default_env GUI_TRACK_VEHICLE "Merge_Car"
             default_env GUI_MERGE_VIEW_RADIUS "95"
         fi
@@ -190,7 +198,7 @@ case "$COMMAND" in
     *)
         echo "Usage: $0 [up|log|bridge|down|config|generate|scenarios] [docker compose args...]" >&2
         echo "Set LOG_FILE=logs/my_run.log to choose the output file for the log command." >&2
-        echo "Select a focused scenario with VANETZA_SCENARIO=dense|blocked|single-lane" >&2
+        echo "Select a focused scenario with VANETZA_SCENARIO=dense|blocked|single-lane|mcm-main" >&2
         exit 2
         ;;
 esac
