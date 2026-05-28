@@ -192,6 +192,7 @@ def common_obu_env(vehicle: Vehicle, index: int, ramp_station_ids: str, main_sta
         "MERGE_YIELD_FLOOR_RATIO": env("MERGE_YIELD_FLOOR_RATIO", "0.2"),
         "HOST_YIELD_FLOOR_RATIO": env("HOST_YIELD_FLOOR_RATIO", "0.2"),
         "HOST_REJECT_DISTANCE_M": env("HOST_REJECT_DISTANCE_M", "20.0"),
+        "HOST_MIN_ACCEPT_GAP_S": env("HOST_MIN_ACCEPT_GAP_S", env("MERGE_COMMIT_HEADWAY_S", "1.5")),
         "HOST_SAME_LANE_GUARD_GAP": env("HOST_SAME_LANE_GUARD_GAP", "14.0"),
         "RAMP_PLATOON_HEADWAY_S": env("RAMP_PLATOON_HEADWAY_S", "1.4"),
         "RAMP_PLATOON_MIN_GAP": env("RAMP_PLATOON_MIN_GAP", "14.0"),

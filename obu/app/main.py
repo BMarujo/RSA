@@ -149,6 +149,7 @@ class OBUApp:
         self.merge_lost_auth_after_point_floor_enabled = env("MERGE_LOST_AUTH_AFTER_POINT_ROLLING_FLOOR", "true").lower() == "true"
         self.merge_lost_auth_after_point_floor_ratio = float(env("MERGE_LOST_AUTH_AFTER_POINT_FLOOR_RATIO", str(self.merge_wait_edge_floor_ratio)))
         self.host_reject_distance_m, self.host_same_lane_guard_gap = float(env("HOST_REJECT_DISTANCE_M", "20.0")), float(env("HOST_SAME_LANE_GUARD_GAP", "14.0"))
+        self.host_min_accept_gap_s = float(env("HOST_MIN_ACCEPT_GAP_S", str(self.merge_commit_headway_s)))
         self.ramp_platoon_headway_s, self.ramp_platoon_min_gap, self.ramp_platoon_speed_delta = float(env("RAMP_PLATOON_HEADWAY_S", "1.4")), float(env("RAMP_PLATOON_MIN_GAP", "14.0")), float(env("RAMP_PLATOON_SPEED_DELTA", "0.8"))
         self.merge_queue_release_gap = float(env("MERGE_QUEUE_RELEASE_GAP", "34.0"))
         self.enable_cam_following = env("ENABLE_CAM_FOLLOWING", "true").lower() == "true"
@@ -1995,6 +1996,15 @@ class OBUApp:
         sf = max(self.cruise_speed * self.host_yield_floor_ratio, self.min_speed); rqs = max(min(rqs, cs), sf)
         gd, asafe = oe - me, (oe - me) >= self.merge_commit_headway_s; dy = rqs < cs - 0.15; ns = gd >= (self.merge_commit_headway_s * 0.75); sa = rqs >= cs - 0.30
         if dy:
+            if gd < self.host_min_accept_gap_s:
+                self._set_state(STATE_CRUISE)
+                if n - self.last_mcm_response.get(rsid, 0) >= self.response_period_s:
+                    self._log_host_decision(rsid, rmid, "REJECT", "LATE_GAP")
+                    self._send_mcm(3, rmid, target_station_id=rsid); self.last_mcm_response[rsid] = n
+                    log.info("HOST_LATE_GAP_REJECT: host=%s ramp=%d manoeuvre=%d gap_eta=%.2f min_gap_eta=%.2f own_speed=%.2f required_speed=%.2f", self.vehicle_id, rsid, rmid, gd, self.host_min_accept_gap_s, cs, rqs)
+                else:
+                    self._log_host_decision(rsid, rmid, "IGNORE", "LATE_GAP_PERIOD")
+                return
             yt = max(min(rqs, cs - self.host_min_yield_delta), sf)
             if n - self.last_mcm_response.get(rsid, 0) < self.response_period_s:
                 self._log_host_decision(rsid, rmid, "IGNORE", "YIELDING_PERIOD")

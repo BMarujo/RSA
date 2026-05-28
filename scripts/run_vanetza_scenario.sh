@@ -80,6 +80,7 @@ case "$VANETZA_SCENARIO" in
         default_env SAFE_HEADWAY_S "1.5"
         default_env MIN_CLEARANCE_M "8.0"
         default_env HOST_REJECT_DISTANCE_M "18.0"
+        default_env HOST_MIN_ACCEPT_GAP_S "1.5"
         default_env HOST_SAME_LANE_GUARD_GAP "14.0"
         default_env MERGE_ZONE_CLEARANCE_M "8.0"
         default_env MERGE_STOP_MARGIN_M "8.0"

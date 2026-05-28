@@ -1,0 +1,1155 @@
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-traci-bridge:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+ Image rsa-obu:latest Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.66kB done
+#1 DONE 0.0s
+
+#2 [obu-main-back internal] load build definition from Dockerfile
+#2 transferring dockerfile: 499B done
+#2 DONE 0.0s
+
+#3 [traci-bridge internal] load build definition from Dockerfile
+#3 transferring dockerfile: 997B done
+#3 DONE 0.0s
+
+#4 [obu-main-lead internal] load metadata for ghcr.io/nap-it/vanetza-nap:latest
+#4 DONE 0.0s
+
+#5 [traci-bridge internal] load metadata for ghcr.io/eclipse-sumo/sumo:latest
+#5 DONE 0.0s
+
+#6 [obu-main-acceptor internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [traci-bridge 1/6] FROM ghcr.io/eclipse-sumo/sumo:latest
+#7 DONE 0.0s
+
+#8 [obu-main-front 1/9] FROM ghcr.io/nap-it/vanetza-nap:latest
+#8 DONE 0.0s
+
+#9 [traci-bridge internal] load build context
+#9 transferring context: 148B done
+#9 DONE 0.0s
+
+#10 [traci-bridge 5/6] RUN pip3 install --no-cache-dir -r /app/requirements.txt
+#10 CACHED
+
+#11 [traci-bridge 2/6] RUN apt-get update     && apt-get install -y --no-install-recommends         ca-certificates         curl         gnupg         python3         python3-pip     && curl -fsSL https://downloads.apache.org/arrow/KEYS         | gpg --dearmor -o /usr/share/keyrings/apache-arrow-apt-source.gpg     && echo "deb [signed-by=/usr/share/keyrings/apache-arrow-apt-source.gpg] https://apache.jfrog.io/artifactory/arrow/ubuntu jammy main"         > /etc/apt/sources.list.d/apache-arrow.list     && apt-get update     && apt-get install -y --no-install-recommends         libarrow2300         libparquet2300     && rm -rf /var/lib/apt/lists/*
+#11 CACHED
+
+#12 [traci-bridge 3/6] WORKDIR /app
+#12 CACHED
+
+#13 [traci-bridge 4/6] COPY sim/bridge/requirements.txt /app/requirements.txt
+#13 CACHED
+
+#14 [traci-bridge 6/6] COPY sim/bridge/traci_bridge.py /app/traci_bridge.py
+#14 CACHED
+
+#15 [obu-main-back internal] load build context
+#15 transferring context: 350.24kB done
+#15 DONE 0.0s
+
+#16 [traci-bridge] exporting to image
+#16 exporting layers done
+#16 writing image sha256:ec189de1fdf1a841024ba630f2bab815935eee1cb5501501177aeafb8aa6d178 done
+#16 naming to docker.io/library/rsa-traci-bridge:latest done
+#16 DONE 0.0s
+
+#17 [obu-main-acceptor 3/9] WORKDIR /app
+#17 CACHED
+
+#18 [obu-main-acceptor 2/9] RUN apt-get update     && apt-get install -y --no-install-recommends python3 python3-pip     && rm -rf /var/lib/apt/lists/*
+#18 CACHED
+
+#19 [obu-main-acceptor 4/9] COPY obu/requirements.txt /app/requirements.txt
+#19 CACHED
+
+#20 [obu-main-acceptor 5/9] RUN pip3 install --no-cache-dir -r /app/requirements.txt
+#20 CACHED
+
+#21 [traci-bridge] resolving provenance for metadata file
+#21 DONE 0.0s
+
+#22 [obu-merge-car 6/9] COPY obu/app /app
+#22 DONE 0.0s
+
+#23 [obu-main-lead 7/9] COPY obu/entrypoint.sh /entrypoint-obu.sh
+#23 DONE 0.0s
+
+#24 [obu-main-lead 8/9] COPY obu/config/vanetza-obu.ini /config.ini
+#24 DONE 0.0s
+
+#25 [obu-main-back 9/9] RUN chmod +x /entrypoint-obu.sh
+#25 DONE 0.1s
+
+#26 [obu-main-front] exporting to image
+#26 exporting layers 0.0s done
+#26 writing image sha256:e8c858e25608cfa70b977336043786d7b2ffebb403cbe29a4fa79640f0801d5a done
+#26 naming to docker.io/library/rsa-obu:latest done
+#26 DONE 0.0s
+
+#27 [obu-main-back] exporting to image
+#27 exporting layers 0.0s done
+#27 writing image sha256:cce1cc9e4bd8f2a67694a8fc0a1ee9e9463323cf2cf3d56c84d6d32fc400e5af done
+#27 naming to docker.io/library/rsa-obu:latest done
+#27 DONE 0.1s
+
+#28 [obu-main-lead] exporting to image
+#28 exporting layers 0.0s done
+#28 writing image sha256:82897c175a7d21cdcfa4d20d35271676f1880adf3d1d92b4487793b50140894d done
+#28 naming to docker.io/library/rsa-obu:latest done
+#28 DONE 0.1s
+
+#29 [obu-main-acceptor] exporting to image
+#29 exporting layers 0.0s done
+#29 writing image sha256:26e3673ddb8f6f8313adb8fc743ca0b514f4b247a00dff66fdccf756c26124e2 done
+#29 naming to docker.io/library/rsa-obu:latest done
+#29 DONE 0.1s
+
+#30 [obu-merge-car] exporting to image
+#30 exporting layers 0.0s done
+#30 writing image sha256:03e01462a74200709ceb75a9359d72aba462a9b93f598ff9e78ba2c1c06a9b80 done
+#30 naming to docker.io/library/rsa-obu:latest done
+#30 DONE 0.1s
+
+#31 [obu-main-front] resolving provenance for metadata file
+#31 DONE 0.1s
+
+#32 [obu-main-back] resolving provenance for metadata file
+#32 DONE 0.0s
+
+#33 [obu-main-acceptor] resolving provenance for metadata file
+#33 DONE 0.0s
+
+#34 [obu-main-lead] resolving provenance for metadata file
+#34 DONE 0.0s
+
+#35 [obu-merge-car] resolving provenance for metadata file
+#35 DONE 0.0s
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-traci-bridge:latest Built 
+ Image rsa-obu:latest Built 
+ Image rsa-obu:latest Built 
+ Container rsa-mqtt-broker-1 Running 
+ Container rsa-traci-bridge-1 Recreate 
+ Container rsa-obu-main-lead-1 Recreate 
+ Container rsa-obu-main-back-1 Recreate 
+ Container rsa-obu-main-front-1 Recreate 
+ Container rsa-obu-main-acceptor-1 Recreate 
+ Container rsa-obu-merge-car-1 Recreate 
+ Container rsa-traci-bridge-1 Recreated 
+ Container rsa-obu-main-front-1 Recreated 
+ Container rsa-obu-main-back-1 Recreated 
+ Container rsa-obu-merge-car-1 Recreated 
+ Container rsa-obu-main-acceptor-1 Recreated 
+ Container rsa-obu-main-lead-1 Recreated 
+Attaching to mqtt-broker-1, obu-main-acceptor-1, obu-main-back-1, obu-main-front-1, obu-main-lead-1, obu-merge-car-1, traci-bridge-1
+ Container rsa-obu-main-lead-1 Starting 
+ Container rsa-obu-main-acceptor-1 Starting 
+ Container rsa-obu-main-back-1 Starting 
+ Container rsa-traci-bridge-1 Starting 
+ Container rsa-obu-main-front-1 Starting 
+ Container rsa-obu-merge-car-1 Starting 
+obu-main-lead-1  | No global board config file found. Skipping config update process
+ Container rsa-obu-main-lead-1 Started 
+ Container rsa-traci-bridge-1 Started 
+obu-main-acceptor-1  | No global board config file found. Skipping config update process
+ Container rsa-obu-main-acceptor-1 Started 
+obu-main-back-1      | No global board config file found. Skipping config update process
+ Container rsa-obu-main-back-1 Started 
+obu-main-lead-1      | 1780001883: mosquitto version 2.0.11 starting
+obu-main-lead-1      | 1780001883: Config loaded from /mosquitto.conf.
+obu-main-lead-1      | 1780001883: Opening ipv4 listen socket on port 1883.
+obu-main-lead-1      | 1780001883: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-lead-1      | 1780001883: mosquitto version 2.0.11 running
+obu-main-acceptor-1  | 1780001883: mosquitto version 2.0.11 starting
+obu-main-acceptor-1  | 1780001883: Config loaded from /mosquitto.conf.
+obu-main-acceptor-1  | 1780001883: Opening ipv4 listen socket on port 1883.
+obu-main-acceptor-1  | 1780001883: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-acceptor-1  | 1780001883: mosquitto version 2.0.11 running
+obu-merge-car-1      | No global board config file found. Skipping config update process
+ Container rsa-obu-merge-car-1 Started 
+obu-main-back-1      | 1780001883: mosquitto version 2.0.11 starting
+obu-main-back-1      | 1780001883: Config loaded from /mosquitto.conf.
+obu-main-back-1      | 1780001883: Opening ipv4 listen socket on port 1883.
+obu-main-back-1      | 1780001883: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-back-1      | 1780001883: mosquitto version 2.0.11 running
+obu-merge-car-1      | 1780001883: mosquitto version 2.0.11 starting
+obu-merge-car-1      | 1780001883: Config loaded from /mosquitto.conf.
+obu-merge-car-1      | 1780001883: Opening ipv4 listen socket on port 1883.
+obu-merge-car-1      | 1780001883: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-merge-car-1      | 1780001883: mosquitto version 2.0.11 running
+obu-main-front-1     | No global board config file found. Skipping config update process
+ Container rsa-obu-main-front-1 Started 
+obu-main-front-1     | 1780001883: mosquitto version 2.0.11 starting
+obu-main-front-1     | 1780001883: Config loaded from /mosquitto.conf.
+obu-main-front-1     | 1780001883: Opening ipv4 listen socket on port 1883.
+obu-main-front-1     | 1780001883: Connecting bridge (step 1) bridge_to_remote (mqtt-broker:1883)
+obu-main-front-1     | 1780001883: mosquitto version 2.0.11 running
+mqtt-broker-1        | 1780001883: New connection from 172.18.0.3:41410 on port 1883.
+obu-main-lead-1      | 1780001883: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1        | 1780001883: New connection from 172.18.0.5:58204 on port 1883.
+mqtt-broker-1        | 1780001883: New bridge connected from 172.18.0.3:41410 as 8c4e68deb348.bridge_to_remote (p4, c0, k60).
+obu-main-acceptor-1  | 1780001883: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1        | 1780001883: New bridge connected from 172.18.0.5:58204 as 10eea38444e1.bridge_to_remote (p4, c0, k60).
+obu-main-back-1      | 1780001883: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1        | 1780001883: New connection from 172.18.0.6:41676 on port 1883.
+mqtt-broker-1        | 1780001883: New bridge connected from 172.18.0.6:41676 as 9a0508b4b557.bridge_to_remote (p4, c0, k60).
+mqtt-broker-1        | 1780001883: New connection from 172.18.0.7:48952 on port 1883.
+obu-merge-car-1      | 1780001883: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1        | 1780001883: New bridge connected from 172.18.0.7:48952 as c733202bfdff.bridge_to_remote (p4, c0, k60).
+obu-main-front-1     | 1780001883: Connecting bridge (step 2) bridge_to_remote (mqtt-broker:1883)
+mqtt-broker-1        | 1780001883: New connection from 172.18.0.8:34150 on port 1883.
+mqtt-broker-1        | 1780001883: New bridge connected from 172.18.0.8:34150 as fb0bce671b71.bridge_to_remote (p4, c0, k60).
+mqtt-broker-1        | 1780001883: New connection from 172.18.0.4:59847 on port 1883.
+mqtt-broker-1        | 1780001883: New client connected from 172.18.0.4:59847 as traci-bridge (p4, c1, k60).
+obu-main-lead-1      | Using MAC address: 6e:06:e0:03:00:11.
+obu-main-acceptor-1  | Using MAC address: 6e:06:e0:03:00:13.
+obu-main-acceptor-1  | 1780001884: New connection from 127.0.0.1:46166 on port 1883.
+obu-main-acceptor-1  | 1780001884: New client connected from 127.0.0.1:46166 as 10eea38444e1_49 (p2, c1, k60).
+obu-main-acceptor-1  | mqtt.cpp: connected with server
+obu-main-back-1      | Using MAC address: 6e:06:e0:03:00:14.
+mqtt-broker-1        | 1780001884: New connection from 172.18.0.5:58218 on port 1883.
+mqtt-broker-1        | 1780001884: New client connected from 172.18.0.5:58218 as auto-7B2C05A8-3B7C-9375-E6E5-87A54FCF0E6C (p4, c1, k60, u'""').
+obu-main-acceptor-1  | mqtt.cpp: connected with server
+obu-main-lead-1      | 1780001884: New connection from 127.0.0.1:46170 on port 1883.
+obu-main-lead-1      | 1780001884: New client connected from 127.0.0.1:46170 as 8c4e68deb348_45 (p2, c1, k60).
+obu-main-lead-1      | mqtt.cpp: connected with server
+mqtt-broker-1        | 1780001884: New connection from 172.18.0.3:41424 on port 1883.
+mqtt-broker-1        | 1780001884: New client connected from 172.18.0.3:41424 as auto-744B8A8D-B06B-A218-381C-FDC8FB76B52D (p4, c1, k60, u'""').
+obu-main-lead-1      | mqtt.cpp: connected with server
+obu-merge-car-1      | Using MAC address: 6e:06:e0:03:00:15.
+obu-main-back-1      | 1780001884: New connection from 127.0.0.1:46174 on port 1883.
+obu-main-back-1      | 1780001884: New client connected from 127.0.0.1:46174 as 9a0508b4b557_687 (p2, c1, k60).
+obu-main-back-1      | mqtt.cpp: connected with server
+mqtt-broker-1        | 1780001884: New connection from 172.18.0.6:41680 on port 1883.
+mqtt-broker-1        | 1780001884: New client connected from 172.18.0.6:41680 as auto-EECCDB79-DA9E-A9C5-732C-2C5F07E8B5CD (p4, c1, k60, u'""').
+obu-main-back-1      | mqtt.cpp: connected with server
+obu-main-front-1     | Using MAC address: 6e:06:e0:03:00:12.
+obu-merge-car-1      | 1780001884: New connection from 127.0.0.1:46186 on port 1883.
+obu-merge-car-1      | 1780001884: New client connected from 127.0.0.1:46186 as c733202bfdff_408 (p2, c1, k60).
+obu-merge-car-1      | mqtt.cpp: connected with server
+obu-main-lead-1      | 1780001884: New connection from 127.0.0.1:47723 on port 1883.
+obu-main-lead-1      | 1780001884: New client connected from 127.0.0.1:47723 as obu-Main_Lead-1 (p2, c1, k60).
+mqtt-broker-1        | 1780001884: New connection from 172.18.0.7:48958 on port 1883.
+mqtt-broker-1        | 1780001884: New client connected from 172.18.0.7:48958 as auto-6D142235-2775-EF66-92CE-198BF9064002 (p4, c1, k60, u'""').
+obu-merge-car-1      | mqtt.cpp: connected with server
+obu-main-acceptor-1  | 1780001884: New connection from 127.0.0.1:41711 on port 1883.
+obu-main-acceptor-1  | 1780001884: New client connected from 127.0.0.1:41711 as obu-Main_Acceptor-1 (p2, c1, k60).
+obu-main-front-1     | 1780001884: New connection from 127.0.0.1:46194 on port 1883.
+obu-main-front-1     | 1780001884: New client connected from 127.0.0.1:46194 as fb0bce671b71_296 (p2, c1, k60).
+obu-main-front-1     | mqtt.cpp: connected with server
+mqtt-broker-1        | 1780001884: New connection from 172.18.0.8:34158 on port 1883.
+mqtt-broker-1        | 1780001884: New client connected from 172.18.0.8:34158 as auto-3F3AB2AA-B737-907D-6F87-2B8A1C6B786F (p4, c1, k60, u'""').
+obu-main-front-1     | mqtt.cpp: connected with server
+obu-main-back-1      | 1780001884: New connection from 127.0.0.1:40223 on port 1883.
+obu-main-back-1      | 1780001884: New client connected from 127.0.0.1:40223 as obu-Main_Back-1 (p2, c1, k60).
+obu-merge-car-1      | 1780001884: New connection from 127.0.0.1:45587 on port 1883.
+obu-merge-car-1      | 1780001884: New client connected from 127.0.0.1:45587 as obu-Merge_Car-1 (p2, c1, k60).
+obu-main-front-1     | 1780001884: New connection from 127.0.0.1:36773 on port 1883.
+obu-main-front-1     | 1780001884: New client connected from 127.0.0.1:36773 as obu-Main_Front-1 (p2, c1, k60).
+obu-main-acceptor-1  | Zenoh session established locally
+obu-main-lead-1      | Zenoh session established locally
+obu-main-back-1      | Zenoh session established locally
+obu-merge-car-1      | Zenoh session established locally
+obu-main-front-1     | Zenoh session established locally
+obu-main-lead-1      | [1.1] Main_Lead role=lead state=CRUISE->CRUISE speed=9.27 target=9.27 neighbors=4
+obu-main-back-1      | [1.0] Main_Back role=host state=CRUISE->CRUISE speed=8.72 target=7.50 neighbors=4
+obu-main-acceptor-1  | [1.0] Main_Acceptor role=host state=CRUISE->CRUISE speed=8.96 target=7.50 neighbors=4
+obu-main-front-1     | [1.0] Main_Front role=lead state=CRUISE->CRUISE speed=8.66 target=8.66 neighbors=4
+obu-merge-car-1      | [1.1] Merge_Car role=merge state=CRUISE->CRUISE speed=8.62 target=6.75 neighbors=4
+obu-main-front-1     | [2.2] Main_Front role=host state=CRUISE->CRUISE speed=8.62 target=7.50 neighbors=0
+obu-merge-car-1      | [2.1] Merge_Car role=merge state=CRUISE->CRUISE speed=7.87 target=6.75 neighbors=0
+obu-main-lead-1      | [2.2] Main_Lead role=host state=CRUISE->CRUISE speed=9.26 target=7.50 neighbors=0
+obu-main-back-1      | [2.7] Main_Back role=host state=CRUISE->CRUISE speed=8.01 target=7.50 neighbors=4
+obu-main-acceptor-1  | [2.7] Main_Acceptor role=host state=CRUISE->CRUISE speed=8.11 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_NEW t=3.0 manoeuvre=196 source=new_request lead=101 host=104 own_eta=10.63 lead_eta=0.96 host_eta=18.70 min_eta=2.46 max_eta=17.20 desired_eta=10.63 gap_possible=True dtm=79.3 edge=34126779 lane=0 speed=7.46 lead_speed=9.25 host_speed=8.27 lead_gap=45.48 host_gap=75.21 lead_gap_t1=45.48 lead_gap_t2=45.48 lead_gap_t3=45.48 host_gap_t1=75.21 host_gap_t2=75.21 host_gap_t3=75.21 rel_to_lead=-1.79 rel_to_host=-0.81 lead_lat=52.85 host_lat=90.03 pending=True accepted=False authorized=False committed=False pending_age=0.00 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=196 host=104 lead=101 event=REQUEST_SENT t=3.0 edge=34126779 lane=0 lane_cmd_state=NONE speed=7.46 target=6.75 dtm=79.3 lead_gap=45.48 host_gap=75.21 lead_gap_t1=45.48 lead_gap_t2=45.48 lead_gap_t3=45.48 host_gap_t1=75.21 host_gap_t2=75.21 host_gap_t3=75.21
+obu-merge-car-1      | [3.0] Merge_Car MCM_TX_REQUEST: manoeuvre=196 target=104
+obu-merge-car-1      | [3.0] Merge_Car MERGE_LCLEAR_BLOCK: sid=101 gap=6.5 neighbor_age=0.3 from_memory=False dtm=79.3
+obu-merge-car-1      | [3.0] Merge_Car MERGE_DECISION: auth=False phys=False fgok=True lgok=True hgok=True cok=True esok=True cready=False dtm=79.3 past=False committed=False hid=104 ra=None lclear=False hyok=True
+obu-main-lead-1      | [3.2] Main_Lead role=lead state=CRUISE->CRUISE speed=9.01 target=9.01 neighbors=4
+obu-main-front-1     | [3.5] Main_Front role=lead state=CRUISE->CRUISE speed=8.44 target=8.44 neighbors=4
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=101 manoeuvre=196 retry_count=1 pending_age=0.5 dtm=76.6 own_eta=10.50 host_eta_current=18.701369466984758 host_eta_at_request=18.701369466984758 lead_eta_current=0.9566960192763324 lead_eta_at_request=0.9566960192763324 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=3.5 manoeuvre=196 source=retry_request lead=101 host=104 own_eta=10.50 lead_eta=0.96 host_eta=18.70 min_eta=2.46 max_eta=17.20 desired_eta=10.50 gap_possible=True dtm=76.6 edge=34126779 lane=0 speed=7.30 lead_speed=9.25 host_speed=8.27 lead_gap=47.43 host_gap=60.93 lead_gap_t1=47.43 lead_gap_t2=47.43 lead_gap_t3=47.43 host_gap_t1=60.93 host_gap_t2=60.93 host_gap_t3=60.93 rel_to_lead=-1.95 rel_to_host=-0.97 lead_lat=46.81 host_lat=98.51 pending=True accepted=False authorized=False committed=False pending_age=0.50 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [3.5] Merge_Car MCM_TX_REQUEST: manoeuvre=196 target=104
+obu-merge-car-1      | [3.5] Merge_Car MERGE_DECISION: auth=False phys=False fgok=True lgok=True hgok=True cok=True esok=True cready=False dtm=76.6 past=False committed=False hid=104 ra=None lclear=False hyok=True
+obu-merge-car-1      | [3.5] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=7.30 target=7.05 neighbors=4
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=101 manoeuvre=196 retry_count=2 pending_age=1.1 dtm=73.5 own_eta=10.15 host_eta_current=None host_eta_at_request=18.701369466984758 lead_eta_current=None lead_eta_at_request=0.9566960192763324 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=4.1 manoeuvre=196 source=retry_request lead=101 host=104 own_eta=10.15 lead_eta=0.96 host_eta=18.70 min_eta=2.46 max_eta=17.20 desired_eta=10.15 gap_possible=True dtm=73.5 edge=34126779 lane=0 speed=7.24 lead_speed=9.25 host_speed=8.27 lead_gap=46.49 host_gap=48.90 lead_gap_t1=46.49 lead_gap_t2=46.49 lead_gap_t3=46.49 host_gap_t1=48.90 host_gap_t2=48.90 host_gap_t3=48.90 rel_to_lead=-2.01 rel_to_host=-1.03 lead_lat=42.73 host_lat=103.20 pending=True accepted=False authorized=False committed=False pending_age=1.10 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [4.1] Merge_Car MCM_TX_REQUEST: manoeuvre=196 target=104
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=196 host=104 lead=101 event=TIMEOUT t=4.1 edge=34126779 lane=0 lane_cmd_state=NONE speed=7.24 target=6.75 dtm=73.5 lead_gap=46.49 host_gap=48.90 lead_gap_t1=46.49 lead_gap_t2=46.49 lead_gap_t3=46.49 host_gap_t1=48.90 host_gap_t2=48.90 host_gap_t3=48.90
+obu-merge-car-1      | MCM_PENDING_ABANDON_DIAG: vehicle=Merge_Car host=104 lead=101 manoeuvre=196 reason=lost dtm=73.5 own_eta=10.15 host_eta=18.70 lead_eta=0.96 pending_age=1.1 last_mcm_sent_age=0.0 retry_count=2 host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_lane_cmd_state=NONE active_merge_request=False slot_source=pending_request lead_gap=46.49 host_gap=48.90 lead_gap_t1=46.49 lead_gap_t2=46.49 lead_gap_t3=46.49 host_gap_t1=48.90 host_gap_t2=48.90 host_gap_t3=48.90 host_gap_possible=True
+obu-merge-car-1      | [4.1] Merge_Car MCM_PENDING_ABANDON: host=104 lost
+obu-merge-car-1      | [4.1] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-merge-car-1      | [4.1] Merge_Car MERGE_DECISION: auth=False phys=False fgok=False lgok=True hgok=True cok=True esok=True cready=False dtm=73.5 past=False committed=False hid=None ra=None lclear=True hyok=True
+obu-main-back-1      | [4.6] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=196 target=104
+obu-main-back-1      | [4.6] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=196 target=104
+obu-main-back-1      | [4.6] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=196 target=104
+obu-main-front-1     | [4.5] Main_Front role=host state=CRUISE->CRUISE speed=8.46 target=7.50 neighbors=0
+obu-merge-car-1      | [4.3] Merge_Car MERGE_LCLEAR_BLOCK: sid=101 gap=3.3 neighbor_age=0.1 from_memory=False dtm=72.5
+obu-merge-car-1      | [4.3] Merge_Car MERGE_DECISION: auth=False phys=False fgok=True lgok=True hgok=True cok=True esok=True cready=False dtm=72.5 past=False committed=False hid=None ra=None lclear=False hyok=True
+obu-main-lead-1      | [4.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=9.00 target=7.50 neighbors=0
+obu-main-back-1      | HOST_REQUEST_DECISION: host=Main_Back ramp=105 manoeuvre=196 decision=ACCEPT reason=SAFE_OR_NOMINAL ramp_eta=10.64 host_eta=17.17 required_speed=8.59 current_speed=7.67 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=CRUISE
+obu-main-back-1      | [4.8] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-main-back-1      | HOST_RESERVATION_START: host=Main_Back ramp=105 manoeuvre=196 until=8.8 own_speed=7.67 target_speed=7.67 required_speed=7.67 gap_eta=6.53
+obu-main-back-1      | [4.8] Main_Back HOST_RESERVED: merge=105 manoeuvre=196 until=8.8 target_spd=7.67
+obu-main-back-1      | [4.8] Main_Back role=host state=CRUISE->CRUISE speed=7.67 target=7.50 neighbors=4
+obu-main-acceptor-1  | [5.0] Main_Acceptor role=host state=CRUISE->CRUISE speed=7.69 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_NEW t=5.0 manoeuvre=197 source=new_request lead=102 host=103 own_eta=9.59 lead_eta=4.34 host_eta=12.82 min_eta=5.84 max_eta=11.32 desired_eta=9.59 gap_possible=True dtm=68.7 edge=34126779 lane=0 speed=7.16 lead_speed=8.45 host_speed=8.10 lead_gap=41.77 host_gap=35.92 lead_gap_t1=41.77 lead_gap_t2=41.77 lead_gap_t3=41.77 host_gap_t1=35.92 host_gap_t2=35.92 host_gap_t3=35.92 rel_to_lead=-1.29 rel_to_host=-0.94 lead_lat=9.61 host_lat=57.31 pending=True accepted=False authorized=False committed=False pending_age=0.00 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=197 host=103 lead=102 event=REQUEST_SENT t=5.0 edge=34126779 lane=0 lane_cmd_state=NONE speed=7.16 target=6.75 dtm=68.7 lead_gap=41.77 host_gap=35.92 lead_gap_t1=41.77 lead_gap_t2=41.77 lead_gap_t3=41.77 host_gap_t1=35.92 host_gap_t2=35.92 host_gap_t3=35.92
+obu-merge-car-1      | [5.0] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [5.0] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=68.7 past=False committed=False hid=103 ra=None lclear=True hyok=False
+obu-merge-car-1      | [5.0] Merge_Car role=merge state=CRUISE->NEGOTIATING speed=7.16 target=6.91 neighbors=4
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=3.7 own_speed=7.65 target_speed=7.67 ramp_fsm=CRUISE ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [5.1] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [5.1] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-merge-car-1      | [5.2] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=67.5 past=False committed=False hid=103 ra=None lclear=True hyok=False
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=3.4 own_speed=7.63 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [5.4] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [5.4] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-main-front-1     | [5.7] Main_Front role=host state=CRUISE->CRUISE speed=8.04 target=7.50 neighbors=0
+obu-main-lead-1      | [6.1] Main_Lead role=cruise state=CRUISE->CRUISE speed=8.23 target=7.50 neighbors=0
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=103 lead=102 manoeuvre=197 retry_count=1 pending_age=0.8 dtm=64.1 own_eta=9.04 host_eta_current=None host_eta_at_request=12.816529450385914 lead_eta_current=None lead_eta_at_request=4.338655927886634 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=5.8 manoeuvre=197 source=retry_request lead=102 host=103 own_eta=9.04 lead_eta=4.34 host_eta=12.82 min_eta=5.84 max_eta=11.32 desired_eta=9.04 gap_possible=True dtm=64.1 edge=34126779 lane=0 speed=7.09 lead_speed=8.45 host_speed=8.10 lead_gap=36.92 host_gap=22.58 lead_gap_t1=36.92 lead_gap_t2=36.92 lead_gap_t3=36.92 host_gap_t1=22.58 host_gap_t2=22.58 host_gap_t3=22.58 rel_to_lead=-1.36 rel_to_host=-1.01 lead_lat=3.62 host_lat=62.00 pending=True accepted=False authorized=False committed=False pending_age=0.80 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [5.8] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [5.8] Merge_Car MCM_PENDING_HOLD_LATE_HOST: host=103 age=0.0 dtm=64.1 lead_gap=36.92 host_gap=22.58 pending_age=0.8 accepted_at=None reason=lost
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=2.8 own_speed=7.63 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [6.0] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [6.0] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-main-back-1      | [6.0] Main_Back role=host state=YIELDING->YIELDING speed=7.63 target=7.67 neighbors=0
+obu-main-acceptor-1  | [6.3] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=103 lead=102 manoeuvre=197 retry_count=2 pending_age=1.3 dtm=61.3 own_eta=8.70 host_eta_current=11.167193426459026 host_eta_at_request=12.816529450385914 lead_eta_current=3.578521271258088 lead_eta_at_request=4.338655927886634 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=6.3 manoeuvre=197 source=retry_request lead=102 host=103 own_eta=8.70 lead_eta=4.34 host_eta=11.17 min_eta=5.84 max_eta=9.67 desired_eta=8.70 gap_possible=True dtm=61.3 edge=34126779 lane=0 speed=7.05 lead_speed=8.36 host_speed=7.68 lead_gap=35.11 host_gap=21.68 lead_gap_t1=35.11 lead_gap_t2=35.11 lead_gap_t3=35.11 host_gap_t1=21.68 host_gap_t2=21.68 host_gap_t3=21.68 rel_to_lead=-1.31 rel_to_host=-0.63 lead_lat=9.01 host_lat=45.23 pending=True accepted=False authorized=False committed=False pending_age=1.30 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [6.3] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [6.3] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=61.3 past=False committed=False hid=103 ra=None lclear=True hyok=True
+obu-merge-car-1      | [6.3] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=7.05 target=6.80 neighbors=4
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=9.05 host_eta=9.98 required_speed=5.51 current_speed=7.60 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-main-acceptor-1  | [6.3] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=0.93 min_gap_eta=1.50 own_speed=7.60 required_speed=5.51
+obu-main-acceptor-1  | [6.3] Main_Acceptor role=host state=CRUISE->CRUISE speed=7.60 target=7.50 neighbors=4
+obu-merge-car-1      | [6.3] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-main-acceptor-1  | [6.3] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=2.5 own_speed=7.64 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [6.3] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-merge-car-1      | [6.3] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-main-back-1      | [6.3] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-merge-car-1      | [6.3] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=103 lead=102 manoeuvre=197 retry_count=3 pending_age=1.7 dtm=58.7 own_eta=8.46 host_eta_current=11.167193426459026 host_eta_at_request=12.816529450385914 lead_eta_current=2.8077642118557997 lead_eta_at_request=4.338655927886634 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=6.7 manoeuvre=197 source=retry_request lead=102 host=103 own_eta=8.46 lead_eta=4.34 host_eta=11.17 min_eta=5.84 max_eta=9.67 desired_eta=8.46 gap_possible=True dtm=58.7 edge=34126779 lane=0 speed=6.94 lead_speed=8.04 host_speed=7.68 lead_gap=36.30 host_gap=10.47 lead_gap_t1=36.30 lead_gap_t2=36.30 lead_gap_t3=36.30 host_gap_t1=10.47 host_gap_t2=10.47 host_gap_t3=10.47 rel_to_lead=-1.10 rel_to_host=-0.74 lead_lat=8.34 host_lat=49.37 pending=True accepted=False authorized=False committed=False pending_age=1.70 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [6.7] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [6.7] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=58.7 past=False committed=False hid=103 ra=None lclear=True hyok=True
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=9.16 host_eta=9.51 required_speed=5.20 current_speed=7.57 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-main-acceptor-1  | [6.8] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=0.35 min_gap_eta=1.50 own_speed=7.57 required_speed=5.20
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=2.0 own_speed=7.65 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [6.8] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [6.8] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-main-front-1     | [6.9] Main_Front role=lead state=CRUISE->CRUISE speed=7.85 target=7.85 neighbors=4
+obu-main-lead-1      | [7.1] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.94 target=7.50 neighbors=4
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=103 lead=102 manoeuvre=197 retry_count=4 pending_age=2.0 dtm=56.8 own_eta=8.23 host_eta_current=11.167193426459026 host_eta_at_request=12.816529450385914 lead_eta_current=2.8077642118557997 lead_eta_at_request=4.338655927886634 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=7.0 manoeuvre=197 source=retry_request lead=102 host=103 own_eta=8.23 lead_eta=4.34 host_eta=11.17 min_eta=5.84 max_eta=9.67 desired_eta=8.23 gap_possible=True dtm=56.8 edge=34126779 lane=0 speed=6.90 lead_speed=8.04 host_speed=7.68 lead_gap=34.77 host_gap=4.41 lead_gap_t1=34.77 lead_gap_t2=34.77 lead_gap_t3=34.77 host_gap_t1=4.41 host_gap_t2=4.41 host_gap_t3=4.41 rel_to_lead=-1.14 rel_to_host=-0.78 lead_lat=5.06 host_lat=50.41 pending=True accepted=False authorized=False committed=False pending_age=2.00 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [7.0] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [7.0] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=56.8 past=False committed=False hid=103 ra=None lclear=True hyok=True
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=9.16 host_eta=9.13 required_speed=4.98 current_speed=7.56 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-main-acceptor-1  | [7.2] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=-0.03 min_gap_eta=1.50 own_speed=7.56 required_speed=4.98
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=1.5 own_speed=7.65 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [7.3] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [7.3] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-main-back-1      | [7.3] Main_Back role=host state=YIELDING->YIELDING speed=7.65 target=7.67 neighbors=4
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=103 lead=102 manoeuvre=197 retry_count=5 pending_age=2.5 dtm=53.7 own_eta=7.82 host_eta_current=None host_eta_at_request=12.816529450385914 lead_eta_current=None lead_eta_at_request=4.338655927886634 last_response_action=None last_response_age=None host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=7.5 manoeuvre=197 source=retry_request lead=102 host=103 own_eta=7.82 lead_eta=4.34 host_eta=12.82 min_eta=5.84 max_eta=11.32 desired_eta=7.82 gap_possible=True dtm=53.7 edge=34126779 lane=0 speed=6.87 lead_speed=8.04 host_speed=7.68 lead_gap=31.33 host_gap=0.97 lead_gap_t1=31.33 lead_gap_t2=31.33 lead_gap_t3=31.33 host_gap_t1=0.97 host_gap_t2=0.97 host_gap_t3=0.97 rel_to_lead=-1.17 rel_to_host=-0.81 lead_lat=5.06 host_lat=50.41 pending=True accepted=False authorized=False committed=False pending_age=2.50 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [7.5] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [7.5] Merge_Car MCM_PENDING_HOLD_LATE_HOST: host=103 age=0.0 dtm=53.7 lead_gap=31.33 host_gap=0.97 pending_age=2.5 accepted_at=None reason=lost
+obu-merge-car-1      | [7.5] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.87 target=6.38 neighbors=0
+obu-main-acceptor-1  | [7.5] Main_Acceptor role=host state=CRUISE->CRUISE speed=7.55 target=7.50 neighbors=0
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=196 remaining=0.9 own_speed=7.66 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [7.9] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [7.9] Main_Back MCM_TX_ACCEPT: manoeuvre=196 target=105
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-main-acceptor-1  | [7.9] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-main-front-1     | [7.9] Main_Front role=lead state=CRUISE->CRUISE speed=7.86 target=7.86 neighbors=4
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-main-acceptor-1  | [7.9] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-merge-car-1      | [7.8] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-main-acceptor-1  | [7.9] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=103 lead=102 manoeuvre=197 retry_count=6 pending_age=2.9 dtm=51.2 own_eta=7.48 host_eta_current=9.006675329298075 host_eta_at_request=12.816529450385914 lead_eta_current=1.672413266746981 lead_eta_at_request=4.338655927886634 last_response_action=3 last_response_age=0.10000000000000053 host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=False host_remote_active_station_id=None host_remote_active_manoeuvre_id=None host_remote_active_remaining_s=0.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=7.9 manoeuvre=197 source=retry_request lead=102 host=103 own_eta=7.48 lead_eta=4.34 host_eta=9.01 min_eta=5.84 max_eta=7.51 desired_eta=7.48 gap_possible=True dtm=51.2 edge=34126779 lane=0 speed=6.85 lead_speed=7.85 host_speed=8.00 lead_gap=33.57 host_gap=3.52 lead_gap_t1=33.57 lead_gap_t2=33.57 lead_gap_t3=33.57 host_gap_t1=3.52 host_gap_t2=3.52 host_gap_t3=3.52 rel_to_lead=-1.00 rel_to_host=-1.15 lead_lat=11.96 host_lat=38.83 pending=True accepted=False authorized=False committed=False pending_age=2.90 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=8.12 host_eta=8.35 required_speed=4.91 current_speed=7.54 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-merge-car-1      | [7.9] Merge_Car MCM_TX_REQUEST: manoeuvre=197 target=103
+obu-merge-car-1      | [7.9] Merge_Car MCM_REJECT: host=103 manoeuvre=197
+obu-main-acceptor-1  | [8.0] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=0.24 min_gap_eta=1.50 own_speed=7.54 required_speed=4.91
+obu-main-lead-1      | [8.2] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.75 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_NEW t=8.2 manoeuvre=198 source=new_request lead=None host=104 own_eta=7.23 lead_eta=None host_eta=14.09 min_eta=None max_eta=12.59 desired_eta=7.23 gap_possible=True dtm=49.3 edge=34126779 lane=0 speed=6.82 lead_speed=None host_speed=8.00 lead_gap=None host_gap=16.05 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=14.86 host_gap_t2=13.68 host_gap_t3=12.50 rel_to_lead=None rel_to_host=1.18 lead_lat=None host_lat=72.68 pending=True accepted=False authorized=False committed=False pending_age=0.00 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=REQUEST_SENT t=8.2 edge=34126779 lane=0 lane_cmd_state=NONE speed=6.82 target=6.75 dtm=49.3 lead_gap= host_gap=16.05 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=14.86 host_gap_t2=13.68 host_gap_t3=12.50
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=8.12 host_eta=8.06 required_speed=4.74 current_speed=7.53 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-merge-car-1      | [8.2] Merge_Car MCM_TX_REQUEST: manoeuvre=198 target=104
+obu-main-acceptor-1  | [8.3] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=-0.06 min_gap_eta=1.50 own_speed=7.53 required_speed=4.88
+obu-merge-car-1      | [8.2] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=49.3 past=False committed=False hid=104 ra=None lclear=True hyok=True
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=8.12 host_eta=7.57 required_speed=4.44 current_speed=7.53 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=None manoeuvre=198 retry_count=1 pending_age=0.6 dtm=45.4 own_eta=6.70 host_eta_current=None host_eta_at_request=14.085760115594347 lead_eta_current=None lead_eta_at_request=None last_response_action=None last_response_age=None host_remote_fsm=YIELDING host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=True host_remote_active_station_id=105 host_remote_active_manoeuvre_id=196 host_remote_active_remaining_s=0.9000000000000004
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=8.8 manoeuvre=198 source=retry_request lead=None host=104 own_eta=6.70 lead_eta=None host_eta=14.09 min_eta=None max_eta=12.59 desired_eta=6.70 gap_possible=True dtm=45.4 edge=34126779 lane=0 speed=6.78 lead_speed=None host_speed=8.00 lead_gap=None host_gap=24.51 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=23.30 host_gap_t2=22.08 host_gap_t3=20.87 rel_to_lead=None rel_to_host=1.22 lead_lat=None host_lat=71.29 pending=True accepted=False authorized=False committed=False pending_age=0.60 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-main-acceptor-1  | [8.8] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=-0.55 min_gap_eta=1.50 own_speed=7.53 required_speed=4.88
+obu-main-acceptor-1  | [8.8] Main_Acceptor role=host state=CRUISE->CRUISE speed=7.53 target=7.50 neighbors=4
+obu-merge-car-1      | [8.8] Merge_Car MCM_TX_REQUEST: manoeuvre=198 target=104
+obu-merge-car-1      | [8.8] Merge_Car MCM_PENDING_HOLD_LATE_HOST: host=104 age=0.0 dtm=45.4 lead_gap=None host_gap=24.51 pending_age=0.6 accepted_at=None reason=lost
+obu-merge-car-1      | [8.8] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.78 target=6.38 neighbors=0
+obu-merge-car-1      | [9.0] Merge_Car MCM_PENDING_HOLD_LATE_HOST: host=104 age=0.2 dtm=44.2 lead_gap=None host_gap=25.87 pending_age=0.8 accepted_at=None reason=lost
+obu-main-acceptor-1  | [9.5] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-main-front-1     | [9.5] Main_Front role=lead state=CRUISE->CRUISE speed=7.86 target=7.86 neighbors=3
+obu-merge-car-1      | [9.5] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=196 target=105
+obu-main-back-1      | [9.5] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=198 target=104
+obu-main-acceptor-1  | [9.5] Main_Acceptor MCM_RX_REQUEST: from=105 manoeuvre=197 target=103
+obu-merge-car-1      | [9.5] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-merge-car-1      | [9.5] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-merge-car-1      | [9.5] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-main-lead-1      | [9.6] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.62 target=7.50 neighbors=4
+obu-main-back-1      | HOST_MANOEUVRE_ID_UPDATE: host=Main_Back ramp=105 old_mid=196 new_mid=198
+obu-main-back-1      | HOST_RELEASE_BEFORE_CLEAR: host=Main_Back ramp=105 manoeuvre=198 reason=timeout ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | HOST_REQUEST_DECISION: host=Main_Back ramp=105 manoeuvre=198 decision=ACCEPT reason=SAFE_OR_NOMINAL ramp_eta=7.04 host_eta=12.50 required_speed=8.16 current_speed=7.67 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-main-back-1      | [9.5] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | HOST_RESERVATION_START: host=Main_Back ramp=105 manoeuvre=198 until=13.5 own_speed=7.67 target_speed=7.67 required_speed=7.67 gap_eta=5.46
+obu-main-back-1      | [9.5] Main_Back HOST_RESERVED: merge=105 manoeuvre=198 until=13.5 target_spd=7.67
+obu-main-back-1      | [9.5] Main_Back role=host state=YIELDING->CRUISE speed=7.67 target=7.50 neighbors=4
+obu-main-back-1      | [9.5] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=198 target=104
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=6.70 host_eta=6.78 required_speed=4.47 current_speed=7.52 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=None manoeuvre=198 retry_count=2 pending_age=1.4 dtm=40.3 own_eta=6.02 host_eta_current=13.511611657302343 host_eta_at_request=14.085760115594347 lead_eta_current=None lead_eta_at_request=None last_response_action=2 last_response_age=0.09999999999999964 host_remote_fsm=YIELDING host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=True host_remote_active_station_id=105 host_remote_active_manoeuvre_id=196 host_remote_active_remaining_s=0.9000000000000004
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=9.6 manoeuvre=198 source=retry_request lead=None host=104 own_eta=6.02 lead_eta=None host_eta=13.51 min_eta=None max_eta=12.01 desired_eta=6.02 gap_possible=True dtm=40.3 edge=34126779 lane=0 speed=6.70 lead_speed=None host_speed=8.00 lead_gap=None host_gap=31.04 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=29.75 host_gap_t2=28.45 host_gap_t3=27.15 rel_to_lead=None rel_to_host=1.30 lead_lat=None host_lat=65.96 pending=True accepted=False authorized=False committed=False pending_age=1.40 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-main-acceptor-1  | [9.6] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=0.08 min_gap_eta=1.50 own_speed=7.52 required_speed=4.88
+obu-merge-car-1      | [9.6] Merge_Car MCM_TX_REQUEST: manoeuvre=198 target=104
+obu-merge-car-1      | [9.6] Merge_Car MCM_ACCEPT_WRONG_MANOEUVRE: host=104 got=196 expected=198
+obu-merge-car-1      | [9.6] Merge_Car MERGE_LCLEAR_BLOCK: sid=102 gap=5.3 neighbor_age=0.1 from_memory=False dtm=40.3
+obu-merge-car-1      | [9.6] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=40.3 past=False committed=False hid=104 ra=None lclear=False hyok=True
+obu-merge-car-1      | [9.6] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=None lane_cmd_edge=None lane_cmd_target=None lane_cmd_executable=None same_lane=False reason=merge_conflict_eta gap=1.1 follow_spd=4.68 emergency=False target_before=6.75 target_after=6.4532407503990425 target_after_raw=4.68
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=3.5 own_speed=7.67 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [10.0] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [10.0] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=6.70 host_eta=6.48 required_speed=4.27 current_speed=7.52 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-main-acceptor-1  | [9.9] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=-0.22 min_gap_eta=1.50 own_speed=7.52 required_speed=4.88
+obu-main-acceptor-1  | [9.9] Main_Acceptor role=host state=CRUISE->CRUISE speed=7.52 target=7.50 neighbors=4
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=None manoeuvre=198 retry_count=3 pending_age=1.8 dtm=37.7 own_eta=5.68 host_eta_current=13.511611657302343 host_eta_at_request=14.085760115594347 lead_eta_current=None lead_eta_at_request=None last_response_action=2 last_response_age=0.5 host_remote_fsm=YIELDING host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=True host_remote_active_station_id=105 host_remote_active_manoeuvre_id=196 host_remote_active_remaining_s=0.9000000000000004
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=10.0 manoeuvre=198 source=retry_request lead=None host=104 own_eta=5.68 lead_eta=None host_eta=13.51 min_eta=None max_eta=12.01 desired_eta=5.68 gap_possible=True dtm=37.7 edge=34126779 lane=0 speed=6.64 lead_speed=None host_speed=8.00 lead_gap=None host_gap=40.80 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=39.44 host_gap_t2=38.09 host_gap_t3=36.73 rel_to_lead=None rel_to_host=1.36 lead_lat=None host_lat=61.66 pending=True accepted=False authorized=False committed=False pending_age=1.80 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [10.0] Merge_Car MCM_TX_REQUEST: manoeuvre=198 target=104
+obu-merge-car-1      | [10.0] Merge_Car MCM_ACCEPT_WRONG_MANOEUVRE: host=104 got=196 expected=198
+obu-merge-car-1      | [10.0] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=37.7 past=False committed=False hid=104 ra=None lclear=False hyok=True
+obu-merge-car-1      | [10.0] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=None lane_cmd_edge=None lane_cmd_target=None lane_cmd_executable=None same_lane=False reason=merge_conflict_eta gap=1.4 follow_spd=4.38 emergency=False target_before=6.75 target_after=6.3923541427047095 target_after_raw=4.38
+obu-merge-car-1      | [10.0] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.64 target=6.39 neighbors=4
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=3.0 own_speed=7.64 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [10.5] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [10.5] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | [10.5] Main_Back role=host state=YIELDING->YIELDING speed=7.64 target=7.67 neighbors=4
+obu-main-acceptor-1  | HOST_REQUEST_DECISION: host=Main_Acceptor ramp=105 manoeuvre=197 decision=REJECT reason=LATE_GAP ramp_eta=6.70 host_eta=5.98 required_speed=3.94 current_speed=7.51 active_request_ramp=None active_request_remaining=0.0 ramp_remote_edge=34126779 ramp_remote_lane=0 ramp_remote_fsm=NEGOTIATING
+obu-main-acceptor-1  | [10.4] Main_Acceptor MCM_TX_REJECT: manoeuvre=197 target=105
+obu-main-acceptor-1  | HOST_LATE_GAP_REJECT: host=Main_Acceptor ramp=105 manoeuvre=197 gap_eta=-0.72 min_gap_eta=1.50 own_speed=7.51 required_speed=4.88
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=None manoeuvre=198 retry_count=4 pending_age=2.4 dtm=33.9 own_eta=5.14 host_eta_current=None host_eta_at_request=14.085760115594347 lead_eta_current=None lead_eta_at_request=None last_response_action=2 last_response_age=1.0999999999999996 host_remote_fsm=CRUISE host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=True host_remote_active_station_id=105 host_remote_active_manoeuvre_id=198 host_remote_active_remaining_s=4.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=10.6 manoeuvre=198 source=retry_request lead=None host=104 own_eta=5.14 lead_eta=None host_eta=14.09 min_eta=None max_eta=12.59 desired_eta=5.14 gap_possible=True dtm=33.9 edge=34126779 lane=0 speed=6.59 lead_speed=None host_speed=8.00 lead_gap=None host_gap=45.76 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=44.35 host_gap_t2=42.94 host_gap_t3=41.53 rel_to_lead=None rel_to_host=1.41 lead_lat=None host_lat=60.92 pending=True accepted=False authorized=False committed=False pending_age=2.40 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [10.6] Merge_Car MCM_TX_REQUEST: manoeuvre=198 target=104
+obu-merge-car-1      | [10.6] Merge_Car MCM_ACCEPT_STALE: host=104 manoeuvre=196
+obu-merge-car-1      | [10.6] Merge_Car MCM_PENDING_HOLD_LATE_HOST: host=104 age=0.0 dtm=33.9 lead_gap=None host_gap=45.76 pending_age=2.4 accepted_at=None reason=lost
+obu-main-back-1      | [10.9] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=198 target=104
+obu-merge-car-1      | [10.9] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-back-1      | [10.9] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=198 target=104
+obu-merge-car-1      | [10.9] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-back-1      | [10.9] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=198 target=104
+obu-merge-car-1      | [10.9] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-merge-car-1      | [10.9] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-merge-car-1      | [10.9] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-merge-car-1      | [10.9] Merge_Car MCM_RX_REJECT: from=103 manoeuvre=197 target=105
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=2.5 own_speed=7.64 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=False
+obu-main-back-1      | [11.0] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [11.0] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-front-1     | [11.0] Main_Front role=cruise state=CRUISE->CRUISE speed=7.86 target=7.50 neighbors=4
+obu-main-acceptor-1  | [11.0] Main_Acceptor role=host state=CRUISE->CRUISE speed=7.51 target=7.50 neighbors=4
+obu-merge-car-1      | MCM_REQUEST_RETRY_DIAG: vehicle=Merge_Car host=104 lead=None manoeuvre=198 retry_count=5 pending_age=2.8 dtm=31.3 own_eta=4.77 host_eta_current=11.021230536163149 host_eta_at_request=14.085760115594347 lead_eta_current=None lead_eta_at_request=None last_response_action=2 last_response_age=0.09999999999999964 host_remote_fsm=YIELDING host_remote_edge=560761994 host_remote_lane=0 host_remote_merge_committed=False host_remote_merge_completed=False host_remote_active_merge_request=True host_remote_active_station_id=105 host_remote_active_manoeuvre_id=198 host_remote_active_remaining_s=3.0
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=REQUEST_RETRY t=11.0 manoeuvre=198 source=retry_request lead=None host=104 own_eta=4.77 lead_eta=None host_eta=11.02 min_eta=None max_eta=9.52 desired_eta=4.77 gap_possible=True dtm=31.3 edge=34126779 lane=0 speed=6.56 lead_speed=None host_speed=8.00 lead_gap=None host_gap=33.95 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=32.50 host_gap_t2=31.06 host_gap_t3=29.61 rel_to_lead=None rel_to_host=1.44 lead_lat=None host_lat=47.46 pending=True accepted=False authorized=False committed=False pending_age=2.80 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [11.0] Merge_Car MCM_TX_REQUEST: manoeuvre=198 target=104
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=ACCEPT_MATCHED t=11.0 edge=34126779 lane=0 lane_cmd_state=NONE speed=6.56 target=6.75 dtm=31.3 lead_gap= host_gap=33.95 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=32.50 host_gap_t2=31.06 host_gap_t3=29.61
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=ACCEPT_MATCHED t=11.0 manoeuvre=198 source=accept_matched lead=None host=104 own_eta=4.77 lead_eta=None host_eta=11.02 min_eta=None max_eta=9.52 desired_eta=4.77 gap_possible=True dtm=31.3 edge=34126779 lane=0 speed=6.56 lead_speed=None host_speed=8.00 lead_gap=None host_gap=33.95 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=32.50 host_gap_t2=31.06 host_gap_t3=29.61 rel_to_lead=None rel_to_host=1.44 lead_lat=None host_lat=47.46 pending=True accepted=False authorized=False committed=False pending_age=2.80 accepted_age=None lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [11.0] Merge_Car MCM_ACCEPT_MATCHED: host=104 manoeuvre=198
+obu-merge-car-1      | [11.0] Merge_Car MERGE_LCLEAR_BLOCK: sid=102 gap=6.3 neighbor_age=0.1 from_memory=False dtm=31.3
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=ACCEPTED_WAIT_SLOT_VALID t=11.0 manoeuvre=198 source=pending_request lead=102 host=104 own_eta=4.77 lead_eta=0.96 host_eta=11.02 min_eta=2.46 max_eta=9.52 desired_eta=4.77 gap_possible=True dtm=31.3 edge=34126779 lane=0 speed=6.56 lead_speed=7.85 host_speed=8.00 lead_gap=30.50 host_gap=33.95 lead_gap_t1=30.50 lead_gap_t2=30.50 lead_gap_t3=30.50 host_gap_t1=32.50 host_gap_t2=31.06 host_gap_t3=29.61 rel_to_lead=-1.29 rel_to_host=1.44 lead_lat=13.66 host_lat=47.46 pending=True accepted=True authorized=False committed=False pending_age=2.80 accepted_age=0.00 lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [11.0] Merge_Car MERGE_ACCEPTED_WAIT_SLOT_VALID: reason=lclear=False
+obu-merge-car-1      | [11.0] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=31.3 past=False committed=False hid=104 ra=2 lclear=False hyok=True
+obu-merge-car-1      | [11.0] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=None lane_cmd_edge=None lane_cmd_target=None lane_cmd_executable=None same_lane=False reason=merge_conflict_eta gap=0.8 follow_spd=4.40 emergency=False target_before=6.73532041231695 target_after=6.30532041231695 target_after_raw=4.40
+obu-merge-car-1      | [11.0] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.56 target=6.31 neighbors=4
+obu-main-lead-1      | [11.0] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.56 target=7.50 neighbors=4
+obu-merge-car-1      | [11.2] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=30.0 past=False committed=False hid=104 ra=2 lclear=False hyok=True
+obu-merge-car-1      | [11.2] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=None lane_cmd_edge=None lane_cmd_target=None lane_cmd_executable=None same_lane=False reason=merge_conflict_eta gap=1.0 follow_spd=4.22 emergency=False target_before=6.7177391721160475 target_after=6.287739172116048 target_after_raw=4.22
+obu-merge-car-1      | [11.6] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=27.5 past=False committed=False hid=104 ra=2 lclear=False hyok=True
+obu-merge-car-1      | [11.6] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=None lane_cmd_edge=None lane_cmd_target=None lane_cmd_executable=None same_lane=False reason=merge_conflict_eta gap=1.4 follow_spd=4.12 emergency=False target_before=6.677614021615052 target_after=6.247614021615052 target_after_raw=4.12
+obu-merge-car-1      | [11.9] Merge_Car MERGE_DECISION: auth=False phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=25.6 past=False committed=False hid=104 ra=2 lclear=False hyok=True
+obu-merge-car-1      | [11.9] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=None lane_cmd_edge=None lane_cmd_target=None lane_cmd_executable=None same_lane=False reason=merge_conflict_eta gap=1.7 follow_spd=4.12 emergency=False target_before=6.648473974669322 target_after=6.2184739746693225 target_after_raw=4.12
+obu-main-lead-1      | [12.1] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.53 target=7.50 neighbors=0
+obu-merge-car-1      | [12.3] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-back-1      | [12.4] Main_Back MCM_RX_REQUEST: from=105 manoeuvre=198 target=104
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=AUTHORIZED t=12.4 edge=34126779 lane=0 lane_cmd_state=NONE speed=6.42 target=6.60 dtm=22.3 lead_gap= host_gap=49.48 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=47.90 host_gap_t2=46.32 host_gap_t3=44.75
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=AUTHORIZED t=12.4 manoeuvre=198 source=pending_request lead=None host=104 own_eta=3.48 lead_eta=None host_eta=10.54 min_eta=None max_eta=9.04 desired_eta=3.48 gap_possible=True dtm=22.3 edge=34126779 lane=0 speed=6.42 lead_speed=None host_speed=8.00 lead_gap=None host_gap=49.48 lead_gap_t1=None lead_gap_t2=None lead_gap_t3=None host_gap_t1=47.90 host_gap_t2=46.32 host_gap_t3=44.75 rel_to_lead=None rel_to_host=1.58 lead_lat=None host_lat=34.75 pending=True accepted=True authorized=True committed=False pending_age=4.20 accepted_age=0.00 lane_cmd_state=NONE lane_cmd_target=None
+obu-merge-car-1      | [12.4] Merge_Car MERGE_AUTHORIZED_BY_MCM: host=104 manoeuvre=198
+obu-merge-car-1      | [12.4] Merge_Car MERGE_DECISION: auth=True phys=True fgok=True lgok=True hgok=True cok=True esok=True cready=True dtm=22.3 past=False committed=False hid=104 ra=2 lclear=True hyok=True
+obu-merge-car-1      | [12.4] Merge_Car MERGE_PREPARE_WAIT_LANE_AVAILABLE: edge=None lane=None target_lane=None lane_count=None executable=None dtm=22.3 speed=6.42 host=104 lead=None
+obu-merge-car-1      | [12.4] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.42 target=6.60 neighbors=4
+obu-main-back-1      | HOST_RESERVATION_EXTEND_UNTIL_CLEAR: host=Main_Back ramp=105 manoeuvre=198 new_remaining=4.0 ramp_lcs=NONE ramp_edge=34126779
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=4.0 own_speed=7.66 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=NONE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [13.2] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [13.2] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | [13.2] Main_Back role=host state=YIELDING->YIELDING speed=7.66 target=7.67 neighbors=4
+obu-main-front-1     | [13.2] Main_Front role=cruise state=CRUISE->CRUISE speed=7.63 target=7.50 neighbors=4
+obu-main-acceptor-1  | [13.2] Main_Acceptor role=lead state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [13.1] Merge_Car MERGE_LANE_WAIT_EDGE_CONFIRMED: edge=34126779 lane=0 target_lane=1 lane_count=1 executable=False
+obu-merge-car-1      | [13.3] Merge_Car MERGE_PREPARE_WAIT_LANE_AVAILABLE: edge=34126779 lane=0 target_lane=1 lane_count=1 executable=False dtm=16.6 speed=6.39 host=104 lead=None
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=WAIT_EDGE t=13.3 edge=34126779 lane=0 lane_cmd_state=WAIT_EDGE speed=6.39 target=6.75 dtm=16.6 lead_gap= host_gap=57.29 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=55.68 host_gap_t2=54.07 host_gap_t3=52.46
+obu-main-lead-1      | [13.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.52 target=7.50 neighbors=4
+obu-merge-car-1      | [13.6] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.42 target=6.60 neighbors=0
+obu-merge-car-1      | [14.1] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-merge-car-1      | [14.2] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=WAIT_EDGE lane_cmd_edge=34126779 lane_cmd_target=1 lane_cmd_executable=False same_lane=False reason=merge_conflict_eta gap=1.5 follow_spd=4.12 emergency=False target_before=6.636192573175093 target_after=6.206192573175093 target_after_raw=4.12
+obu-main-lead-1      | [14.6] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.51 target=7.50 neighbors=4
+obu-merge-car-1      | [14.5] Merge_Car MERGE_PREPARE_WAIT_LANE_AVAILABLE: edge=34126779 lane=0 target_lane=1 lane_count=1 executable=False dtm=9.3 speed=6.47 host=104 lead=None
+obu-merge-car-1      | [14.5] Merge_Car CAR_FOLLOW: sid=103 edge=34126779 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=WAIT_EDGE lane_cmd_edge=34126779 lane_cmd_target=1 lane_cmd_executable=False same_lane=False reason=merge_conflict_eta gap=1.8 follow_spd=4.12 emergency=False target_before=6.654983666940804 target_after=6.224983666940804 target_after_raw=4.12
+obu-main-back-1      | HOST_RESERVATION_EXTEND_UNTIL_CLEAR: host=Main_Back ramp=105 manoeuvre=198 new_remaining=4.0 ramp_lcs=WAIT_EDGE ramp_edge=34126779
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=4.0 own_speed=7.66 target_speed=7.67 ramp_fsm=NEGOTIATING ramp_lane_cmd_state=WAIT_EDGE ramp_edge=34126779 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [15.1] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-front-1     | [15.1] Main_Front role=cruise state=CRUISE->CRUISE speed=7.55 target=7.50 neighbors=4
+obu-main-back-1      | [15.1] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | [15.1] Main_Back role=host state=YIELDING->YIELDING speed=7.66 target=7.67 neighbors=3
+obu-main-acceptor-1  | [15.1] Main_Acceptor role=lead state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [15.0] Merge_Car role=merge state=NEGOTIATING->NEGOTIATING speed=6.45 target=6.63 neighbors=4
+obu-merge-car-1      | [15.5] Merge_Car MERGE_LANE_WAIT_EDGE_CONFIRMED: edge=:390064918_0 lane=0 target_lane=1 lane_count=1 executable=False
+obu-merge-car-1      | [15.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-lead-1      | [15.9] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [15.9] Merge_Car MERGE_PREPARE_WAIT_LANE_AVAILABLE: edge=:390064918_0 lane=0 target_lane=1 lane_count=1 executable=False dtm=5.0 speed=6.44 host=104 lead=None
+obu-merge-car-1      | [15.9] Merge_Car FINAL_GUARD: REJECTED sid=103 gap=9.9 ttc_danger=False
+obu-merge-car-1      | [15.9] Merge_Car MERGE_COMMIT_SAFETY_HOLD: lgok=True hgok=True fgok=False edge=:390064918_0 lane=0 target_lane=1 speed=6.44 lane_cmd_state=WAIT_EDGE lane_cmd_executable=False lane_cmd_edge=:390064918_0 lane_cmd_lane_count=1
+obu-merge-car-1      | [15.9] Merge_Car CAR_FOLLOW: sid=103 edge=:390064918_0 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=WAIT_EDGE lane_cmd_edge=:390064918_0 lane_cmd_target=1 lane_cmd_executable=False same_lane=False reason=merge_conflict_eta gap=0.3 follow_spd=4.12 emergency=False target_before=2.25 target_after=6.188731703183512 target_after_raw=4.12
+obu-merge-car-1      | [16.0] Merge_Car MERGE_LANE_APPLY_CONFIRMED: edge=1331698336 lane=0 target_lane=1 lane_count=3 executable=True
+obu-main-acceptor-1  | [16.1] Main_Acceptor role=lead state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [16.2] Merge_Car MERGE_PHYSICAL_START_DELAYED_UNTIL_LANE_APPLY: waited_s=3.8 edge=1331698336 lane=0 target_lane=1 lane_count=3 lane_cmd_state=APPLY executable=True dtm=5.8 speed=6.46 reason=apply_seen
+obu-merge-car-1      | [16.2] Merge_Car MERGE_START_GAP_DIAG: event=apply_seen lead=None host=104 lead_eta=None own_eta=0.893780078762573 host_eta=6.621921646641031 lead_gap=None host_gap=51.58863055075213 lead_gap_p1=None lead_gap_p2=None lead_gap_p3=None host_gap_p1=50.04955798769057 host_gap_p2=48.51048542462901 host_gap_p3=46.97141286156745 rel_to_lead=None rel_to_host=1.5390725630615583 lead_lat=None host_lat=4.284740237173462 edge=1331698336 lane=0 lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True dtm=5.8 speed=6.46
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=PHYSICAL_START t=16.2 edge=1331698336 lane=0 lane_cmd_state=APPLY speed=6.46 target=6.75 dtm=5.8 lead_gap= host_gap=51.59 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=50.05 host_gap_t2=48.51 host_gap_t3=46.97
+obu-merge-car-1      | [16.2] Merge_Car MERGE_PHYSICAL_START: host=104 manoeuvre=198
+obu-merge-car-1      | [16.2] Merge_Car MERGING!
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=APPLY t=16.2 edge=1331698336 lane=0 lane_cmd_state=APPLY speed=6.46 target=6.75 dtm=5.8 lead_gap= host_gap=51.59 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=50.05 host_gap_t2=48.51 host_gap_t3=46.97
+obu-merge-car-1      | [16.2] Merge_Car MERGE_COMMIT_LANE_APPLY_ACTIVE: edge=1331698336 lane=0 target_lane=1 lane_count=3 executable=True speed=6.46 dtm=5.8
+obu-merge-car-1      | [16.2] Merge_Car CAR_FOLLOW: sid=103 edge=1331698336 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True same_lane=False reason=merge_conflict_eta gap=0.2 follow_spd=4.12 emergency=False target_before=6.75 target_after=6.210927436938442 target_after_raw=4.12
+obu-merge-car-1      | [16.2] Merge_Car role=merge state=NEGOTIATING->MERGING speed=6.46 target=6.21 neighbors=4
+obu-merge-car-1      | [16.5] Merge_Car CAR_FOLLOW: sid=103 edge=1331698336 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True same_lane=False reason=merge_conflict_eta gap=0.0 follow_spd=4.12 emergency=False target_before=6.75 target_after=6.190409259356017 target_after_raw=4.12
+obu-main-front-1     | [17.0] Main_Front role=cruise state=CRUISE->CRUISE speed=7.52 target=7.50 neighbors=0
+obu-main-back-1      | HOST_RESERVATION_EXTEND_UNTIL_CLEAR: host=Main_Back ramp=105 manoeuvre=198 new_remaining=2.6 ramp_lcs=APPLY ramp_edge=1331698336
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=2.6 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [16.9] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [16.9] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | [16.9] Main_Back role=host state=YIELDING->YIELDING speed=7.67 target=7.67 neighbors=0
+obu-merge-car-1      | [17.3] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=2.5 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [17.0] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-lead-1      | [17.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [17.4] Merge_Car role=merge state=MERGING->MERGING speed=6.35 target=6.75 neighbors=4
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=1.8 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [17.7] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [17.7] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=1.6 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [17.9] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [17.9] Main_Back role=host state=YIELDING->YIELDING speed=7.67 target=7.67 neighbors=4
+obu-main-acceptor-1  | [18.1] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [18.3] Main_Front role=cruise state=CRUISE->CRUISE speed=7.51 target=7.50 neighbors=2
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=1.2 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [18.3] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [18.3] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-lead-1      | [18.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [18.4] Merge_Car role=merge state=MERGING->MERGING speed=6.49 target=6.75 neighbors=0
+traci-bridge-1       |  Retrying in 1 seconds
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.37
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.38
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.39
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.40
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.41
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.42
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.42
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.43
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.44
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.44
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.45
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.46
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.46
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.47
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.47
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.48
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.49
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.47
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.46
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.45
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.43
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.42
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.41
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1 recently=False speed=6.40
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=34126779 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1 recently=False speed=6.40
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1 recently=False speed=6.41
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1 recently=False speed=6.42
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1 recently=False speed=6.43
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1 recently=False speed=6.44
+traci-bridge-1       | LANE_CMD_WAIT_EDGE veh=Merge_Car edge=:390064918_0 lane=0 target=1 lane_count=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=False speed=6.45
+traci-bridge-1       | LANE_CMD_APPLY veh=Merge_Car edge=1331698336 from_lane=0 target=1 duration=2.00 mode=256 speed=6.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.46
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.47
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.44
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.43
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.42
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.41
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.40
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.39
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.38
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.37
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.36
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.35
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.34
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.36
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.38
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.40
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.42
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.44
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.47
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.48
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.49
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.51
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.52
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.53
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.54
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.55
+obu-merge-car-1      | [18.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-merge-car-1      | [18.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=0.8 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [18.7] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [18.7] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.56 target=6.75 rear_speed=7.50 rear_gap=2.37 rear_gap_t1=1.44 rear_gap_t2=0.50 rear_gap_t3=0.00 rear_closing=0.94 closing_ttc=2.53 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=21.8
+obu-merge-car-1      | [19.0] Merge_Car CAR_FOLLOW: sid=104 edge=1331698336 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True same_lane=False reason=merge_conflict_eta gap=0.4 follow_spd=4.17 emergency=False target_before=6.75 target_after=6.311479844276493 target_after_raw=4.17
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=0.4 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [19.1] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [19.1] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-back-1      | [19.1] Main_Back role=host state=YIELDING->YIELDING speed=7.67 target=7.67 neighbors=4
+obu-merge-car-1      | [19.2] Merge_Car CAR_FOLLOW: sid=104 edge=1331698336 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True same_lane=False reason=merge_conflict_eta gap=0.2 follow_spd=4.42 emergency=False target_before=6.75 target_after=6.329860559459535 target_after_raw=4.42
+obu-main-front-1     | [19.4] Main_Front role=cruise state=CRUISE->CRUISE speed=7.51 target=7.50 neighbors=4
+obu-main-acceptor-1  | [19.6] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | HOST_RESERVATION_HOLD: host=Main_Back ramp=105 manoeuvre=198 remaining=0.0 own_speed=7.67 target_speed=7.67 ramp_fsm=MERGING ramp_lane_cmd_state=APPLY ramp_edge=1331698336 ramp_lane=0 ramp_merge_completed=False ramp_merge_committed=True
+obu-main-back-1      | [19.5] Main_Back HOST_HOLD_YIELD: for merge=105 spd=7.67
+obu-main-back-1      | [19.5] Main_Back MCM_TX_ACCEPT: manoeuvre=198 target=105
+obu-main-lead-1      | [19.6] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.55 target=6.75 rear_speed=7.50 rear_gap=6.32 rear_gap_t1=5.37 rear_gap_t2=4.42 rear_gap_t3=3.46 rear_closing=0.95 closing_ttc=6.64 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=25.6
+obu-merge-car-1      | [19.6] Merge_Car CAR_FOLLOW: sid=104 edge=1331698336 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True same_lane=False reason=merge_conflict_eta gap=0.2 follow_spd=4.91 emergency=False target_before=6.75 target_after=6.298876425098222 target_after_raw=4.91
+obu-merge-car-1      | [19.6] Merge_Car role=merge state=MERGING->MERGING speed=6.55 target=6.30 neighbors=4
+obu-merge-car-1      | [19.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-merge-car-1      | [19.8] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-main-back-1      | HOST_RESERVATION_RELEASE_MAX_TIMEOUT: host=Main_Back ramp=105 manoeuvre=198 duration=10.3 ramp_fsm=MERGING ramp_lcs=APPLY ramp_edge=1331698336 ramp_merge_completed=False
+obu-merge-car-1      | [19.9] Merge_Car CAR_FOLLOW: sid=104 edge=1331698336 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=True lane_cmd_state=APPLY lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=True same_lane=False reason=merge_conflict_eta gap=1.4 follow_spd=6.42 emergency=False target_before=6.75 target_after=6.419504318617139 target_after_raw=6.42
+obu-main-back-1      | [20.2] Main_Back role=host state=CRUISE->CRUISE speed=7.67 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.48 target=6.75 rear_speed=7.50 rear_gap=1.13 rear_gap_t1=0.10 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=1.02 closing_ttc=1.10 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=30.1
+obu-main-front-1     | [20.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [20.8] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.45 target=6.75 rear_speed=7.50 rear_gap=4.36 rear_gap_t1=3.31 rear_gap_t2=2.27 rear_gap_t3=1.22 rear_closing=1.05 closing_ttc=4.17 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=33.3
+obu-merge-car-1      | [20.8] Merge_Car role=merge state=MERGING->MERGING speed=6.45 target=6.75 neighbors=4
+obu-main-acceptor-1  | [20.9] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [21.3] Merge_Car MCM_RX_ACCEPT: from=104 manoeuvre=198 target=105
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.52 target=6.75 rear_speed=7.50 rear_gap=0.00 rear_gap_t1=0.00 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=0.98 closing_ttc=0.00 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=37.2
+obu-main-front-1     | [21.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [21.5] Main_Back role=host state=CRUISE->CRUISE speed=7.59 target=7.50 neighbors=4
+obu-main-lead-1      | [21.8] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.57 target=6.75 rear_speed=7.50 rear_gap=1.77 rear_gap_t1=0.84 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=0.93 closing_ttc=1.91 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=40.4
+obu-merge-car-1      | [21.9] Merge_Car role=merge state=MERGING->MERGING speed=6.57 target=6.75 neighbors=4
+obu-main-acceptor-1  | [22.1] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [22.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [22.5] Main_Back role=host state=CRUISE->CRUISE speed=7.55 target=7.50 neighbors=0
+obu-main-lead-1      | [23.0] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.64 target=6.75 rear_speed=7.50 rear_gap=0.00 rear_gap_t1=0.00 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=0.86 closing_ttc=0.00 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=47.0
+obu-merge-car-1      | [22.9] Merge_Car role=merge state=MERGING->MERGING speed=6.64 target=6.75 neighbors=4
+obu-main-acceptor-1  | [23.2] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.67 target=6.75 rear_speed=7.50 rear_gap=0.38 rear_gap_t1=0.00 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=0.83 closing_ttc=0.46 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=51.0
+obu-main-front-1     | [23.7] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [23.7] Main_Back role=cruise state=CRUISE->CRUISE speed=7.54 target=7.50 neighbors=4
+obu-merge-car-1      | [24.0] Merge_Car role=merge state=MERGING->MERGING speed=6.69 target=6.75 neighbors=0
+obu-main-lead-1      | [24.3] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=6.70 target=6.75 rear_speed=7.50 rear_gap=0.00 rear_gap_t1=0.00 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=0.80 closing_ttc=0.00 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=57.0
+obu-main-acceptor-1  | [24.4] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [24.8] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [24.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.52 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_APPLY_REAR_GUARD_FLOW_PROTECT: vehicle=Merge_Car rear=103 host=104 speed=5.80 target=6.75 rear_speed=7.50 rear_gap=2.71 rear_gap_t1=1.01 rear_gap_t2=0.00 rear_gap_t3=0.00 rear_closing=1.70 closing_ttc=1.59 lane_cmd_state=APPLY edge=1331698336 lane=0 dtm=61.5
+obu-merge-car-1      | [25.1] Merge_Car role=merge state=MERGING->MERGING speed=5.80 target=6.75 neighbors=4
+obu-main-lead-1      | [25.4] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [25.9] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=CLEAR t=26.1 edge=1331698336 lane=1 lane_cmd_state=CLEAR speed=1.30 target=4.50 dtm=64.7 lead_gap= host_gap=38.44 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=32.22 host_gap_t2=25.99 host_gap_t3=19.77
+obu-merge-car-1      | [26.1] Merge_Car MERGE_LANE_CLEAR_CONFIRMED: edge=1331698336 lane=1 target_lane=1 lane_count=3 executable=False
+obu-main-front-1     | [26.0] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [26.1] Main_Back role=cruise state=CRUISE->CRUISE speed=7.51 target=7.50 neighbors=4
+obu-merge-car-1      | [26.3] Merge_Car FINAL_GUARD: REJECTED sid=103 gap=1.9 ttc_danger=False
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=ABORT_SAFETY_HOLD t=26.3 edge=:1487416310_0 lane=0 lane_cmd_state=CLEAR speed=1.25 target=6.75 dtm=64.9 lead_gap= host_gap=38.69 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=32.42 host_gap_t2=26.15 host_gap_t3=19.88
+obu-merge-car-1      | [26.3] Merge_Car MERGE_COMMIT_ABORT_SAFETY_HOLD: lgok=True hgok=False fgok=False edge=:1487416310_0 lane=0 target_lane=1 speed=1.25 lane_cmd_state=CLEAR lane_cmd_executable=False lane_cmd_edge=1331698336 lane_cmd_lane_count=3
+obu-merge-car-1      | [26.3] Merge_Car CAR_FOLLOW: sid=103 edge=:1487416310_0 lane=0 leader_edge= leader_lane=None leader_role_hint=main self_merge_completed=False self_merge_completed_age=-1.0 self_merge_committed=False lane_cmd_state=CLEAR lane_cmd_edge=1331698336 lane_cmd_target=1 lane_cmd_executable=False same_lane=True reason=same_lane_cam gap=0.0 follow_spd=2.25 emergency=False target_before=6.75 target_after=1.4298038222269334 target_after_raw=2.25
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=POST_CLEAR_CAR_FOLLOW t=26.3 edge=:1487416310_0 lane=0 lane_cmd_state=CLEAR speed=1.25 target=1.43 dtm=64.9 lead_gap= host_gap=38.69 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=32.42 host_gap_t2=26.15 host_gap_t3=19.88
+obu-merge-car-1      | [26.3] Merge_Car POST_CLEAR_CAR_FOLLOW: age=0.2 sid=103 gap=0.0 reason=same_lane_cam follow_spd=2.25 self_edge=:1487416310_0 self_lane=0 leader_edge= leader_lane=None lane_cmd_state=CLEAR
+obu-merge-car-1      | [26.3] Merge_Car role=merge state=MERGING->NEGOTIATING speed=1.25 target=1.43 neighbors=4
+obu-merge-car-1      | [26.5] Merge_Car MERGE_LANE_APPLY_CONFIRMED: edge=:1487416310_0 lane=0 target_lane=1 lane_count=2 executable=False
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.56
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.57
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.58
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.59
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.57
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.56
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.55
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.54
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.53
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.52
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.51
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.50
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.49
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.48
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.47
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.46
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.46
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.46
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=False speed=6.47
+traci-bridge-1       | LANE_CMD_APPLY veh=Merge_Car edge=1331698336 from_lane=0 target=1 duration=2.00 mode=256 speed=6.47
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.48
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.50
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.51
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.52
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.53
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.54
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.55
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.56
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.57
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.58
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.59
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.60
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.61
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.61
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.62
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.63
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.63
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.64
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.64
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.65
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.65
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.66
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.66
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.67
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.67
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.68
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.68
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.68
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.69
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.69
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.69
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.70
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.70
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.70
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.70
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.71
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.71
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.71
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.70
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=6.25
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=5.80
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=5.35
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=4.90
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=4.45
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=4.00
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=3.55
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=3.10
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=2.65
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=True speed=2.20
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=0 target=1 lane_count=3 recently=False speed=1.75
+traci-bridge-1       | LANE_CMD_APPLY veh=Merge_Car edge=1331698336 from_lane=0 target=1 duration=2.00 mode=256 speed=1.75
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=1331698336 lane=1 target=1 lane_count=3 recently=True speed=1.30
+traci-bridge-1       | LANE_CMD_CLEAR veh=Merge_Car edge=1331698336 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=0 target=1 lane_count=2 recently=False speed=1.25
+traci-bridge-1       | LANE_CMD_APPLY veh=Merge_Car edge=:1487416310_0 from_lane=0 target=1 duration=2.00 mode=256 speed=1.25
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.25
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.46
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.67
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+obu-main-lead-1      | [26.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [26.8] Merge_Car FINAL_GUARD: REJECTED sid=103 gap=3.5 ttc_danger=False
+obu-merge-car-1      | [26.8] Merge_Car MERGE_LCLEAR_BLOCK: sid=102 gap=7.6 neighbor_age=1.0 from_memory=False dtm=65.6
+obu-merge-car-1      | [26.8] Merge_Car MERGE_DECISION: auth=False phys=True fgok=False lgok=True hgok=True cok=True esok=True cready=True dtm=65.6 past=True committed=False hid=None ra=None lclear=False hyok=True
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=LOST_AUTH_AFTER_POINT t=26.8 manoeuvre=None source=true_after_last_main lead=102 host=None own_eta=39.30 lead_eta=16.44 host_eta=None min_eta=17.94 max_eta=None desired_eta=39.30 gap_possible=True dtm=65.6 edge=:1487416310_0 lane=1 speed=1.67 lead_speed=7.50 host_speed=None lead_gap=53.16 host_gap=None lead_gap_t1=53.16 lead_gap_t2=53.16 lead_gap_t3=53.16 host_gap_t1=None host_gap_t2=None host_gap_t3=None rel_to_lead=-5.83 rel_to_host=None lead_lat=6.04 host_lat=None pending=False accepted=False authorized=False committed=False pending_age=None accepted_age=None lane_cmd_state=HOLD_INTERNAL lane_cmd_target=1
+obu-merge-car-1      | [26.8] Merge_Car MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=65.6 past=True hid=None auth=False
+obu-merge-car-1      | [27.1] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-main-front-1     | [27.3] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [27.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [27.2] Main_Back role=cruise state=CRUISE->CRUISE speed=7.51 target=7.50 neighbors=0
+obu-merge-car-1      | [27.4] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-merge-car-1      | [27.4] Merge_Car role=merge state=ABORT->ABORT speed=1.52 target=1.70 neighbors=4
+obu-main-lead-1      | [27.8] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [27.7] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-merge-car-1      | [28.3] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-main-front-1     | [28.3] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [28.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [28.3] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [29.0] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-merge-car-1      | [29.0] Merge_Car role=merge state=ABORT->ABORT speed=1.56 target=1.74 neighbors=4
+obu-main-lead-1      | [28.9] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [29.1] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-merge-car-1      | [29.4] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-main-front-1     | [29.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [29.5] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [29.6] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [29.7] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-main-lead-1      | [30.2] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [30.5] Merge_Car FINAL_GUARD: REJECTED sid=104 gap=11.8 ttc_danger=True
+obu-merge-car-1      | [30.5] Merge_Car MERGE_DECISION: auth=False phys=False fgok=False lgok=True hgok=True cok=True esok=True cready=True dtm=71.5 past=True committed=False hid=None ra=None lclear=True hyok=True
+obu-merge-car-1      | MERGE_SLOT_QUALITY_DIAG: vehicle=Merge_Car event=LOST_AUTH_AFTER_POINT t=30.5 manoeuvre=None source=true_after_last_main lead=101 host=None own_eta=43.07 lead_eta=26.93 host_eta=None min_eta=28.43 max_eta=None desired_eta=43.07 gap_possible=True dtm=71.5 edge=:1487416310_0 lane=1 speed=1.66 lead_speed=7.50 host_speed=None lead_gap=126.06 host_gap=None lead_gap_t1=126.06 lead_gap_t2=126.06 lead_gap_t3=126.06 host_gap_t1=None host_gap_t2=None host_gap_t3=None rel_to_lead=-5.84 rel_to_host=None lead_lat=6.81 host_lat=None pending=False accepted=False authorized=False committed=False pending_age=None accepted_age=None lane_cmd_state=HOLD_INTERNAL lane_cmd_target=1
+obu-merge-car-1      | [30.5] Merge_Car MERGE_FAILED_LOST_AUTH_AFTER_POINT: dtm=71.5 past=True hid=None auth=False
+obu-merge-car-1      | [30.5] Merge_Car role=merge state=ABORT->ABORT speed=1.66 target=0.50 neighbors=4
+obu-main-front-1     | [30.6] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [30.6] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [30.6] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [30.6] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-merge-car-1      | [31.0] Merge_Car FINAL_GUARD: REJECTED blind merge with main traffic
+obu-main-lead-1      | [31.3] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | MERGE_COMPLETION_REAR_GUARD_HOLD: vehicle=Merge_Car host=104 lead=None held_s=0.0 speed=1.51 target=1.68 lead_gap=None hazard_sid=104 gap=8.27 t1=2.28 t2=0.00 t3=0.00 ttc=1.38 lane_cmd_state=HOLD_INTERNAL edge=135424828 lane=1
+obu-merge-car-1      | [31.4] Merge_Car MERGE_LANE_CLEAR_CONFIRMED: edge=135424828 lane=1 target_lane=1 lane_count=2 executable=False
+obu-merge-car-1      | MERGE_COMPLETION_REAR_GUARD_RELEASE: vehicle=Merge_Car reason=safe_gap host=104 lead=None edge=135424828 lane=1
+obu-merge-car-1      | MERGE_ATTEMPT_TIMELINE: vehicle=Merge_Car manoeuvre=198 host=104 lead=None event=COMPLETED t=31.7 edge=135424828 lane=1 lane_cmd_state=CLEAR speed=1.54 target=6.75 dtm=73.3 lead_gap= host_gap=8.72 lead_gap_t1= lead_gap_t2= lead_gap_t3= host_gap_t1=2.76 host_gap_t2=0.00 host_gap_t3=0.00
+obu-merge-car-1      | [31.7] Merge_Car MERGE_COMPLETED: eid=135424828 lane=1 clean=True
+obu-merge-car-1      | [31.7] Merge_Car role=merge state=MERGING->CRUISE speed=1.54 target=7.50 neighbors=0
+obu-main-front-1     | [32.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [32.6] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [32.6] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [32.4] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [32.7] Merge_Car role=cruise state=CRUISE->CRUISE speed=3.24 target=7.50 neighbors=4
+obu-main-back-1      | [33.6] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-lead-1      | [33.9] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [34.1] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [34.1] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [34.0] Merge_Car role=cruise state=CRUISE->CRUISE speed=5.31 target=7.50 neighbors=4
+obu-main-back-1      | [34.7] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [35.0] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [35.0] Merge_Car role=cruise state=CRUISE->CRUISE speed=6.19 target=7.50 neighbors=1
+obu-main-front-1     | [35.2] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [35.2] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [36.1] Merge_Car role=cruise state=CRUISE->CRUISE speed=6.75 target=7.50 neighbors=4
+obu-main-lead-1      | [36.4] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [36.4] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [36.6] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [37.3] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [37.3] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.10 target=7.50 neighbors=4
+obu-main-lead-1      | [37.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [37.7] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [37.7] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [38.3] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.26 target=7.50 neighbors=0
+obu-main-lead-1      | [38.6] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [38.7] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [38.7] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [39.0] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [39.6] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.38 target=7.50 neighbors=4
+obu-main-lead-1      | [39.8] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [40.1] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [40.0] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [40.1] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [40.8] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.43 target=7.50 neighbors=4
+obu-main-back-1      | [41.0] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [41.2] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [41.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [40.9] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [41.8] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.46 target=7.50 neighbors=4
+obu-main-lead-1      | [42.0] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [42.4] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [42.1] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [42.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [42.8] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.48 target=7.50 neighbors=4
+obu-main-lead-1      | [43.0] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [43.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [43.2] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [43.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [44.1] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.49 target=7.50 neighbors=4
+obu-main-lead-1      | [44.2] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [44.4] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [44.4] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [44.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [45.1] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.49 target=7.50 neighbors=4
+obu-main-lead-1      | [45.2] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [45.5] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-acceptor-1  | [45.4] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [45.7] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [46.3] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [46.4] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [46.7] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [46.5] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [46.8] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [47.4] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [47.4] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [47.8] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [47.6] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [48.1] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [48.4] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [48.4] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [48.6] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [48.8] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [49.1] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [49.5] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [49.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [49.9] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [50.1] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [50.1] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [50.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [50.7] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [50.9] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [51.2] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [51.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [51.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [51.9] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [52.6] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [52.6] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-merge-car-1      | [52.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-back-1      | [52.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-acceptor-1  | [53.0] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-lead-1      | [53.8] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [53.7] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [53.8] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [53.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [54.0] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [54.7] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [55.1] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-merge-car-1      | [55.1] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [55.3] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [54.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=1
+obu-main-front-1     | [55.8] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [56.2] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [56.2] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [56.6] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [56.6] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [56.9] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [57.3] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [57.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-lead-1      | [57.9] Main_Lead role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [58.1] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [58.4] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [58.3] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-acceptor-1  | [58.5] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-front-1     | [59.1] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [59.6] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [59.8] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [59.8] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-front-1     | [60.3] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-main-back-1      | [60.8] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-acceptor-1  | [60.8] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=4
+obu-merge-car-1      | [60.9] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-front-1     | [61.5] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-back-1      | [61.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-acceptor-1  | [62.0] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-merge-car-1      | [62.1] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-front-1     | [62.8] Main_Front role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [63.2] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-acceptor-1  | [63.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-merge-car-1      | [63.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-back-1      | [64.2] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [64.3] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [64.7] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [65.6] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-acceptor-1  | [65.7] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-merge-car-1      | [65.9] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=3
+obu-main-back-1      | [66.9] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [67.2] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [67.3] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [68.4] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-main-acceptor-1  | [68.4] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-merge-car-1      | [68.7] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-main-acceptor-1  | [69.4] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [69.8] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [70.2] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-acceptor-1  | [70.8] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [71.2] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-merge-car-1      | [71.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-main-acceptor-1  | [71.8] Main_Acceptor role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-main-back-1      | [73.0] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [73.3] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [74.4] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [75.1] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-merge-car-1      | [75.4] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=2
+obu-merge-car-1      | [76.5] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-main-back-1      | [77.0] Main_Back role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+obu-merge-car-1      | [77.6] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.66Step #0.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 5 ACT 5 BUF 0)                       Step #10.00 (0ms ?*RT. ?UPS, TraCI: 2ms, vehicles TOT 5 ACT 5 BUF 0)                      Step #20.00 (0ms ?*RT. ?UPS, TraCI: 3ms, vehicles TOT 5 ACT 5 BUF 0)                      Step #30.00 (0ms ?*RT. ?UPS, TraCI: 3ms, vehicles TOT 5 ACT 5 BUF 0)                      Step #40.00 (0ms ?*RT. ?UPS, TraCI: 2ms, vehicles TOT 5 ACT 5 BUF 0)                      Step #50.00 (0ms ?*RT. ?UPS, TraCI: 3ms, vehicles TOT 5 ACT 5 BUF 0)                      Step #60.00 (0ms ?*RT. ?UPS, TraCI: 2ms, vehicles TOT 5 ACT 4 BUF 0)                      Step #70.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 5 ACT 3 BUF 0)                      Step #79.20 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 5 ACT 0 BUF 0)                      
+obu-merge-car-1      | [79.1] Merge_Car role=cruise state=CRUISE->CRUISE speed=7.50 target=7.50 neighbors=0
+traci-bridge-1       | 
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.65
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.64
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.63
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.57
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.52
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.46
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.42
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.44
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.46
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.47
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.48
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.50
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.51
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.51
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.52
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.53
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.53
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.54
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.54
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.55
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.56
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.56
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.57
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.58
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.59
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.59
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.60
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.61
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.61
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.62
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.63
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.63
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.64
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.65
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.65
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.66
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.67
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.67
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.61
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.56
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.50
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.45
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.47
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=:1487416310_0 lane=1 target=1 lane_count=2 recently=True speed=1.49
+traci-bridge-1       | LANE_CMD_HOLD_INTERNAL veh=Merge_Car edge=:1487416310_0 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=135424828 lane=1 target=1 lane_count=2 recently=False speed=1.51
+traci-bridge-1       | LANE_CMD_CLEAR veh=Merge_Car edge=135424828 target=1
+traci-bridge-1       | LANE_CMD_STATE veh=Merge_Car edge=135424828 lane=1 target=1 lane_count=2 recently=False speed=1.56
+traci-bridge-1       | LANE_CMD_CLEAR veh=Merge_Car edge=135424828 target=1
+mqtt-broker-1        | 1780001887: Client traci-bridge [172.18.0.4:59847] disconnected: connection closed by client.
+[Ktraci-bridge-1 exited with code 0
+ Compose Stopping Aborting on container exit...
+ Container rsa-traci-bridge-1 Stopping 
+ Container rsa-obu-merge-car-1 Stopping 
+ Container rsa-obu-main-back-1 Stopping 
+ Container rsa-obu-main-lead-1 Stopping 
+ Container rsa-obu-main-front-1 Stopping 
+ Container rsa-obu-main-acceptor-1 Stopping 
+ Container rsa-traci-bridge-1 Stopped 
+obu-merge-car-1      | 1780001897: Client obu-Merge_Car-1 closed its connection.
+obu-main-lead-1      | 1780001897: Client obu-Main_Lead-1 closed its connection.
+mqtt-broker-1        | 1780001897: Client c733202bfdff.bridge_to_remote [172.18.0.7:48952] disconnected: connection closed by client.
+obu-main-acceptor-1  | 1780001897: Client obu-Main_Acceptor-1 closed its connection.
+mqtt-broker-1        | 1780001897: Client fb0bce671b71.bridge_to_remote [172.18.0.8:34150] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client 9a0508b4b557.bridge_to_remote [172.18.0.6:41676] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client 8c4e68deb348.bridge_to_remote [172.18.0.3:41410] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client 10eea38444e1.bridge_to_remote [172.18.0.5:58204] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client auto-6D142235-2775-EF66-92CE-198BF9064002 [172.18.0.7:48958] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client auto-EECCDB79-DA9E-A9C5-732C-2C5F07E8B5CD [172.18.0.6:41680] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client auto-3F3AB2AA-B737-907D-6F87-2B8A1C6B786F [172.18.0.8:34158] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client auto-744B8A8D-B06B-A218-381C-FDC8FB76B52D [172.18.0.3:41424] disconnected: connection closed by client.
+mqtt-broker-1        | 1780001897: Client auto-7B2C05A8-3B7C-9375-E6E5-87A54FCF0E6C [172.18.0.5:58218] disconnected: connection closed by client.
+ Container rsa-obu-merge-car-1 Stopped 
+[Kobu-merge-car-1 exited with code 137
+ Container rsa-obu-main-lead-1 Stopped 
+[Kobu-main-lead-1 exited with code 137
+ Container rsa-obu-main-acceptor-1 Stopped 
+[Kobu-main-acceptor-1 exited with code 137
+ Container rsa-obu-main-back-1 Stopped 
+[Kobu-main-back-1 exited with code 137
+ Container rsa-obu-main-front-1 Stopped 
+ Container rsa-mqtt-broker-1 Stopping 
+[Kobu-main-front-1 exited with code 137
+mqtt-broker-1        | 1780001898: mosquitto version 2.1.2 terminating
+ Container rsa-mqtt-broker-1 Stopped 
+[Kmqtt-broker-1 exited with code 0
