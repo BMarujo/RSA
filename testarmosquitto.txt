@@ -1,0 +1,78 @@
+MCM-MAIN
+
+mosquitto_sub -h localhost -p 1883 -t 'obu103/vanetza/out/mcm' \
+| jq '{
+  view: "Merge_Car received MCM",
+  from_station: .stationID,
+  to_station: .receiverID,
+  manoeuvre_id: .fields.payload.basicContainer.manoeuvreId,
+  action_code: .fields.payload.basicContainer.rational.manoeuvreCooperationCost,
+  action: (
+    .fields.payload.basicContainer.rational.manoeuvreCooperationCost12:46 AM
+    6. Rear gap OK?
+    Depois da lane change, ainda confirma se o carro de trás não está a fechar 
+    | tostring
+    | {"1":"REQUEST","2":"ACCEPT","3":"REJECT"}[.]
+  ),
+  target_executant: .fields.payload.mcmContainer.vehicleManoeuvreContainer.manoeuvreAdvice[0].executantID,
+  speed: .fields.payload.mcmContainer.vehicleManoeuvreContainer.vehicleCurrentStateContainer.vehicleSpeed.speedValue
+}'
+
+
+
+mosquitto_sub -h localhost -p 1883 -t 'obu102/vanetza/out/mcm' \
+| jq '{
+  view: "Host received MCM",
+  from_station: .stationID,
+  to_station: .receiverID,
+  manoeuvre_id: .fields.payload.basicContainer.manoeuvreId,
+  action_code: .fields.payload.basicContainer.rational.manoeuvreCooperationCost,
+  action: (
+    .fields.payload.basicContainer.rational.manoeuvreCooperationCost
+    | tostring
+    | {"1":"REQUEST","2":"ACCEPT","3":"REJECT"}[.]
+  ),
+  target_executant: .fields.payload.mcmContainer.vehicleManoeuvreContainer.manoeuvreAdvice[0].executantID,
+  speed: .fields.payload.mcmContainer.vehicleManoeuvreContainer.vehicleCurrentStateContainer.vehicleSpeed.speedValue
+}'
+
+
+
+SINGLE-LANE
+
+mosquitto_sub -h localhost -p 1883 -t 'obu105/vanetza/out/mcm' \
+| jq '{
+  view: "Merge_Car received MCM",
+  from_station: .stationID,
+  to_station: .receiverID,
+  manoeuvre_id: .fields.payload.basicContainer.manoeuvreId,
+  action_code: .fields.payload.basicContainer.rational.manoeuvreCooperationCost,
+  action: (
+    .fields.payload.basicContainer.rational.manoeuvreCooperationCost
+    | tostring
+    | {"1":"REQUEST","2":"ACCEPT","3":"REJECT"}[.]
+  ),
+  target_executant: .fields.payload.mcmContainer.vehicleManoeuvreContainer.manoeuvreAdvice[0].executantID,
+  speed: .fields.payload.mcmContainer.vehicleManoeuvreContainer.vehicleCurrentStateContainer.vehicleSpeed.speedValue
+}'
+
+
+mosquitto_sub -h localhost -p 1883 -t 'obu104/vanetza/out/mcm' \
+| jq '{
+  view: "Host received MCM",
+  from_station: .stationID,
+  to_station: .receiverID,
+  manoeuvre_id: .fields.payload.basicContainer.manoeuvreId,
+  action_code: .fields.payload.basicContainer.rational.manoeuvreCooperationCost,
+  action: (
+    .fields.payload.basicContainer.rational.manoeuvreCooperationCost
+    | tostring
+    | {"1":"REQUEST","2":"ACCEPT","3":"REJECT"}[.]
+  ),
+  target_executant: .fields.payload.mcmContainer.vehicleManoeuvreContainer.manoeuvreAdvice[0].executantID,
+  speed: .fields.payload.mcmContainer.vehicleManoeuvreContainer.vehicleCurrentStateContainer.vehicleSpeed.speedValue
+}'
+
+
+
+
