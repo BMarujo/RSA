@@ -1,0 +1,17 @@
+<routes>
+    <vType id="lead_car" accel="2.2" decel="50.0" emergencyDecel="50.0" sigma="0.0" length="4.8" width="1.9" minGap="2.5" maxSpeed="13.89" guiShape="passenger/wagon"/>
+    <vType id="host_car" accel="2.0" decel="50.0" emergencyDecel="50.0" sigma="0.0" length="4.6" width="1.9" minGap="2.5" maxSpeed="13.89" guiShape="passenger/sedan"/>
+    <vType id="main_car" accel="2.0" decel="50.0" emergencyDecel="50.0" sigma="0.0" length="4.4" width="1.85" minGap="2.5" maxSpeed="13.89" guiShape="passenger/hatchback"/>
+    <vType id="merge_car" accel="2.1" decel="50.0" emergencyDecel="50.0" sigma="0.0" length="4.5" width="1.9" minGap="2.5" maxSpeed="13.89" guiShape="passenger/sedan"/>
+
+    <route id="main_route" edges="560761994 1331698336 135424828"/>
+    <route id="ramp_route" edges="34126779 1331698336 135424828"/>
+
+    <!-- Focused MCM demo: one acceleration-lane vehicle and a visible main-lane queue. -->
+    <vehicle id="Main_Lead" type="lead_car" route="main_route" depart="0.0" departLane="0" departPos="190" departSpeed="8.5" color="236,240,244"/>
+    <vehicle id="Main_Front" type="main_car" route="main_route" depart="0.0" departLane="0" departPos="148" departSpeed="8.2" color="54,132,245"/>
+    <vehicle id="Main_Acceptor" type="host_car" route="main_route" depart="0.0" departLane="0" departPos="92" departSpeed="8.0" color="58,200,125"/>
+    <vehicle id="Main_Back" type="main_car" route="main_route" depart="0.0" departLane="0" departPos="48" departSpeed="8.0" color="96,112,255"/>
+
+    <vehicle id="Merge_Car" type="merge_car" route="ramp_route" depart="0.0" departLane="0" departPos="126" departSpeed="8.8" color="240,80,80"/>
+</routes>
